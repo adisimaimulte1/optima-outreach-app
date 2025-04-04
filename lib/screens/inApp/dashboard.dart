@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:optima/screens/inApp/globals.dart';
 import 'package:optima/screens/inApp/widgets/menu.dart';
 
 import '../choose_first_screen.dart';
@@ -21,6 +22,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dashboardScaleNotifier.value = _currentScale;
+
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
@@ -86,6 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _pinchDuration = Duration(milliseconds: dynamicMs);
     debugPrint("Pinch duration: $dynamicMs");
 
+    dashboardScaleNotifier.value = _currentScale;
     setState(() {
       _currentScale = targetScale;
     });
@@ -94,22 +98,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
 
-  Widget _buildDashboardContent(context) {
+  Widget _buildDashboardContent(BuildContext context) {
     final bool isMinimized = _currentScale < 1.0;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Define the maximum corner radius for the minimized state
+    const double maxCornerRadius = 120.0;
+    const double maxBorderWidth = 0;
+
+    // Calculate the dynamic corner radius based on the current scale
+    double dynamicCornerRadius = maxCornerRadius * (1 - _currentScale);
+    double dynamicBorderWidth = maxBorderWidth * (1 - _currentScale);
 
     return Container(
       width: MediaQuery.of(context).size.width,
       height: MediaQuery.of(context).size.height,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: isMinimized ? BorderRadius.circular(10) : BorderRadius.circular(0),
-        border: isMinimized
-            ? Border.all(
-          color: isDark ? Colors.white : Colors.black,
-          width: 14,
-        )
-            : null,
+        borderRadius: BorderRadius.circular(dynamicCornerRadius),
+
       ),
       child: SafeArea(
         child: Column(
@@ -119,8 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Text("Main Content Area", style: TextStyle(fontSize: 22)),
               ),
             ),
-
-            // 🔓 TEMP LOGOUT BUTTON
+            // Temporary Logout Button
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: ElevatedButton.icon(
@@ -134,7 +140,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
                 },
               ),
-            )
+            ),
           ],
         ),
       ),
