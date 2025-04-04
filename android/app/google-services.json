@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "378911935439",
+    "project_id": "optima-78874",
+    "storage_bucket": "optima-78874.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:378911935439:android:d11d1033278e60e79660ba",
+        "android_client_info": {
+          "package_name": "ro.contras.optima"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_dh_-ZW4Tt9do13GNhXv-BR6_2Y8bIGA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,10 @@
+Copyright (c) 2025 Optima - Contraș Adrian. All rights reserved.
+
+This software and its associated files may not be copied, modified, distributed, or used in any form without explicit, written permission from the author.
+
+Unauthorized use, reproduction, or redistribution of this software or any of its components is strictly prohibited.
+
+This software is proprietary and confidential. By accessing or using the software, you agree to be bound by these terms.
+This license does not grant any rights to the source code or distribution beyond those explicitly stated.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
