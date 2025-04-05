@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/screens/inApp/globals.dart';
 import 'package:optima/screens/inApp/widgets/menu.dart';
+import 'package:optima/screens/inApp/widgets/menu_controller.dart' as custom_menu;
+
 
 import '../choose_first_screen.dart';
 
@@ -16,9 +18,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isPinching = false;
   double _currentScale = 1.0;
 
-
   static const double _minimizedScale = 0.4;
-  static Duration _pinchDuration = Duration(milliseconds: 100);
+  static Duration _pinchDuration = Duration(milliseconds: 150);
+
+
+  @override
+  void initState() {
+    super.initState();
+    custom_menu.MenuController.instance.selectSource(DashboardScreen);
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +97,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     shouldMinimize ? (scaleDiff * 800).clamp(100, 600).toInt() : 100;
 
     _pinchDuration = Duration(milliseconds: dynamicMs);
-    debugPrint("Pinch duration: $dynamicMs");
 
     dashboardScaleNotifier.value = _currentScale;
     setState(() {
@@ -104,7 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Define the maximum corner radius for the minimized state
     const double maxCornerRadius = 120.0;
-    const double maxBorderWidth = 0;
+    const double maxBorderWidth = 30;
 
     // Calculate the dynamic corner radius based on the current scale
     double dynamicCornerRadius = maxCornerRadius * (1 - _currentScale);
@@ -114,7 +123,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       width: MediaQuery.of(context).size.width,
       height: MediaQuery.of(context).size.height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.black : Colors.white,
+        border: Border.all(
+          width: dynamicBorderWidth,
+          color: isDark ? Colors.white : Colors.black,
+        ),
         borderRadius: BorderRadius.circular(dynamicCornerRadius),
 
       ),
