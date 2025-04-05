@@ -248,70 +248,90 @@ class _MenuState extends State<Menu> {
       return Positioned(
         left: dx - 40,
         top: verticalOffset > 0 ? dy - 40 : dy + 40,
-        child: StatefulBuilder(
-          builder: (context, setInnerState) {
-            return GestureDetector(
-              onTapDown: (_) {
-                setInnerState(() => pressScales[index] = 0.70);
-              },
-              onTapUp: (_) {
-                setInnerState(() => pressScales[index] = 1.0);
+        child: AnimatedOpacity(
+          opacity: opacity,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeInOut,
+          child: AnimatedSlide(
+            offset: Offset(0, (1 - opacity) * (verticalOffset > 0 ? -3 : 3)),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            child: AnimatedOpacity(
+              opacity: opacity,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: AnimatedScale(
+                scale: ((1.0 - scale) / (1.0 - 0.4)).clamp(0.0, 1.0),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                child: StatefulBuilder(
+                  builder: (context, setInnerState) {
+                    return GestureDetector(
+                      onTapDown: (_) {
+                        setInnerState(() => pressScales[index] = 0.70);
+                      },
+                      onTapUp: (_) {
+                        setInnerState(() => pressScales[index] = 1.0);
 
-                final Offset iconPosition = Offset(dx, verticalOffset > 0 ? dy : dy + 80);
-                final screenSize = MediaQuery.of(context).size;
-                final padding = MediaQuery.of(context).padding;
-                final usableHeight = screenSize.height - padding.top - padding.bottom;
-                final Offset center = Offset(screenSize.width / 2, padding.top + usableHeight / 2);
+                        final Offset iconPosition = Offset(dx, verticalOffset > 0 ? dy : dy + 80);
+                        final screenSize = MediaQuery.of(context).size;
+                        final padding = MediaQuery.of(context).padding;
+                        final usableHeight = screenSize.height - padding.top - padding.bottom;
+                        final Offset center = Offset(screenSize.width / 2, padding.top + usableHeight / 2);
 
-                for (final beam in _activeBeams) {
-                  if (beam.key is GlobalKey) {
-                    final currentState = (beam.key as GlobalKey).currentState;
-                    if (currentState is ParticleBeamEffectState) {
-                      currentState.stopSpawning();
-                    }
-                  }
-                }
+                        for (final beam in _activeBeams) {
+                          if (beam.key is GlobalKey) {
+                            final currentState = (beam.key as GlobalKey).currentState;
+                            if (currentState is ParticleBeamEffectState) {
+                              currentState.stopSpawning();
+                            }
+                          }
+                        }
 
-                final newBeamKey = GlobalKey<ParticleBeamEffectState>();
-                final newBeam = ParticleBeamEffect(
-                  key: newBeamKey,
-                  start: iconPosition,
-                  end: center,
-                  spawnRate: const Duration(milliseconds: 80),
-                  maxParticles: 60,
-                );
+                        final newBeamKey = GlobalKey<ParticleBeamEffectState>();
+                        final newBeam = ParticleBeamEffect(
+                          key: newBeamKey,
+                          start: iconPosition,
+                          end: center,
+                          spawnRate: const Duration(milliseconds: 80),
+                          maxParticles: 60,
+                        );
 
-                setState(() {
-                  selectedTarget = iconPosition;
-                  _activeBeams.add(newBeam);
-                });
-              },
-              onTapCancel: () => setInnerState(() => pressScales[index] = 1.0),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 1.0, end: pressScales[index]!),
-                duration: const Duration(milliseconds: 100),
-                builder: (context, scaleVal, child) {
-                  final iconColor = isDark ? Colors.white : const Color(0xFF1C2837);
-                  return Transform.scale(
-                    scale: scaleVal,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.transparent,
-                        border: Border.all(color: iconColor, width: 6),
+                        setState(() {
+                          selectedTarget = iconPosition;
+                          _activeBeams.add(newBeam);
+                        });
+                      },
+                      onTapCancel: () => setInnerState(() => pressScales[index] = 1.0),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 1.0, end: pressScales[index]!),
+                        duration: const Duration(milliseconds: 100),
+                        builder: (context, scaleVal, child) {
+                          final iconColor = isDark ? Colors.white : const Color(0xFF1C2837);
+                          return Transform.scale(
+                            scale: scaleVal,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.transparent,
+                                border: Border.all(color: iconColor, width: 6),
+                              ),
+                              child: Icon(icons[index], size: 40, color: iconColor),
+                            ),
+                          );
+                        },
                       ),
-                      child: Icon(icons[index], size: 40, color: iconColor),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            );
-          },
+            ),
+          ),
         ),
-
       );
+
     });
   }
 
