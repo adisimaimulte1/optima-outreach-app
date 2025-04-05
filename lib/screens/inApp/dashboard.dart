@@ -126,7 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: isDark ? Colors.black : Colors.white,
         border: Border.all(
           width: dynamicBorderWidth,
-          color: isDark ? Colors.white : Colors.black,
+          color: isDark ? Colors.white : Color(0xFF1C2837),
         ),
         borderRadius: BorderRadius.circular(dynamicCornerRadius),
 

@@ -316,7 +316,10 @@ class _MenuState extends State<Menu> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.transparent,
-                                border: Border.all(color: iconColor, width: 6),
+                                border: Border.all(
+                                  color: iconColor,
+                                  width: selectedTarget == Offset(dx, verticalOffset > 0 ? dy : dy + 80) ? 10 : 6,
+                                ),
                               ),
                               child: Icon(icons[index], size: 40, color: iconColor),
                             ),
