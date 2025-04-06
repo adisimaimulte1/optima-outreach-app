@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:optima/screens/inApp/dashboard.dart';
-import 'package:optima/screens/inApp/widgets/selection_beam.dart';
-import 'package:optima/screens/inApp/globals.dart';
+
 import 'package:optima/screens/inApp/widgets/menu_controller.dart' as custom_menu;
+import 'package:optima/screens/inApp/widgets/selection_beam.dart';
+import 'package:optima/screens/inApp/dashboard.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:optima/globals.dart';
 
 
 class Menu extends StatefulWidget {
@@ -50,7 +51,6 @@ class _MenuState extends State<Menu> {
   }
 
   Widget _buildMenu(BuildContext context, double opacity, double scale) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
@@ -60,7 +60,7 @@ class _MenuState extends State<Menu> {
     final Offset topArcCenter = Offset(screenWidth / 2, usableHeight * 0.23);
     final Offset bottomArcCenter = Offset(screenWidth / 2, usableHeight * 0.77);
 
-    final backgroundGradient = _buildBackgroundGradient(isDark);
+    final backgroundGradient = _buildBackgroundGradient();
 
     return Stack(
       children: [
@@ -77,7 +77,6 @@ class _MenuState extends State<Menu> {
               center: topArcCenter,
               horizontalOffset: 130,
               verticalOffset: 60,
-              isDark: isDark,
               opacity: opacity,
               scale: scale,
             ),
@@ -86,7 +85,6 @@ class _MenuState extends State<Menu> {
               center: bottomArcCenter,
               horizontalOffset: 130,
               verticalOffset: -60,
-              isDark: isDark,
               opacity: opacity,
               scale: scale,
             ),
@@ -96,12 +94,12 @@ class _MenuState extends State<Menu> {
     );
   }
 
-  BoxDecoration _buildBackgroundGradient(bool isDark) {
+  BoxDecoration _buildBackgroundGradient() {
     return BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: isDark
+        colors: isDarkModeNotifier.value
             ? [const Color(0xFF292727), const Color(0xFF000000)]
             : [const Color(0xFFFFE8A7), const Color(0xFFFFC62D)],
       ),
@@ -225,7 +223,6 @@ class _MenuState extends State<Menu> {
     required Offset center,
     required double horizontalOffset,
     required double verticalOffset,
-    required bool isDark,
     required double opacity,
     required double scale,
   }) {
@@ -307,7 +304,7 @@ class _MenuState extends State<Menu> {
                         tween: Tween(begin: 1.0, end: pressScales[index]!),
                         duration: const Duration(milliseconds: 100),
                         builder: (context, scaleVal, child) {
-                          final iconColor = isDark ? Colors.white : const Color(0xFF1C2837);
+                          final iconColor = isDarkModeNotifier.value ? Colors.white : const Color(0xFF1C2837);
                           return Transform.scale(
                             scale: scaleVal,
                             child: Container(

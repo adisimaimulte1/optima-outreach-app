@@ -1,10 +1,14 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:lottie/lottie.dart';
 
-import 'authentication_screen.dart';
-import 'inApp/dashboard.dart';
+import 'package:optima/screens/beforeApp/authentication_screen.dart';
+import 'package:optima/screens/inApp/dashboard.dart';
+import 'package:optima/globals.dart';
+
 
 class AnimatedSplashScreen extends StatefulWidget {
   const AnimatedSplashScreen({super.key});
@@ -20,23 +24,19 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
     _controller = AnimationController(vsync: this);
   }
 
   @override
   void dispose() {
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final animationPath = _getAnimationPath(isDarkMode);
-    final footerColor = isDarkMode ? Colors.black : const Color(0xFFFFCD32);
+    final animationPath = _getAnimationPath();
+    final footerColor = isDarkModeNotifier.value ? Colors.black : const Color(0xFFFFCD32);
 
     final scalar = 0.5;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -55,8 +55,8 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
     );
   }
 
-  String _getAnimationPath(bool isDarkMode) {
-    return isDarkMode
+  String _getAnimationPath() {
+    return isDarkModeNotifier.value
         ? 'assets/splash/OptimaSplashDark.json'
         : 'assets/splash/OptimaSplash.json';
   }

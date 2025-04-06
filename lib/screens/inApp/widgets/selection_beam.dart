@@ -1,6 +1,10 @@
+import 'package:flutter/material.dart';
+
+import 'package:optima/globals.dart';
+
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/material.dart';
+
 
 class ParticleBeamEffect extends StatefulWidget {
   final Offset start;
@@ -126,7 +130,6 @@ class ParticleBeamEffectState extends State<ParticleBeamEffect>
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Stack(
       children: _particles.map((p) {
@@ -151,7 +154,7 @@ class ParticleBeamEffectState extends State<ParticleBeamEffect>
                   height: p.size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isDark ? Colors.white : Color(0xFF1C2837),
+                    color: isDarkModeNotifier.value ? Colors.white : Color(0xFF1C2837),
                   ),
                 ),
               ),

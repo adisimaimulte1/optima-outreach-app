@@ -3,12 +3,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
-import 'package:optima/screens/choose_first_screen.dart';
+import 'package:optima/screens/beforeApp/choose_first_screen.dart';
+import 'package:optima/globals.dart';
+
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+
+  setupGlobalListeners();
   runApp(Optima());
 }
 
@@ -36,7 +43,8 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
 
   void _setSystemUIOverlay() {
     final brightness = SchedulerBinding.instance.window.platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    isDarkModeNotifier.value = brightness == Brightness.dark;
+
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
@@ -45,13 +53,13 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
       systemStatusBarContrastEnforced: true,
       statusBarColor:
       Theme.of(context).scaffoldBackgroundColor.withOpacity(0.002),
-      statusBarIconBrightness: isDark
+      statusBarIconBrightness: isDarkModeNotifier.value
           ? Brightness.light
           : Brightness.dark,
-      systemNavigationBarColor: isDark
+      systemNavigationBarColor: isDarkModeNotifier.value
           ? Colors.white.withOpacity(0.002)
           : Colors.black.withOpacity(0.002),
-      systemNavigationBarIconBrightness: isDark
+      systemNavigationBarIconBrightness: isDarkModeNotifier.value
           ? Brightness.light
           : Brightness.dark,)
     );

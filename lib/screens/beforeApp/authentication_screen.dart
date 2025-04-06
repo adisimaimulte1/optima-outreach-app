@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
+
 import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:particles_flutter/particles_flutter.dart';
 
-import 'inApp/dashboard.dart';
+import 'package:optima/screens/inApp/dashboard.dart';
+import 'package:optima/globals.dart';
+
 
 
 class AuthScreen extends StatefulWidget {
@@ -33,7 +38,6 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
 
 
@@ -239,11 +243,8 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _showVerificationSnackbar() {
-    final isDark = MediaQuery
-        .of(context)
-        .platformBrightness == Brightness.dark;
-    final snackColor = isDark ? Colors.grey[900] : Colors.grey[200];
-    final textColor = isDark ? Colors.white : Colors.black;
+    final snackColor = isDarkModeNotifier.value ? Colors.grey[900] : Colors.grey[200];
+    final textColor = isDarkModeNotifier.value ? Colors.white : Colors.black;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -324,9 +325,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
       final googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
-        setState(() {
+        setState(() async {
           _loading = false;
           _errorMessage = 'Google sign-in was cancelled.';
+          await FirebaseAuth.instance.signOut();
         });
         return;
       }
@@ -399,10 +401,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final bgColor = isDark ? Colors.black : Colors.white;
-    final fgColor = isDark ? Colors.white : Colors.black;
-    final inputBg = isDark ? Colors.grey[900] : Colors.grey[100];
+    final bgColor = isDarkModeNotifier.value ? Colors.black : Colors.white;
+    final fgColor = isDarkModeNotifier.value ? Colors.white : Colors.black;
+    final inputBg = isDarkModeNotifier.value ? Colors.grey[900] : Colors.grey[100];
 
     return Scaffold(
       extendBody: true,
@@ -660,29 +661,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // only show cancel button in login flow
-              if (_isLogin)
-                ElevatedButton(
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                    setState(() {
-                      _loading = false;
-                      _errorMessage = 'Verification cancelled.';
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: bgColor,
-                    foregroundColor: fgColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: responsiveText(
-                    'Cancel',
-                    maxWidthFraction: 0.3,
-                    style: TextStyle(color: fgColor),
-                  ),
-                ),
             ],
           ),
         ),
@@ -691,11 +669,8 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildForgotPasswordButton(Color fgColor) {
-    final isDark = MediaQuery
-        .of(context)
-        .platformBrightness == Brightness.dark;
-    final snackColor = isDark ? Colors.grey[900] : Colors.grey[200];
-    final textColor = isDark ? Colors.white : Colors.black;
+    final snackColor = isDarkModeNotifier.value ? Colors.grey[900] : Colors.grey[200];
+    final textColor = isDarkModeNotifier.value ? Colors.white : Colors.black;
 
     return TextButton(
       onPressed: () async {
@@ -733,15 +708,14 @@ class _AuthScreenState extends State<AuthScreen> {
       },
       child: responsiveText(
         'Forgot password?',
-        maxWidthFraction: 0.4,
+        maxWidthFraction: 0.3,
         style: TextStyle(color: fgColor.withOpacity(0.7)),
       ),
     );
   }
 
   Widget _buildParticleBackground(BuildContext context) {
-    final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final particleColor = isDark
+    final particleColor = isDarkModeNotifier.value
         ? Colors.white.withOpacity(0.3)
         : Colors.black.withOpacity(0.3);
 
@@ -771,7 +745,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   void dispose() {
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();
   }
 }

@@ -1,0 +1,38 @@
+Change Log
+==========
+
+
+0.0.1 (28/03/2024)
+------------------
+- created the brand:
+    * name
+    * logo
+    * chromatic
+    * motto
+- made the app base
+- adaptive icon based on system settings
+- support for Android & iOS
+
+
+0.0.11 (30/03/2024)
+------------------
+- added custom splash screen
+- dark theme support
+
+
+0.0.12 (01/04/2024)
+------------------
+- added a logging screen, login / register via:
+    * email & password
+    * a google account
+- custom site for:
+    * redirecting verification emails
+    * resetting password
+
+
+0.0.13 (05/04/2024)
+------------------
+- added the selection menu
+- icons for all in-app screens
+- upright screen locking
+- fixed login menu bugs

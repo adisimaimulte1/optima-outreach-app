@@ -1,9 +1,12 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:optima/screens/splash_screen_adaptive.dart';
 
-import 'authentication_screen.dart';
-import 'inApp/dashboard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'package:optima/screens/beforeApp/splash_screen_adaptive.dart';
+import 'package:optima/screens/beforeApp/authentication_screen.dart';
+import 'package:optima/screens/inApp/dashboard.dart';
+
+
 
 class ChooseFirstScreen extends StatelessWidget {
   const ChooseFirstScreen({super.key});
