@@ -35,11 +35,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   String _loadingText = 'Waiting for email verification...';
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
 
 
   bool _validateEmail(String value) {
@@ -298,8 +293,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
 
 
-  void _navigateToHome()
-  {
+  void _navigateToHome() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (_, __, ___) =>
@@ -359,19 +353,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  InputDecoration themedInput(String label, Color fgColor, Color inputBg) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(color: fgColor.withOpacity(0.8)),
-      filled: true,
-      fillColor: inputBg,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: fgColor.withOpacity(0.6)),
-      ),
-    );
-  }
+
 
   Widget responsiveText(String text, {
     required double maxWidthFraction,
@@ -740,11 +722,4 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
 
-
-
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }

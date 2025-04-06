@@ -34,15 +34,17 @@ class _MenuState extends State<Menu> {
   @override
   void initState() {
     super.initState();
-    dashboardScaleNotifier.addListener(_onDashboardScaleChanged);
+    screenScaleNotifier.addListener(_onDashboardScaleChanged);
   }
+
+
 
   @override
   Widget build(BuildContext context) {
 
 
     return ValueListenableBuilder<double>(
-      valueListenable: dashboardScaleNotifier,
+      valueListenable: screenScaleNotifier,
       builder: (context, scale, _) {
         final double opacity = ((1.0 - scale) / (1.0 - 0.4)).clamp(0.0, 1.0);
         return _buildMenu(context, opacity, scale);
@@ -108,10 +110,9 @@ class _MenuState extends State<Menu> {
 
 
 
-
   void _onDashboardScaleChanged() {
-    final isDashboardFull = dashboardScaleNotifier.value >= 0.99;
-    final isDashboardMinimized = dashboardScaleNotifier.value == 0.4;
+    final isDashboardFull = screenScaleNotifier.value >= 0.99;
+    final isDashboardMinimized = screenScaleNotifier.value == 0.4;
 
     if (isDashboardMinimized && _activeBeams.isEmpty) {
       _handleIncomingSource();
@@ -121,21 +122,6 @@ class _MenuState extends State<Menu> {
         _queuedTarget = null;
       });
     }
-  }
-
-  void _startBeam(Offset start, Offset end) {
-    setState(() {
-      _activeBeams.add(
-        ParticleBeamEffect(
-          key: UniqueKey(),
-          start: start,
-          end: end,
-          spawnRate: const Duration(milliseconds: 80),
-          maxParticles: 60,
-          onComplete: _onBeamComplete,
-        ),
-      );
-    });
   }
 
   void _onBeamComplete() {
@@ -151,6 +137,23 @@ class _MenuState extends State<Menu> {
 
         _startBeam(target, center);
       }
+    });
+  }
+
+
+
+  void _startBeam(Offset start, Offset end) {
+    setState(() {
+      _activeBeams.add(
+        ParticleBeamEffect(
+          key: UniqueKey(),
+          start: start,
+          end: end,
+          spawnRate: const Duration(milliseconds: 80),
+          maxParticles: 60,
+          onComplete: _onBeamComplete,
+        ),
+      );
     });
   }
 
@@ -214,7 +217,6 @@ class _MenuState extends State<Menu> {
       });
     }
   }
-
 
 
 
@@ -337,10 +339,9 @@ class _MenuState extends State<Menu> {
 
 
 
-
   @override
   void dispose() {
-    dashboardScaleNotifier.removeListener(_onDashboardScaleChanged);
+    screenScaleNotifier.removeListener(_onDashboardScaleChanged);
     super.dispose();
   }
 }

@@ -34,9 +34,11 @@ class _ScalableScreenWrapperState extends State<ScalableScreenWrapper> {
     custom_menu.MenuController.instance.selectSource(widget.sourceType);
   }
 
+
+
   @override
   Widget build(BuildContext context) {
-    dashboardScaleNotifier.value = _currentScale;
+    screenScaleNotifier.value = _currentScale;
 
     return Scaffold(
       extendBody: true,
@@ -45,7 +47,7 @@ class _ScalableScreenWrapperState extends State<ScalableScreenWrapper> {
         children: [
           const Menu(),
           ValueListenableBuilder<double>(
-            valueListenable: dashboardScaleNotifier,
+            valueListenable: screenScaleNotifier,
             builder: (context, scale, _) {
               return Stack(
                 children: [
@@ -96,6 +98,8 @@ class _ScalableScreenWrapperState extends State<ScalableScreenWrapper> {
     );
   }
 
+
+
   void _handleTap() {
     if (_currentScale < 1.0 && !_isPinching) {
       setState(() => _currentScale = 1.0);
@@ -126,7 +130,7 @@ class _ScalableScreenWrapperState extends State<ScalableScreenWrapper> {
 
     _pinchDuration = Duration(milliseconds: dynamicMs);
 
-    dashboardScaleNotifier.value = _currentScale;
+    screenScaleNotifier.value = _currentScale;
     setState(() {
       _currentScale = targetScale;
     });

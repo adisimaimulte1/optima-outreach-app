@@ -33,6 +33,56 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
     super.dispose();
   }
 
+
+  String _getAnimationPath() {
+    return isDarkModeNotifier.value
+        ? 'assets/splash/OptimaSplashDark.json'
+        : 'assets/splash/OptimaSplash.json';
+  }
+
+  void _onAnimationLoaded(LottieComposition composition) async {
+    _controller.duration = composition.duration;
+    _controller.forward();
+
+    Future.delayed(const Duration(seconds: 5), () async {
+      _controller.stop();
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+      if (!context.mounted) return;
+      final user = FirebaseAuth.instance.currentUser;
+
+
+      if (user != null) {
+        try {
+          await user.reload();
+          final refreshedUser = FirebaseAuth.instance.currentUser;
+
+          if (!refreshedUser!.emailVerified) {
+            await FirebaseAuth.instance.signOut();
+            _navigateWithFade(const AuthScreen(), 1200);
+          } else { _navigateWithFade(const DashboardScreen(), 800); }
+        } catch (e) {
+          await FirebaseAuth.instance.signOut();
+        }
+      } else {
+        _navigateWithFade(const AuthScreen(), 1200);
+      }
+    });
+  }
+
+  void _navigateWithFade(Widget page, int durationMs) {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => page,
+        transitionDuration: Duration(milliseconds: durationMs),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     final animationPath = _getAnimationPath();
@@ -55,12 +105,6 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
     );
   }
 
-  String _getAnimationPath() {
-    return isDarkModeNotifier.value
-        ? 'assets/splash/OptimaSplashDark.json'
-        : 'assets/splash/OptimaSplash.json';
-  }
-
   Widget _buildCenteredAnimation(String animationPath, double scalar, double screenHeight, double offset) {
     return Center(
       child: Transform.translate(
@@ -78,66 +122,6 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
       ),
     );
   }
-
-  void _onAnimationLoaded(LottieComposition composition) async {
-    _controller.duration = composition.duration;
-    _controller.forward();
-
-    Future.delayed(const Duration(seconds: 5), () async {
-      _controller.stop();
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-      if (!context.mounted) return;
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (!mounted) return;
-
-
-      if (user != null) {
-        try {
-          await user.reload();
-          final refreshedUser = FirebaseAuth.instance.currentUser;
-
-          if (!refreshedUser!.emailVerified) {
-            await FirebaseAuth.instance.signOut();
-            _navigateToAuth();
-          } else { _navigateToHome(); }
-        } catch (e) {
-          await FirebaseAuth.instance.signOut();
-        }
-      } else {
-        _navigateToAuth();
-      }
-    });
-  }
-
-
-
-  void _navigateToHome() {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const DashboardScreen(),
-        transitionDuration: const Duration(milliseconds: 800),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
-  }
-
-  void _navigateToAuth() {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const AuthScreen(),
-        transitionDuration: const Duration(milliseconds: 1200),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
-  }
-
-
 
   Widget _buildBottomFooter(double scalar, double screenHeight, Color footerColor) {
     return Positioned(

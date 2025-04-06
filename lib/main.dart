@@ -43,25 +43,23 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
 
   void _setSystemUIOverlay() {
     final brightness = SchedulerBinding.instance.window.platformBrightness;
+
+
     isDarkModeNotifier.value = brightness == Brightness.dark;
+    Brightness usedBrightness = isDarkModeNotifier.value ? Brightness.light : Brightness.dark;
 
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       systemNavigationBarContrastEnforced: true,
       systemStatusBarContrastEnforced: true,
       statusBarColor:
       Theme.of(context).scaffoldBackgroundColor.withOpacity(0.002),
-      statusBarIconBrightness: isDarkModeNotifier.value
-          ? Brightness.light
-          : Brightness.dark,
+      statusBarIconBrightness: usedBrightness,
       systemNavigationBarColor: isDarkModeNotifier.value
           ? Colors.white.withOpacity(0.002)
           : Colors.black.withOpacity(0.002),
-      systemNavigationBarIconBrightness: isDarkModeNotifier.value
-          ? Brightness.light
-          : Brightness.dark,)
+      systemNavigationBarIconBrightness: usedBrightness,)
     );
   }
 

@@ -41,7 +41,6 @@ class ParticleBeamEffectState extends State<ParticleBeamEffect>
 
 
 
-
   void _startSpawning() {
     _spawnTimer = Timer.periodic(widget.spawnRate, (_) {
       if (_spawningStopped) return;
@@ -109,7 +108,6 @@ class ParticleBeamEffectState extends State<ParticleBeamEffect>
 
 
 
-
   void _checkIfDone() {
     if (_spawningStopped && _particles.isEmpty) {
       widget.onComplete?.call();
@@ -124,7 +122,6 @@ class ParticleBeamEffectState extends State<ParticleBeamEffect>
       _resumeSpawning();
     }
   }
-
 
 
 
@@ -167,7 +164,6 @@ class ParticleBeamEffectState extends State<ParticleBeamEffect>
 
 
 
-
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -178,7 +174,6 @@ class ParticleBeamEffectState extends State<ParticleBeamEffect>
     super.dispose();
   }
 }
-
 
 
 
