@@ -35,4 +35,17 @@ Change Log
 - added the selection menu
 - icons for all in-app screens
 - upright screen locking
-- fixed login menu bugs
+- fixed login screen bugs
+
+
+0.0.14 (06/04/2024)
+------------------
+- refactored code for in a more reusable manner
+- fixed selection menu bugs
+
+
+0.0.15 (10/04/2024)
+------------------
+- made a backend node server for gpt access
+- added the concept of AI in the actual app
+- working on functionality..

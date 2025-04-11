@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "ro.contras.optima"
-        minSdk = 23 // or flutter.minSdkVersion
+        minSdk = 24 // or flutter.minSdkVersion
         targetSdk = 33 // or flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

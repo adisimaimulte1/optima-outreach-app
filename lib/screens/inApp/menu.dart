@@ -201,22 +201,20 @@ class _MenuState extends State<Menu> {
 
 
     // start the beam bby
-    if (iconPosition != null) {
-      final newBeamKey = GlobalKey<ParticleBeamEffectState>();
-      final newBeam = ParticleBeamEffect(
-        key: newBeamKey,
-        start: iconPosition,
-        end: center,
-        spawnRate: const Duration(milliseconds: 80),
-        maxParticles: 60,
-      );
+    final newBeamKey = GlobalKey<ParticleBeamEffectState>();
+    final newBeam = ParticleBeamEffect(
+      key: newBeamKey,
+      start: iconPosition,
+      end: center,
+      spawnRate: const Duration(milliseconds: 80),
+      maxParticles: 60,
+    );
 
-      setState(() {
-        selectedTarget = iconPosition;
-        _activeBeams.add(newBeam);
-      });
+    setState(() {
+      selectedTarget = iconPosition;
+      _activeBeams.add(newBeam);
+    });
     }
-  }
 
 
 

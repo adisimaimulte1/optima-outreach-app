@@ -1,13 +1,36 @@
 import 'package:flutter/material.dart';
-
 import 'package:optima/screens/beforeApp/choose_first_screen.dart';
 import 'package:optima/screens/inApp/widgets/scalable_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/ai/ai_assistant.dart';
 
-
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final ai = AIVoiceAssistant();
+
+  @override
+  void initState() {
+    super.initState();
+    _startJamie();
+  }
+
+  Future<void> _startJamie() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        await ai.runAssistant(userId: userId);
+      }
+    } catch (e) {
+      debugPrint("Jamie startup error: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +64,8 @@ class DashboardScreen extends StatelessWidget {
                     child: Text("Main Content Area", style: TextStyle(fontSize: 22)),
                   ),
                 ),
+                _buildJamieStatusUI(),
+                const SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: ElevatedButton.icon(
@@ -60,6 +85,80 @@ class DashboardScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildJamieStatusUI() {
+    final isDark = isDarkModeNotifier.value;
+    final bgColor = isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+    final borderColor = isDark ? Colors.white38 : Colors.black12;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? Colors.white10 : Colors.black12,
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ValueListenableBuilder<JamieState>(
+          valueListenable: assistantState,
+          builder: (context, state, _) {
+            String label;
+            Color color;
+            IconData icon;
+
+            switch (state) {
+              case JamieState.listening:
+                label = "Listening...";
+                color = Colors.orange;
+                icon = Icons.hearing;
+                break;
+              case JamieState.speaking:
+                label = "You’re talking...";
+                color = Colors.deepPurple;
+                icon = Icons.record_voice_over;
+                break;
+              case JamieState.listening:
+                label = "Waiting for you to finish...";
+                color = Colors.blueGrey;
+                icon = Icons.hourglass_bottom;
+                break;
+              case JamieState.thinking:
+                label = "Processing...";
+                color = Colors.teal;
+                icon = Icons.cloud_sync;
+                break;
+              case JamieState.speaking:
+                label = "Jamie is responding...";
+                color = Colors.green;
+                icon = Icons.volume_up;
+                break;
+              case JamieState.idle:
+              default:
+                label = "Idle";
+                color = Colors.grey;
+                icon = Icons.mic_none;
+            }
+
+            return Row(
+              children: [
+                Icon(icon, size: 22, color: color),
+                const SizedBox(width: 10),
+                Text(label, style: TextStyle(color: color, fontSize: 16)),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }

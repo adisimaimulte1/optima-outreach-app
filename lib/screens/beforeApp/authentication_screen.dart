@@ -315,9 +315,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       // always sign out first so the user is prompted to pick an account
-      await GoogleSignIn().signOut();
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
 
-      final googleUser = await GoogleSignIn().signIn();
+      final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         setState(() async {
           _loading = false;
