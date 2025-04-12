@@ -4,8 +4,11 @@
 	<dict>
 	    <key>NSCameraUsageDescription</key>
          <string>Optima uses your camera</string>
+         <key>NSSpeechRecognitionUsageDescription</key>
+         <string>We need access to speech recognition for transcribing your voice.</string>
          <key>NSMicrophoneUsageDescription</key>
-         <string>Optima uses your microphone</string>
+         <string>We need access to the microphone for speech recognition.</string>
+
 
          <key>UIBackgroundModes</key>
          <array>

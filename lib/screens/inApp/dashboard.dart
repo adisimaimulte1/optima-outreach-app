@@ -3,7 +3,7 @@ import 'package:optima/screens/beforeApp/choose_first_screen.dart';
 import 'package:optima/screens/inApp/widgets/scalable_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/ai/ai_assistant.dart';
+import 'package:optima/ai/ai_assistant.dart'; // <-- Import your AI assistant
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,7 +13,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final ai = AIVoiceAssistant();
+  final AIVoiceAssistant ai = AIVoiceAssistant();
 
   @override
   void initState() {
@@ -21,14 +21,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _startJamie();
   }
 
-  Future<void> _startJamie() async {
+  void _startJamie() {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId != null) {
-        await ai.runAssistant(userId: userId);
+        ai.runAssistant(userId: userId);
       }
     } catch (e) {
-      debugPrint("Jamie startup error: $e");
+      debugPrint("❌ Jamie startup error: $e");
     }
   }
 
@@ -51,7 +51,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             border: dynamicBorderWidth > 0
                 ? Border.all(
               width: dynamicBorderWidth,
-              color: isDarkModeNotifier.value ? Colors.white : const Color(0xFF1C2837),
+              color: isDarkModeNotifier.value
+                  ? Colors.white
+                  : const Color(0xFF1C2837),
             )
                 : null,
             borderRadius: BorderRadius.circular(dynamicCornerRadius),
@@ -59,9 +61,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                const Expanded(
-                  child: Center(
-                    child: Text("Main Content Area", style: TextStyle(fontSize: 22)),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SingleChildScrollView(
+                      child: ValueListenableBuilder<String>(
+                        valueListenable: transcribedText, // optional global or assistant state
+                        builder: (context, text, _) => Text(
+                          text.isNotEmpty
+                              ? text
+                              : "Jamie is waiting for you to say 'Hey Jamie'...",
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 _buildJamieStatusUI(),
@@ -122,24 +135,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color = Colors.orange;
                 icon = Icons.hearing;
                 break;
-              case JamieState.speaking:
-                label = "You’re talking...";
-                color = Colors.deepPurple;
-                icon = Icons.record_voice_over;
-                break;
-              case JamieState.listening:
-                label = "Waiting for you to finish...";
-                color = Colors.blueGrey;
-                icon = Icons.hourglass_bottom;
-                break;
               case JamieState.thinking:
-                label = "Processing...";
+                label = "Thinking...";
                 color = Colors.teal;
-                icon = Icons.cloud_sync;
+                icon = Icons.sync;
                 break;
               case JamieState.speaking:
-                label = "Jamie is responding...";
-                color = Colors.green;
+                label = "Jamie is speaking...";
+                color = Colors.deepPurple;
                 icon = Icons.volume_up;
                 break;
               case JamieState.idle:

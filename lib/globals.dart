@@ -15,6 +15,10 @@ final ValueNotifier<bool> isMenuOpenNotifier = ValueNotifier(false);
 final ValueNotifier<Type?> selectedScreenNotifier = ValueNotifier(null);
 final ValueNotifier<JamieState> assistantState = ValueNotifier(JamieState.idle);
 
+ValueNotifier<String> transcribedText = ValueNotifier('');
+
+bool wakeWordDetected = false;
+bool isListeningForWake = false;
 bool keepAiRunning = true;
 
 
