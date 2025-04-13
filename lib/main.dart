@@ -15,6 +15,8 @@ void main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 
+  await aiAssistant.warmUpAssistant("optima-warmup");
+
   setupGlobalListeners();
   runApp(Optima());
 }
@@ -29,25 +31,40 @@ class Optima extends StatefulWidget {
 
 class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   @override
-  void didChangePlatformBrightness() {
-    super.didChangePlatformBrightness();
-    _setSystemUIOverlay();
-  }
-
-  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _setSystemUIOverlay();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    appPaused = state == AppLifecycleState.paused;
+
+    if (appPaused && aiAssistant.aiSpeaking) {
+      aiAssistant.pauseImmediately();
+    }
+
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    _setSystemUIOverlay();
+  }
+
   void _setSystemUIOverlay() {
     final brightness = SchedulerBinding.instance.window.platformBrightness;
 
-
     isDarkModeNotifier.value = brightness == Brightness.dark;
-    Brightness usedBrightness = isDarkModeNotifier.value ? Brightness.light : Brightness.dark;
-
+    Brightness usedBrightness =
+    isDarkModeNotifier.value ? Brightness.light : Brightness.dark;
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
@@ -59,14 +76,8 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
       systemNavigationBarColor: isDarkModeNotifier.value
           ? Colors.white.withOpacity(0.002)
           : Colors.black.withOpacity(0.002),
-      systemNavigationBarIconBrightness: usedBrightness,)
-    );
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
+      systemNavigationBarIconBrightness: usedBrightness,
+    ));
   }
 
   @override

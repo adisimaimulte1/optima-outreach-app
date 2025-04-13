@@ -3,7 +3,7 @@ import 'package:optima/screens/beforeApp/choose_first_screen.dart';
 import 'package:optima/screens/inApp/widgets/scalable_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/ai/ai_assistant.dart'; // <-- Import your AI assistant
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,24 +13,13 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final AIVoiceAssistant ai = AIVoiceAssistant();
 
   @override
   void initState() {
     super.initState();
-    _startJamie();
+    aiAssistant.startLoop();
   }
 
-  void _startJamie() {
-    try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null) {
-        ai.runAssistant(userId: userId);
-      }
-    } catch (e) {
-      debugPrint("❌ Jamie startup error: $e");
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                _buildJamieStatusUI(),
+                _buildAssistantStatusUI(),
                 const SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -101,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildJamieStatusUI() {
+  Widget _buildAssistantStatusUI() {
     final isDark = isDarkModeNotifier.value;
     final bgColor = isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
     final borderColor = isDark ? Colors.white38 : Colors.black12;

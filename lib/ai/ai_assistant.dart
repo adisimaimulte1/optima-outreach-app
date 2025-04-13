@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
@@ -22,7 +24,15 @@ class AIVoiceAssistant {
   bool _loopRunning = false;
 
   Completer<void>? _listeningCompleter;
+  Completer<void>? _playbackCompleter;
 
+  AIVoiceAssistant() {
+    _player.onPlayerComplete.listen((_) {
+      if (!(_playbackCompleter?.isCompleted ?? true)) {
+        _playbackCompleter?.complete();
+      }
+    });
+  }
 
 
   Future<void> initPermissions() async {
@@ -32,70 +42,17 @@ class AIVoiceAssistant {
     }
   }
 
-  Future<void> playResponseFile(List<int> bytes) async {
-    final tempDir = await getTemporaryDirectory();
-    final file = File("${tempDir.path}/jamie_response.mp3");
-    await file.writeAsBytes(bytes);
-
-    debugPrint("📦 Playing from: ${file.path}");
-    assistantState.value = JamieState.speaking;
-
-    final completer = Completer<void>();
-
-    _player.onPlayerComplete.listen((_) {
-      debugPrint("🔊 Playback completed");
-      if (!completer.isCompleted) completer.complete();
-    });
-
-    await _player.play(DeviceFileSource(file.path));
-
-    // Wait for playback to finish
-    await completer.future;
-  }
 
 
-  Future<List<int>> sendTextToBackend(String message, String userId) async {
-    final uri = Uri.parse('https://optima-livekit-token-server.onrender.com/chat');
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "message": message,
-        "userId": userId,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      return response.bodyBytes;
-    } else {
-      debugPrint("❌ Chat request failed: ${response.statusCode}");
-      return [];
+  void startLoop() {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        aiAssistant.runAssistant(userId: userId);
+      }
+    } catch (e) {
+      debugPrint("❌ Jamie startup error: $e");
     }
-  }
-
-
-
-  void _startCooldown() {
-    _cooldownActive = true;
-    _cooldownTimer?.cancel();
-    _cooldownTimer = Timer(const Duration(minutes: 2), () {
-      _cooldownActive = false;
-      debugPrint("⌛ Cooldown expired. Wake word required again.");
-    });
-  }
-
-  void _completeListening() {
-    if (!(_listeningCompleter?.isCompleted ?? true)) {
-      _listeningCompleter?.complete();
-    }
-  }
-
-  void handleError(Object e) {
-    debugPrint("💥 Error: $e");
-    assistantState.value = JamieState.idle;
-    aiSpeaking = false;
-    isListening = false;
-    _completeListening();
   }
 
 
@@ -118,73 +75,17 @@ class AIVoiceAssistant {
 
     while (true) {
       if (!keepAiRunning || aiSpeaking || isListening) {
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 10));
         continue;
       }
 
       try {
-        // Wake word detection
         if (!_cooldownActive && !wakeWordDetected) {
-          assistantState.value = JamieState.idle;
-          isListening = true;
-
-          await _speech.listenForWakeWordLoop(
-            onTranscript: (text) => {},
-          );
-
-          isListening = false;
-          aiSpeaking = false;
-          wakeWordDetected = true;
+          await _detectWakeWord();
         }
 
-        // User message capture
         if (wakeWordDetected && !aiSpeaking && !isListening) {
-          assistantState.value = JamieState.listening;
-          isListening = true;
-
-          _listeningCompleter = Completer<void>();
-
-          await _speech.startListening(
-                (text) {
-              transcribedText.value = text;
-            },
-                () async {
-              await _speech.stopListening();
-              if (_listeningCompleter?.isCompleted ?? false) return;
-              _completeListening();
-
-              assistantState.value = JamieState.thinking;
-
-              final rawTranscript = transcribedText.value.trim();
-
-              final match = RegExp(r"hey jamie\s*", caseSensitive: false).firstMatch(rawTranscript);
-              final cleaned = match != null
-                  ? rawTranscript.substring(match.end).trim()
-                  : rawTranscript;
-
-              debugPrint("📝 Raw: $rawTranscript");
-              debugPrint("🧹 Cleaned: $cleaned");
-
-              if (cleaned.isEmpty) {
-                debugPrint("🚫 Nothing to send after cleaning.");
-                isListening = false;
-                wakeWordDetected = false;
-                return;
-              }
-
-              aiSpeaking = true;
-              final response = await sendTextToBackend(cleaned, userId);
-              await playResponseFile(response);
-
-              aiSpeaking = false;
-              isListening = false;
-              wakeWordDetected = true;
-              _startCooldown();
-            },
-          );
-
-
-          await _listeningCompleter?.future;
+          await _captureAndRespond(userId);
         }
       } catch (e) {
         handleError(e);
@@ -193,4 +94,197 @@ class AIVoiceAssistant {
     }
   }
 
+  Future<void> _detectWakeWord() async {
+    assistantState.value = JamieState.idle;
+    isListening = true;
+
+    String? wakeTranscript;
+    await _speech.listenForWakeWordLoop(onTranscript: (text) {
+      wakeTranscript = text;
+    });
+
+    isListening = false;
+    aiSpeaking = false;
+    wakeWordDetected = true;
+
+    if ((wakeTranscript ?? "").toLowerCase().contains("hey jamie")) {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        await _respondToUser("hey jamie", userId);
+      }
+    }
+  }
+
+  Future<void> _captureAndRespond(String userId) async {
+    assistantState.value = JamieState.listening;
+    isListening = true;
+    _listeningCompleter = Completer<void>();
+    bool processed = false;
+
+    await _speech.startListening(
+          (text) => transcribedText.value = text,
+          () async => await _handleTranscript(userId, () => processed = true, () => processed),
+    );
+
+    while (!_listeningCompleter!.isCompleted) {
+      if (appPaused && _speech.isListening) {
+        debugPrint("⏸ Pausing listening due to background");
+        await _speech.stopListening();
+      }
+
+      if (!appPaused && !_speech.isListening && !processed) {
+        debugPrint("▶️ Resuming listening after app resumed");
+        transcribedText.value = '';
+        await _speech.resumeListeningAfterPlayback(
+          onResult: (text) => transcribedText.value = text,
+          onDone: () async => await _handleTranscript(userId, () => processed = true, () => processed),
+        );
+      }
+
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+  }
+
+  Future<void> _handleTranscript(String userId, VoidCallback markProcessed, bool Function() isProcessed) async {
+    if (isProcessed()) return;
+    markProcessed();
+
+    await _speech.stopListening();
+    _completeListening();
+
+    assistantState.value = JamieState.thinking;
+
+    final rawTranscript = transcribedText.value.trim();
+    final match = RegExp(r"hey jamie\s*", caseSensitive: false).firstMatch(rawTranscript);
+    final cleaned = match != null ? rawTranscript.substring(match.end).trim() : rawTranscript;
+
+    debugPrint("📝 Raw: $rawTranscript");
+    debugPrint("🧹 Cleaned: $cleaned");
+
+    if (cleaned.isEmpty) {
+      debugPrint("🚫 Nothing to send after cleaning.");
+      isListening = false;
+      return;
+    }
+
+    await _respondToUser(cleaned, userId);
+  }
+
+  Future<void> _respondToUser(String message, String userId) async {
+    aiSpeaking = true;
+    final response = await sendTextToBackend(message, userId);
+
+    while (appPaused) {
+      await Future.delayed(const Duration(milliseconds: 30));
+    }
+
+    await playResponseFile(response);
+
+    aiSpeaking = false;
+    isListening = false;
+    wakeWordDetected = true;
+    _startCooldown();
+  }
+
+  Future<void> playResponseFile(List<int> bytes) async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File("${tempDir.path}/jamie_response.mp3");
+    await file.writeAsBytes(bytes);
+
+    debugPrint("📦 Playing from: ${file.path}");
+    assistantState.value = JamieState.speaking;
+
+    _playbackCompleter = Completer<void>();
+
+    try {
+      await _player.play(DeviceFileSource(file.path));
+
+      while (!_playbackCompleter!.isCompleted) {
+        if (appPaused && _player.state == PlayerState.playing) {
+          debugPrint("⏸ App paused — pausing playback");
+          await _player.pause();
+        }
+
+        if (!appPaused && _player.state == PlayerState.paused) {
+          debugPrint("▶️ App resumed — resuming playback");
+          await _player.resume();
+        }
+
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+    } catch (e) {
+      debugPrint("🔇 Playback failed or timed out: $e");
+    }
+  }
+
+
+
+  void pauseImmediately() {
+    if (_player.state == PlayerState.playing) {
+      _player.pause();
+      debugPrint("🛑 Immediate forced pause due to lifecycle");
+    }
+  }
+
+
+
+  Future<List<int>> sendTextToBackend(String message, String userId) async {
+    final uri = Uri.parse('https://optima-livekit-token-server.onrender.com/chat');
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "message": message,
+        "userId": userId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      debugPrint("❌ Chat request failed: ${response.statusCode}");
+      return [];
+    }
+  }
+
+  Future<void> warmUpAssistant(String userId) async {
+    final tempSpeech = SpeechToTextService();
+    await tempSpeech.startListening((_) {}, () {});
+    await tempSpeech.stopListening();
+
+    try {
+      debugPrint("🌡️ Warming up Jamie...");
+      final dummyResponse = await sendTextToBackend("This is a warm-up request", userId);
+      debugPrint(dummyResponse.isNotEmpty ? "🔥 Jamie is warmed up." : "⚠️ Warm-up returned no audio.");
+    } catch (e) {
+      debugPrint("❌ Warm-up failed: $e");
+    }
+  }
+
+
+
+  void _startCooldown() {
+    _cooldownActive = true;
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer(const Duration(seconds: 50), () {
+      _cooldownActive = false;
+      debugPrint("⌛ Cooldown expired. Wake word required again.");
+    });
+  }
+
+  void _completeListening() {
+    if (!(_listeningCompleter?.isCompleted ?? true)) {
+      _listeningCompleter?.complete();
+    }
+  }
+
+
+
+  void handleError(Object e) {
+    debugPrint("💥 Error: $e");
+    assistantState.value = JamieState.idle;
+    aiSpeaking = false;
+    isListening = false;
+    _completeListening();
+  }
 }

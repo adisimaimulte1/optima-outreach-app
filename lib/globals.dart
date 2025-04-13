@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/ai_assistant.dart';
 
 enum JamieState {
   idle,
@@ -7,6 +8,8 @@ enum JamieState {
   speaking,
   done,
 }
+
+final AIVoiceAssistant aiAssistant = AIVoiceAssistant();
 
 final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);
 
@@ -20,7 +23,9 @@ ValueNotifier<String> transcribedText = ValueNotifier('');
 bool wakeWordDetected = false;
 bool isListeningForWake = false;
 bool keepAiRunning = true;
+bool appPaused = false;
 
+AppLifecycleState? currentAppState;
 
 void setupGlobalListeners() {
   screenScaleNotifier.addListener(() {

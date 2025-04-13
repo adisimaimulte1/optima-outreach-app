@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:optima/globals.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
@@ -93,16 +92,24 @@ class SpeechToTextService {
       );
     }
 
-    _speech.statusListener = (status) {
+    _speech.statusListener = (status) async {
       debugPrint("🎤 Wake listener status: $status");
       if (status == 'notListening' && !completer.isCompleted) {
         debugPrint("🔁 Restarting due to auto-stop");
-        Future.delayed(const Duration(milliseconds: 200), beginListening);
+
+        if (appPaused) _speech.cancel();
+        while (appPaused) {await Future.delayed(const Duration(milliseconds: 200)); }
+        Future.delayed(const Duration(milliseconds: 100), beginListening);
       }
     };
 
     // Clean stale transcript every few seconds
-    Timer.periodic(const Duration(seconds: 3), (timer) {
+    Timer.periodic(const Duration(seconds: 2), (timer) async {
+
+      if (appPaused) _speech.cancel();
+      while (appPaused) {await Future.delayed(const Duration(milliseconds: 200)); }
+      Future.delayed(const Duration(milliseconds: 100), beginListening);
+
       if (!_speech.isListening || completer.isCompleted) {
         timer.cancel();
       } else if (!currentTranscript.contains("hey jamie")) {
