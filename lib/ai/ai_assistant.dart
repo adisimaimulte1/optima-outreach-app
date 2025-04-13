@@ -106,6 +106,7 @@ class AIVoiceAssistant {
     isListening = false;
     aiSpeaking = false;
     wakeWordDetected = true;
+    assistantState.value = JamieState.thinking;
 
     if ((wakeTranscript ?? "").toLowerCase().contains("hey jamie")) {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -152,7 +153,6 @@ class AIVoiceAssistant {
     await _speech.stopListening();
     _completeListening();
 
-    assistantState.value = JamieState.thinking;
 
     final rawTranscript = transcribedText.value.trim();
     final match = RegExp(r"hey jamie\s*", caseSensitive: false).firstMatch(rawTranscript);
@@ -167,6 +167,7 @@ class AIVoiceAssistant {
       return;
     }
 
+    assistantState.value = JamieState.thinking;
     await _respondToUser(cleaned, userId);
   }
 
@@ -178,11 +179,13 @@ class AIVoiceAssistant {
       await Future.delayed(const Duration(milliseconds: 30));
     }
 
+    assistantState.value = JamieState.speaking;
     await playResponseFile(response);
 
     aiSpeaking = false;
     isListening = false;
     wakeWordDetected = true;
+    assistantState.value = JamieState.listening;
     _startCooldown();
   }
 
@@ -266,10 +269,17 @@ class AIVoiceAssistant {
   void _startCooldown() {
     _cooldownActive = true;
     _cooldownTimer?.cancel();
+    debugPrint("🧊 Cooldown started. Assistant will pause for 50 seconds.");
+
     _cooldownTimer = Timer(const Duration(seconds: 50), () {
       _cooldownActive = false;
+      wakeWordDetected = false;
+      isListening = false;
+      aiSpeaking = false;
+      assistantState.value = JamieState.idle;
       debugPrint("⌛ Cooldown expired. Wake word required again.");
     });
+
   }
 
   void _completeListening() {
