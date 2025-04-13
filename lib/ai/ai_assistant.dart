@@ -48,7 +48,7 @@ class AIVoiceAssistant {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId != null) {
-        aiAssistant.runAssistant(userId: userId);
+        runAssistant(userId: userId);
       }
     } catch (e) {
       debugPrint("❌ Jamie startup error: $e");

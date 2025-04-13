@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:optima/ai/ai_assistant.dart';
+import 'package:optima/ai/ai_status_dots.dart';
 
 enum JamieState {
   idle,
@@ -9,7 +10,8 @@ enum JamieState {
   done,
 }
 
-final AIVoiceAssistant aiAssistant = AIVoiceAssistant();
+final AIStatusDots aiAssistant = AIStatusDots();
+final AIVoiceAssistant aiVoice = AIVoiceAssistant();
 
 final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);
 

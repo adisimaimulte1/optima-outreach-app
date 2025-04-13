@@ -31,6 +31,8 @@ dependencies:
   speech_to_text: 7.0.0
   flutter_volume_controller: ^1.2.0
 
+  fl_chart: ^0.65.0
+
 
 
   path_provider: any

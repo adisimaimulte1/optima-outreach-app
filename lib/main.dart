@@ -12,10 +12,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-
-  await aiAssistant.warmUpAssistant("optima-warmup");
+  await aiVoice.warmUpAssistant("optima-warmup");
 
   setupGlobalListeners();
   runApp(Optima());
@@ -47,8 +47,8 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     appPaused = state == AppLifecycleState.paused;
 
-    if (appPaused && aiAssistant.aiSpeaking) {
-      aiAssistant.pauseImmediately();
+    if (appPaused && aiVoice.aiSpeaking) {
+      aiVoice.pauseImmediately();
     }
 
   }
