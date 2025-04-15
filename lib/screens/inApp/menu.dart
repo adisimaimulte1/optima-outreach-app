@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:optima/screens/inApp/settings.dart';
 
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
 import 'package:optima/screens/inApp/widgets/menu/selection_beam.dart';
 import 'package:optima/screens/inApp/dashboard.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/update.dart';
 
 
 class Menu extends StatefulWidget {
@@ -16,9 +18,11 @@ class Menu extends StatefulWidget {
 
 class _MenuState extends State<Menu> {
   Offset? selectedTarget;
-  final List<Widget> _activeBeams = [];
-
   Offset? _queuedTarget;
+
+  final List<Widget> _activeBeams = [];
+  ScreenType? _pendingScreenChange;
+
 
   final List<IconData> _topIcons = [
     LucideIcons.layoutDashboard,
@@ -35,6 +39,13 @@ class _MenuState extends State<Menu> {
   void initState() {
     super.initState();
     screenScaleNotifier.addListener(_onDashboardScaleChanged);
+
+    // Delay the execution to ensure layout is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (screenScaleNotifier.value == 0.4 && _activeBeams.isEmpty) {
+        _handleIncomingSource();
+      }
+    });
   }
 
 
@@ -124,22 +135,6 @@ class _MenuState extends State<Menu> {
     }
   }
 
-  void _onBeamComplete() {
-    setState(() {
-      if (_queuedTarget != null) {
-        final Offset target = _queuedTarget!;
-        _queuedTarget = null;
-
-        final screenSize = MediaQuery.of(context).size;
-        final padding = MediaQuery.of(context).padding;
-        final usableHeight = screenSize.height - padding.top - padding.bottom;
-        final Offset center = Offset(screenSize.width / 2, padding.top + usableHeight / 2);
-
-        _startBeam(target, center);
-      }
-    });
-  }
-
 
 
   void _startBeam(Offset start, Offset end) {
@@ -151,7 +146,6 @@ class _MenuState extends State<Menu> {
           end: end,
           spawnRate: const Duration(milliseconds: 80),
           maxParticles: 60,
-          onComplete: _onBeamComplete,
         ),
       );
     });
@@ -164,7 +158,7 @@ class _MenuState extends State<Menu> {
     final Offset center = Offset(screenSize.width / 2, padding.top + usableHeight / 2);
 
     final Offset topArcCenter = Offset(screenSize.width / 2, usableHeight * 0.23);
-    final Offset bottomArcCenter = Offset(screenSize.height / 2, usableHeight * 0.77);
+    final Offset bottomArcCenter = Offset(screenSize.width / 2, usableHeight * 0.77);
 
     // get the position of all icons
     List<Offset>
@@ -184,7 +178,7 @@ class _MenuState extends State<Menu> {
 
       if (index == 0) { return Offset(dx - 130, dy); }
       else if (index == 1) { return Offset(dx, dy + 60); }
-      else if (index == 2) { return Offset(dx + 130, dy); }
+      else if (index == 2) { return Offset(dx + 130, dy + 80); }
 
       return Offset(dx, dy);
     });
@@ -196,10 +190,13 @@ class _MenuState extends State<Menu> {
 
     // now find the position of that icon
     if (source == DashboardScreen) {
-      selectedScreenNotifier.value = ScreenType.dashboard;
+      _pendingScreenChange = ScreenType.dashboard;
       iconPosition = topIconsPositions[0];
+    } else if (source == SettingsScreen) {
+      _pendingScreenChange = ScreenType.settings;
+      iconPosition = bottomIconsPositions[2];
     } else {
-      selectedScreenNotifier.value = ScreenType.dashboard;
+      _pendingScreenChange = ScreenType.dashboard;
       iconPosition = topIconsPositions[0];
     }
 
@@ -212,6 +209,11 @@ class _MenuState extends State<Menu> {
       end: center,
       spawnRate: const Duration(milliseconds: 80),
       maxParticles: 60,
+      onComplete: () {
+        selectedScreenNotifier.value = _pendingScreenChange!;
+        updateUI(); // Optional: if you still want that
+        _pendingScreenChange = null;
+      },
     );
 
     setState(() {
@@ -274,6 +276,27 @@ class _MenuState extends State<Menu> {
                       onTapUp: (_) {
                         setInnerState(() => pressScales[index] = 1.0);
 
+
+
+
+                        if (icons[index] == LucideIcons.layoutDashboard) {
+                          _pendingScreenChange = ScreenType.dashboard;
+                        } else if (icons[index] == LucideIcons.settings) {
+                          _pendingScreenChange = ScreenType.settings;
+                        } else if (icons[index] == LucideIcons.calendarDays) {
+                          _pendingScreenChange = ScreenType.calendar;
+                        } else if (icons[index] == LucideIcons.users) {
+                          _pendingScreenChange = ScreenType.users;
+                        } else if (icons[index] == LucideIcons.contact) {
+                          _pendingScreenChange = ScreenType.contact;
+                        } else if (icons[index] == LucideIcons.brain) {
+                          _pendingScreenChange = ScreenType.brain;
+                        } else {
+                          _pendingScreenChange = ScreenType.dashboard;
+                        }
+
+
+
                         final Offset iconPosition = Offset(dx, verticalOffset > 0 ? dy : dy + 80);
                         final screenSize = MediaQuery.of(context).size;
                         final padding = MediaQuery.of(context).padding;
@@ -326,6 +349,14 @@ class _MenuState extends State<Menu> {
                             ),
                           );
                         },
+                        onEnd: () {
+                          if (_pendingScreenChange != null) {
+                            selectedScreenNotifier.value = _pendingScreenChange!;
+                            updateUI(); // Only if you're using it
+                            _pendingScreenChange = null;
+                          }
+                        },
+
                       ),
                     );
                   },

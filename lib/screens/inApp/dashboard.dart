@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 
-import 'package:optima/screens/inApp/widgets/menu/scalable_screen.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/chart.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_button.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
+import 'package:optima/screens/inApp/widgets/menu/scalable_screen.dart';
+import 'package:optima/screens/inApp/widgets/screen_wrapper.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -16,55 +17,23 @@ class DashboardScreen extends StatelessWidget {
     return ScalableScreenWrapper(
       sourceType: DashboardScreen,
       builder: (context, isMinimized, scale) {
-        return ValueListenableBuilder<bool>(
-          valueListenable: isDarkModeNotifier,
-          builder: (context, isDark, _) {
-            return _buildDashboardContent(
-              context,
-              isDark: isDark,
-              borderWidth: _borderWidth(scale),
-              cornerRadius: _cornerRadius(scale),
-            );
-          },
+        return ScalableScreenContainer(
+          scale: scale,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 30),
+            child: Column(
+              children: [
+                const SizedBox(height: 30),
+                _buildHeader(),
+                const SizedBox(height: 30),
+                const LineChartCard(),
+                const SizedBox(height: 60),
+                _buildDashboardRow(context),
+              ],
+            ),
+          ),
         );
       },
-    );
-  }
-
-  double _cornerRadius(double scale) => 120.0 * (1 - scale);
-  double _borderWidth(double scale) => 30.0 * (1 - scale);
-
-  Widget _buildDashboardContent(
-      BuildContext context, {
-        required bool isDark,
-        required double borderWidth,
-        required double cornerRadius,
-      }) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: MediaQuery.of(context).size.height,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C2837),
-        borderRadius: BorderRadius.circular(cornerRadius),
-        border: borderWidth > 0
-            ? Border.all(width: borderWidth, color: isDark ? Colors.white : const Color(0xFF1C2837))
-            : null,
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 30),
-          child: Column(
-            children: [
-              const SizedBox(height: 30),
-              _buildHeader(),
-              const SizedBox(height: 30),
-              const LineChartCard(),
-              const SizedBox(height: 60),
-              _buildDashboardRow(context),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -100,7 +69,7 @@ class DashboardScreen extends StatelessWidget {
     const double cardHeight = 150.0;
     const double spacing = 10.0;
 
-    final bool hasReminder = false; // <- dynamic state hook
+    final bool hasReminder = false;
     final String reminderText = hasReminder
         ? "Submit report by Friday"
         : "You're all caught up!";
@@ -182,5 +151,4 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-
 }

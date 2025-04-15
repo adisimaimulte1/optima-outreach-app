@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
-import 'package:optima/screens/beforeApp/choose_first_screen.dart';
+import 'package:optima/screens/beforeApp/choose_screen.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/update.dart';
 
@@ -89,7 +89,7 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
       title: 'Optima',
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
-      home: const ChooseFirstScreen(),
+      home: const ChooseScreen(),
     );
   }
 }

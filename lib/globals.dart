@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:optima/ai/ai_assistant.dart';
 import 'package:optima/ai/ai_status_dots.dart';
+import 'package:optima/screens/inApp/menu.dart';
 
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
@@ -32,6 +33,7 @@ enum ScreenType {
 
 final AIStatusDots aiAssistant = AIStatusDots();
 final AIVoiceAssistant aiVoice = AIVoiceAssistant();
+final appMenu = Menu();
 
 
 
@@ -40,11 +42,10 @@ final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);
 final ValueNotifier<bool> isDarkModeNotifier = ValueNotifier(false);
 final ValueNotifier<bool> isMenuOpenNotifier = ValueNotifier(false);
 
-final ValueNotifier<ScreenType?> selectedScreenNotifier = ValueNotifier(ScreenType.dashboard);
+final ValueNotifier<ScreenType> selectedScreenNotifier = ValueNotifier(ScreenType.dashboard);
 final ValueNotifier<JamieState> assistantState = ValueNotifier(JamieState.idle);
 
-ValueNotifier<String> transcribedText = ValueNotifier('');
-
+final ValueNotifier<String> transcribedText = ValueNotifier('');
 
 
 
