@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:optima/screens/inApp/widgets/menu_controller.dart' as custom_menu;
-import 'package:optima/screens/inApp/widgets/selection_beam.dart';
+import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
+import 'package:optima/screens/inApp/widgets/menu/selection_beam.dart';
 import 'package:optima/screens/inApp/dashboard.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:optima/globals.dart';
@@ -196,8 +196,12 @@ class _MenuState extends State<Menu> {
 
     // now find the position of that icon
     if (source == DashboardScreen) {
+      selectedScreenNotifier.value = ScreenType.dashboard;
       iconPosition = topIconsPositions[0];
-    } else { iconPosition = topIconsPositions[0]; }
+    } else {
+      selectedScreenNotifier.value = ScreenType.dashboard;
+      iconPosition = topIconsPositions[0];
+    }
 
 
     // start the beam bby

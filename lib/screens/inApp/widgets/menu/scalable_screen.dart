@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:optima/screens/inApp/widgets/menu_controller.dart' as custom_menu;
+import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
 import 'package:optima/screens/inApp/menu.dart';
 import 'package:optima/globals.dart';
 

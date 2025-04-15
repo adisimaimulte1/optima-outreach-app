@@ -49,3 +49,9 @@ Change Log
 - made a backend node server for gpt access
 - added the concept of AI in the actual app
 - working on functionality..
+
+
+0.0.16 (13/04/2024)
+------------------
+- finished adding AI assistant
+- started working on the UI

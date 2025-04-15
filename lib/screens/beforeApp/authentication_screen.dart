@@ -245,6 +245,7 @@ class _AuthScreenState extends State<AuthScreen> {
       SnackBar(
         backgroundColor: snackColor,
         content: responsiveText(
+          context,
           'A verification email has been sent. Please check your inbox.',
           maxWidthFraction: 0.9,
           style: TextStyle(color: textColor),
@@ -356,28 +357,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
 
 
-  Widget responsiveText(String text, {
-    required double maxWidthFraction,
-    required TextStyle style,
-    TextAlign align = TextAlign.center,
-  })
-  {
-    final screenWidth = MediaQuery
-        .of(context)
-        .size
-        .width;
-    return SizedBox(
-      width: screenWidth * maxWidthFraction,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          text,
-          style: style,
-          textAlign: align,
-        ),
-      ),
-    );
-  }
+
 
 
 
@@ -418,6 +398,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     alignment: Alignment.center,
                     children: [
                       responsiveText(
+                        context,
                         'OPTIMA',
                         maxWidthFraction: 0.55,
                         style: TextStyle(
@@ -433,6 +414,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         top: 3.5,
                         right: MediaQuery.of(context).size.width / 2 - 217,
                         child: responsiveText(
+                          context,
                           '™',
                           maxWidthFraction: 0.05,
                           style: TextStyle(
@@ -448,6 +430,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   const SizedBox(height: 12),
                   responsiveText(
+                    context,
                     _isLogin ? 'Login to your account' : 'Create a new account',
                     maxWidthFraction: 0.4,
                     style: TextStyle(
@@ -465,6 +448,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: responsiveText(
+                        context,
                         _errorMessage!,
                         maxWidthFraction: 0.9,
                         style: const TextStyle(color: Colors.red),
@@ -492,6 +476,7 @@ class _AuthScreenState extends State<AuthScreen> {
       style: TextStyle(color: fgColor),
       decoration: InputDecoration(
         label: responsiveText(
+          context,
           'Email',
           maxWidthFraction: 0.1,
           style: TextStyle(color: fgColor.withOpacity(0.8)),
@@ -521,6 +506,7 @@ class _AuthScreenState extends State<AuthScreen> {
         label: Align(
           alignment: Alignment.centerLeft,
           child: responsiveText(
+            context,
             'Password',
             maxWidthFraction: 0.18,
             style: TextStyle(color: fgColor.withOpacity(0.8)),
@@ -563,6 +549,7 @@ class _AuthScreenState extends State<AuthScreen> {
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
         child: responsiveText(
+          context,
           _isLogin ? 'Login' : 'Register',
           maxWidthFraction:
           _isLogin ? 0.1 : 0.15,
@@ -588,6 +575,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
         label: responsiveText(
+          context,
           'Sign in with Google',
           maxWidthFraction: 0.35,
           style: TextStyle(
@@ -616,6 +604,7 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       },
       child: responsiveText(
+        context,
         _isLogin ? 'Don\'t have an account? Register' : 'Already registered? Login',
         maxWidthFraction:
         _isLogin ? 0.55 : 0.45,
@@ -635,6 +624,7 @@ class _AuthScreenState extends State<AuthScreen> {
               const CircularProgressIndicator(),
               const SizedBox(height: 20),
               responsiveText(
+                context,
                 _loadingText,
                 maxWidthFraction: 0.9,
                 style: TextStyle(
@@ -675,6 +665,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: responsiveText(
+                context,
                 'Password reset email sent. Check your inbox.',
                 maxWidthFraction: 0.95,
                 style: TextStyle(color: textColor),
@@ -690,6 +681,7 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       },
       child: responsiveText(
+        context,
         'Forgot password?',
         maxWidthFraction: 0.3,
         style: TextStyle(color: fgColor.withOpacity(0.7)),

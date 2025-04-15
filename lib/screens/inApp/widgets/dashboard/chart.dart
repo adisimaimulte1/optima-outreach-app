@@ -10,9 +10,19 @@ class LineChartCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2837).withOpacity(0.6),
+        color: const Color(0xFF24324A),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFC62D), width: 2.5),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.05),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 12,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: SizedBox(
         height: 120,
@@ -32,11 +42,11 @@ class LineChartCard extends StatelessWidget {
       lineBarsData: [
         _buildLineData(
           points: [2, 2.2, 2, 2.8, 3.2, 3, 3.8],
-          colors: [Colors.purpleAccent, Colors.deepPurpleAccent],
+          colors: [Colors.purple, Colors.deepPurple],
         ),
         _buildLineData(
-          points: [1.2, 1.4, 2, 2.2, 2.5, 2.9, 3.6],
-          colors: [Colors.amberAccent, Colors.orangeAccent],
+          points: [1, 1.1, 1.5, 1.7, 2, 2.3, 2.7], // shifted down to avoid overlap
+          colors: [Colors.orange, Colors.deepOrange],
         ),
       ],
     );
@@ -51,12 +61,17 @@ class LineChartCard extends StatelessWidget {
       isCurved: true,
       gradient: LinearGradient(
         colors: colors,
-        stops: const [0.0, 1.0],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
+        stops: const [0.0, 1.0],
       ),
-      barWidth: 3.5,
+      barWidth: 4.5,
       isStrokeCapRound: true,
+      shadow: const Shadow(
+        blurRadius: 8,
+        color: Colors.black54,
+        offset: Offset(0, 2),
+      ),
       belowBarData: BarAreaData(show: false),
       dotData: FlDotData(show: false),
     );

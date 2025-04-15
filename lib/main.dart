@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'package:optima/screens/beforeApp/choose_first_screen.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/update.dart';
 
 
 
@@ -15,7 +16,8 @@ void main() async {
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-  await aiVoice.warmUpAssistant("optima-warmup");
+  // this is for when you actually want to use the AI voice. Not while testing lol
+  //await aiVoice.warmUpAssistant("optima-warmup");
 
   setupGlobalListeners();
   runApp(Optima());
@@ -34,6 +36,7 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    selectedScreenNotifier.addListener(updateUI);
     _setSystemUIOverlay();
   }
 
