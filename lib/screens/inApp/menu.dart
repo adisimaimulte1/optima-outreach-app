@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:optima/screens/inApp/settings.dart';
+import 'package:optima/screens/inApp/util/settings.dart';
 
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
 import 'package:optima/screens/inApp/widgets/menu/selection_beam.dart';
-import 'package:optima/screens/inApp/dashboard.dart';
+import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/update.dart';
@@ -18,7 +18,6 @@ class Menu extends StatefulWidget {
 
 class _MenuState extends State<Menu> {
   Offset? selectedTarget;
-  Offset? _queuedTarget;
 
   final List<Widget> _activeBeams = [];
   ScreenType? _pendingScreenChange;
@@ -130,26 +129,11 @@ class _MenuState extends State<Menu> {
     } else if (isDashboardFull && _activeBeams.isNotEmpty) {
       setState(() {
         _activeBeams.clear();
-        _queuedTarget = null;
       });
     }
   }
 
 
-
-  void _startBeam(Offset start, Offset end) {
-    setState(() {
-      _activeBeams.add(
-        ParticleBeamEffect(
-          key: UniqueKey(),
-          start: start,
-          end: end,
-          spawnRate: const Duration(milliseconds: 80),
-          maxParticles: 60,
-        ),
-      );
-    });
-  }
 
   void _handleIncomingSource() {
     final screenSize = MediaQuery.of(context).size;
@@ -231,7 +215,8 @@ class _MenuState extends State<Menu> {
     required double verticalOffset,
     required double opacity,
     required double scale,
-  }) {
+  })
+  {
     final Map<int, double> pressScales = {};
 
     return List.generate(icons.length, (index) {

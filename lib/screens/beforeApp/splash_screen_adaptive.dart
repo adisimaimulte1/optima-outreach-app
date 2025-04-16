@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lottie/lottie.dart';
 
 import 'package:optima/screens/beforeApp/authentication_screen.dart';
-import 'package:optima/screens/inApp/dashboard.dart';
+import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/globals.dart';
 
 

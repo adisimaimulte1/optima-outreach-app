@@ -31,6 +31,8 @@ void updateUI() {
   }
 }
 
+
+
 void updateDashboardUI() {
   reminderCardKey.currentState?.update(
     text: "You're all caught up!",
@@ -44,6 +46,5 @@ void updateDashboardUI() {
     time: "2:30 PM",
   );
 }
-
 void updateSettingsUI() {}
 void updateEventsUI() {}

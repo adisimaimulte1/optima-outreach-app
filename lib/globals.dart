@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/ai/ai_assistant.dart';
 import 'package:optima/ai/ai_status_dots.dart';
@@ -35,6 +36,8 @@ final AIStatusDots aiAssistant = AIStatusDots();
 final AIVoiceAssistant aiVoice = AIVoiceAssistant();
 final appMenu = Menu();
 
+
+final user = FirebaseAuth.instance.currentUser;
 
 
 final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);

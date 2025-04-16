@@ -6,25 +6,28 @@ import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_button.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
-import 'package:optima/screens/inApp/widgets/menu/scalable_screen.dart';
-import 'package:optima/screens/inApp/widgets/screen_wrapper.dart';
+import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ScalableScreenWrapper(
+    return AbsScreen(
       sourceType: DashboardScreen,
       builder: (context, isMinimized, scale) {
-        return ScalableScreenContainer(
-          scale: scale,
+        final size = MediaQuery.of(context).size;
+
+        return SizedBox(
+          width: size.width,
+          height: size.height,
+
           child: SingleChildScrollView(
             padding: const EdgeInsets.only(bottom: 30),
             child: Column(
               children: [
                 const SizedBox(height: 30),
-                _buildHeader(),
+                _buildHeader(context),
                 const SizedBox(height: 30),
                 const LineChartCard(),
                 const SizedBox(height: 60),
@@ -37,7 +40,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
         Padding(
@@ -69,10 +72,8 @@ class DashboardScreen extends StatelessWidget {
     const double cardHeight = 150.0;
     const double spacing = 10.0;
 
-    final bool hasReminder = false;
-    final String reminderText = hasReminder
-        ? "Submit report by Friday"
-        : "You're all caught up!";
+    const bool hasReminder = false;
+    const String reminderText = "You're all caught up!";
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,9 +122,7 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: NewEventButton(
-                    onTap: () {
-                      debugPrint('New Event tapped');
-                    },
+                    onTap: () => debugPrint('New Event tapped'),
                     width: buttonSize,
                     height: buttonSize,
                   ),

@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:particles_flutter/particles_flutter.dart';
 
-import 'package:optima/screens/inApp/dashboard.dart';
+import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/globals.dart';
 
 
