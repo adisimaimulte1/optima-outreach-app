@@ -31,6 +31,21 @@ enum ScreenType {
   settings,
 }
 
+enum AppThemeMode {
+  system,
+  light,
+  dark
+}
+
+enum UserState {
+  authenticated,
+  unverified,
+  unauthenticated,
+}
+
+
+AppThemeMode selectedTheme = AppThemeMode.system;
+
 
 final GlobalKey<AIStatusDotsState> aiDotsKey = GlobalKey<AIStatusDotsState>();
 final Widget aiAssistant = AIStatusDots(key: aiDotsKey);
@@ -39,7 +54,8 @@ final AIVoiceAssistant aiVoice = AIVoiceAssistant();
 final appMenu = Menu();
 
 
-final user = FirebaseAuth.instance.currentUser;
+bool isInitialLaunch = true;
+User? get user => FirebaseAuth.instance.currentUser;
 
 
 final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);

@@ -9,11 +9,7 @@ import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
 import 'package:optima/screens/inApp/widgets/menu/menu_overlay.dart';
 
-enum UserState {
-  authenticated,
-  unverified,
-  unauthenticated,
-}
+
 
 class ChooseScreen extends StatelessWidget {
   const ChooseScreen({super.key});
@@ -24,12 +20,12 @@ class ChooseScreen extends StatelessWidget {
         await user!.reload();
         if (user!.emailVerified) {
           return UserState.authenticated;
-        }
-      } catch (e) {
-        debugPrint('Error reloading user: $e');
-      }
+
+        } else { debugPrint("⚠️ User is not verified."); }
+      } catch (e) { debugPrint('❌ Error reloading user: $e'); }
       return UserState.unverified;
     }
+
     return UserState.unauthenticated;
   }
 
@@ -37,6 +33,7 @@ class ChooseScreen extends StatelessWidget {
     return ValueListenableBuilder<ScreenType>(
       valueListenable: selectedScreenNotifier,
       builder: (context, selectedScreen, _) {
+        debugPrint("📱 Building screen for: $selectedScreen");
         switch (selectedScreen) {
           case ScreenType.dashboard:
             return const DashboardScreen();
@@ -47,24 +44,31 @@ class ChooseScreen extends StatelessWidget {
           case ScreenType.events:
             return const EventsScreen();
           case ScreenType.users:
-            // TODO: Handle this case.
+            debugPrint("👥 Users screen not implemented, defaulting to dashboard.");
             return const DashboardScreen();
           case ScreenType.contact:
-            // TODO: Handle this case.
+            debugPrint("📞 Contact screen not implemented, defaulting to dashboard.");
             return const DashboardScreen();
-            }
-          },
-        );
+        }
+      },
+    );
   }
 
   Widget _buildByUserState(UserState state) {
     switch (state) {
-      case UserState.authenticated:
+      case UserState.authenticated: {
+        isInitialLaunch = false;
         return _buildAuthenticatedScreen();
-      case UserState.unverified:
-        return const AnimatedSplashScreen();
-      case UserState.unauthenticated:
-      return const AuthScreen();
+
+      } case UserState.unauthenticated: {
+          if (isInitialLaunch) {
+            isInitialLaunch = false;
+            return const AnimatedSplashScreen();
+          } return const AuthScreen();
+
+      } case UserState.unverified: {
+        return const AuthScreen();
+      }
     }
   }
 
@@ -79,8 +83,11 @@ class ChooseScreen extends StatelessWidget {
           );
         }
 
+        final state = snapshot.data!;
+        debugPrint("📌 UserState resolved to: $state");
+
         return AppMenuOverlay(
-          child: _buildByUserState(snapshot.data!),
+          child: _buildByUserState(state),
         );
       },
     );

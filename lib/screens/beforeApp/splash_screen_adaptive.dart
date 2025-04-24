@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:lottie/lottie.dart';
 
 import 'package:optima/screens/beforeApp/authentication_screen.dart';
-import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/globals.dart';
 
 
@@ -24,6 +21,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _controller = AnimationController(vsync: this);
   }
 
@@ -46,27 +44,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
 
     Future.delayed(const Duration(seconds: 5), () async {
       _controller.stop();
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-      if (!context.mounted) return;
-      final user = FirebaseAuth.instance.currentUser;
-
-
-      if (user != null) {
-        try {
-          await user.reload();
-          final refreshedUser = FirebaseAuth.instance.currentUser;
-
-          if (!refreshedUser!.emailVerified) {
-            await FirebaseAuth.instance.signOut();
-            _navigateWithFade(const AuthScreen(), 1200);
-          } else { _navigateWithFade(const DashboardScreen(), 800); }
-        } catch (e) {
-          await FirebaseAuth.instance.signOut();
-        }
-      } else {
-        _navigateWithFade(const AuthScreen(), 1200);
-      }
+      _navigateWithFade(const AuthScreen(), 1200);
     });
   }
 

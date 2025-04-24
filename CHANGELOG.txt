@@ -55,3 +55,16 @@ Change Log
 ------------------
 - finished adding AI assistant
 - started working on the UI
+
+
+0.1.0 (24/04/2024)
+------------------
+- added the settings screen UI
+- added an easter egg in the settings screen (press three times on the app version)
+- fixing multiple menu-related bugs:
+    * can't scroll and pinch on settings screen
+    * wrong initial selection beam
+    * first tap doesn't work on settings screen
+    * splash doesn't appear when it should
+    * after login, UI is bugged
+- starting to work on the events screen UI

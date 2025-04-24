@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -8,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:particles_flutter/particles_flutter.dart';
 
-import 'package:optima/screens/inApp/util/dashboard.dart';
+import 'package:optima/screens/beforeApp/choose_screen.dart';
 import 'package:optima/globals.dart';
 
 
@@ -35,6 +36,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
   String _loadingText = 'Waiting for email verification...';
 
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
 
 
   bool _validateEmail(String value) {
@@ -295,10 +302,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
 
   void _navigateToHome() {
+    selectedScreenNotifier.value = ScreenType.dashboard;
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) =>
-        const DashboardScreen(),
+        pageBuilder: (_, __, ___) => const ChooseScreen(),
         transitionDuration: const Duration(milliseconds: 800),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
