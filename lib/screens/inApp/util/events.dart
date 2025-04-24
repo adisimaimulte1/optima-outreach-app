@@ -1,97 +1,130 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
-import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart'; // adjust path if needed
+import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
+import 'package:optima/screens/inApp/widgets/events/buttons/filter_button.dart';
+import 'package:optima/screens/inApp/widgets/events/card.dart';
 
-class EventsScreen extends StatelessWidget {
+class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
 
   @override
+  State<EventsScreen> createState() => _EventsScreenState();
+}
+
+class _EventsScreenState extends State<EventsScreen> {
+  String selectedFilter = 'All';
+
+  final List<Map<String, String>> eventData = [
+    {"title": "Red Cross Fundraiser", "date": "Apr 30, 2025", "time": "3:00 PM", "status": "UPCOMING"},
+    {"title": "Beach Cleanup", "date": "May 4, 2025", "time": "10:00 AM", "status": "UPCOMING"},
+    {"title": "Leadership Workshop", "date": "Mar 12, 2025", "time": "5:00 PM", "status": "COMPLETED"},
+    {"title": "Volunteer Coordination", "date": "May 8, 2025", "time": "2:00 PM", "status": "UPCOMING"},
+    {"title": "Fundraiser Wrap-Up", "date": "May 12, 2025", "time": "4:00 PM", "status": "COMPLETED"},
+    {"title": "Hospital Donation Drive", "date": "May 15, 2025", "time": "11:00 AM", "status": "UPCOMING"},
+    {"title": "Blood Drive", "date": "May 20, 2025", "time": "9:00 AM", "status": "UPCOMING"},
+    {"title": "Disaster Response Training", "date": "May 22, 2025", "time": "3:30 PM", "status": "COMPLETED"},
+    {"title": "Medical Supply Sorting", "date": "May 25, 2025", "time": "1:00 PM", "status": "UPCOMING"},
+    {"title": "Community Safety Day", "date": "May 28, 2025", "time": "12:00 PM", "status": "UPCOMING"},
+    {"title": "First Aid Workshop", "date": "May 30, 2025", "time": "10:00 AM", "status": "CANCELLED"},
+    {"title": "Emergency Prep Drill", "date": "Jun 2, 2025", "time": "6:00 PM", "status": "UPCOMING"},
+  ];
+
+  @override
   Widget build(BuildContext context) {
+    final filteredData = selectedFilter == 'All'
+        ? eventData
+        : eventData.where((e) => e['status'] == selectedFilter).toList();
+
     return AbsScreen(
       sourceType: EventsScreen,
       builder: (context, isMinimized, scale) {
-        return Stack(
-          children: [
-            SafeArea(
-              child: Column(
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          "My Events",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(width: 52), // reserve space for button
-                      ],
-                    ),
-                  ),
-
-                  // Event List
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: 5,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Event ${index + 1}",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                "April 30, 2025 – 3:00 PM",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // New Event Button
-            Positioned(
-              right: 24,
-              bottom: 24,
-              child: NewEventButton(
-                width: 60,
-                height: 60,
-                onTap: () {
-                  // TODO: Navigate to the create event screen
-                },
-              ),
-            ),
-          ],
+        return SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 24),
+              _buildHeader(),
+              _buildDivider(),
+              _buildEventList(filteredData),
+            ],
+          ),
         );
       },
+    );
+  }
+
+
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: const [
+              Icon(LucideIcons.calendarDays, color: Colors.white, size: 28),
+              SizedBox(width: 8),
+              Text(
+                "Events",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              _buildFilterMenu(),
+              const SizedBox(width: 12),
+              NewEventButton(
+                width: 48,
+                height: 48,
+                onTap: () {
+                  // TODO: Navigate to Create Event screen
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterMenu() {
+    return FilterButton(
+      selectedValue: selectedFilter,
+      options: const ['All', 'UPCOMING', 'COMPLETED', 'CANCELLED'],
+      onSelected: (value) => setState(() => selectedFilter = value),
+    );
+  }
+
+  Widget _buildDivider() {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Divider(color: Colors.white12, thickness: 1),
+    );
+  }
+
+  Widget _buildEventList(List<Map<String, String>> filteredData) {
+    return Expanded(
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+        itemCount: filteredData.length,
+        itemBuilder: (context, index) {
+          final e = filteredData[index];
+          return EventCard(
+            title: e["title"]!,
+            date: e["date"]!,
+            time: e["time"]!,
+            status: e["status"]!,
+          );
+        },
+      ),
     );
   }
 }
