@@ -10,7 +10,7 @@ void updateUI() {
       updateSettingsUI();
     } break;
 
-    case ScreenType.calendar: {
+    case ScreenType.events: {
       updateEventsUI();
     } break;
 
@@ -20,7 +20,7 @@ void updateUI() {
     case ScreenType.contact:
       // TODO: Handle this case.
       throw UnimplementedError();
-    case ScreenType.brain:
+    case ScreenType.chat:
       // TODO: Handle this case.
       throw UnimplementedError();
 

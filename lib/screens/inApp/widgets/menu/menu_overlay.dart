@@ -14,7 +14,6 @@ class AppMenuOverlay extends StatelessWidget {
       builder: (context, isOpen, _) {
         return Stack(
           children: [
-            // 🔹 Menu: fully interactive only when open
             IgnorePointer(
               ignoring: !isOpen,
               child: AnimatedOpacity(
@@ -24,13 +23,11 @@ class AppMenuOverlay extends StatelessWidget {
               ),
             ),
 
-            // 🔹 Child: always visible, but doesn't block menu touches
             IgnorePointer(
-              ignoring: isOpen, // disable when menu is open
+              ignoring: isOpen,
               child: child,
             ),
 
-            // 🔹 Custom Tap Region: allows both layers to receive taps
             if (isOpen)
               Align(
                 alignment: Alignment.center,

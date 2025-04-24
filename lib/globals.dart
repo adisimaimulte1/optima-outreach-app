@@ -24,15 +24,17 @@ enum JamieState {
 
 enum ScreenType {
   dashboard,
-  calendar,
+  events,
   users,
   contact,
-  brain,
+  chat,
   settings,
 }
 
 
-final AIStatusDots aiAssistant = AIStatusDots();
+final GlobalKey<AIStatusDotsState> aiDotsKey = GlobalKey<AIStatusDotsState>();
+final Widget aiAssistant = AIStatusDots(key: aiDotsKey);
+
 final AIVoiceAssistant aiVoice = AIVoiceAssistant();
 final appMenu = Menu();
 

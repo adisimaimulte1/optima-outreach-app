@@ -1,17 +1,16 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:optima/ai/ai_assistant.dart';
 import 'package:optima/globals.dart';
 
 class AIStatusDots extends StatefulWidget {
   const AIStatusDots({super.key});
 
   @override
-  State<AIStatusDots> createState() => _AIStatusDotsState();
+  State<AIStatusDots> createState() => AIStatusDotsState();
 }
 
-class _AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixin {
+class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin  {
   late AnimationController _dotsController;
   late AnimationController _transitionController;
   late AnimationController _speakingController;
@@ -33,6 +32,9 @@ class _AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMix
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
 
@@ -46,7 +48,8 @@ class _AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMix
     _dot2Opacity = _buildDotOpacity(0.33, 0.66);
     _dot3Opacity = _buildDotOpacity(0.66, 1.0);
 
-    aiVoice.startLoop();
+    // TODO: Uncomment this in the main app
+    //aiVoice.startLoop();
   }
 
   @override
@@ -82,6 +85,8 @@ class _AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return ValueListenableBuilder<JamieState>(
       valueListenable: assistantState,
       builder: (context, state, _) {
@@ -103,67 +108,77 @@ class _AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMix
     return AnimatedBuilder(
       animation: Listenable.merge([_dotsController, _transitionController]),
       builder: (context, _) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(3, (index) {
-            final flicker = flickerAnimations[index].value;
-            final blend = _transitionValue.value;
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+              decoration: BoxDecoration(
+                color: Color(0xFF1C2837).withOpacity(0.99),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(3, (index) {
+                  final flicker = flickerAnimations[index].value;
+                  final blend = _transitionValue.value;
 
-            final fromFlickerOpacity = flicker * _fromStyle.opacity;
-            final toFlickerOpacity = flicker * _toStyle.opacity;
-            final fromFlickerScale = 0.8 + (flicker * 0.2);
-            final toFlickerScale = 0.8 + (flicker * 0.2);
-            final baseWave = sin((_dotsController.value * 2 * pi) + (index * pi / 1.5)) * 6;
+                  final fromFlickerOpacity = flicker * _fromStyle.opacity;
+                  final toFlickerOpacity = flicker * _toStyle.opacity;
+                  final fromFlickerScale = 0.8 + (flicker * 0.2);
+                  final toFlickerScale = 0.8 + (flicker * 0.2);
+                  final baseWave = sin((_dotsController.value * 2 * pi) + (index * pi / 1.5)) * 6;
 
-            final fromWave = _fromState == JamieState.thinking ? baseWave : 0.0;
-            final toWave = _currentState == JamieState.thinking ? baseWave : 0.0;
-            final offsetY = lerpDouble(fromWave, toWave, blend)!;
+                  final fromWave = _fromState == JamieState.thinking ? baseWave : 0.0;
+                  final toWave = _currentState == JamieState.thinking ? baseWave : 0.0;
+                  final offsetY = lerpDouble(fromWave, toWave, blend)!;
 
-            final opacity = lerpDouble(fromFlickerOpacity, toFlickerOpacity, blend)!;
-            final scale = lerpDouble(fromFlickerScale, toFlickerScale, blend)!;
-            final color = Color.lerp(_fromStyle.color, _toStyle.color, blend)!;
-            final size = lerpDouble(_fromStyle.size, _toStyle.size, blend)!;
+                  final opacity = lerpDouble(fromFlickerOpacity, toFlickerOpacity, blend)!;
+                  final scale = lerpDouble(fromFlickerScale, toFlickerScale, blend)!;
+                  final color = Color.lerp(_fromStyle.color, _toStyle.color, blend)!;
+                  final size = lerpDouble(_fromStyle.size, _toStyle.size, blend)!;
 
-            final wave = sin(_speakingController.value * pi * waveSpeed + phaseOffsets[index]);
+                  final wave = sin(_speakingController.value * pi * waveSpeed + phaseOffsets[index]);
 
-            double speakingBlend = 0.0;
-            if (_fromState == JamieState.speaking || _currentState == JamieState.speaking) {
-              speakingBlend = _currentState == JamieState.speaking ? blend : 1.0 - blend;
-            }
+                  double speakingBlend = 0.0;
+                  if (_fromState == JamieState.speaking || _currentState == JamieState.speaking) {
+                    speakingBlend = _currentState == JamieState.speaking ? blend : 1.0 - blend;
+                  }
 
-            final scaleY = 1.0 + yAmplitudes[index] * wave * speakingBlend;
-            final scaleX = 0.95 + xAmplitudes[index] * -wave * speakingBlend;
+                  final scaleY = 1.0 + yAmplitudes[index] * wave * speakingBlend;
+                  final scaleX = 0.95 + xAmplitudes[index] * -wave * speakingBlend;
 
-            return Transform.translate(
-              offset: Offset(0, -offsetY),
-              child: Transform.scale(
-                scale: scale,
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
-                  child: Opacity(
-                    opacity: opacity,
-                    child: Container(
-                      width: size,
-                      height: size,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withOpacity(0.4),
-                            blurRadius: 6,
-                            spreadRadius: 1,
+                  return Transform.translate(
+                    offset: Offset(0, -offsetY),
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
+                        child: Opacity(
+                          opacity: opacity,
+                          child: Container(
+                            width: size,
+                            height: size,
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withOpacity(0.4),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                }),
               ),
-            );
-          }),
+          ),
         );
       },
     );

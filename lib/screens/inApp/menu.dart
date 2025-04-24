@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:optima/screens/inApp/util/aichat.dart';
+import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
 
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
@@ -37,7 +39,7 @@ class _MenuState extends State<Menu> {
   @override
   void initState() {
     super.initState();
-    screenScaleNotifier.addListener(_onDashboardScaleChanged);
+    screenScaleNotifier.addListener(_onScreenScaleChanged);
 
     // Delay the execution to ensure layout is complete
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -120,13 +122,13 @@ class _MenuState extends State<Menu> {
 
 
 
-  void _onDashboardScaleChanged() {
-    final isDashboardFull = screenScaleNotifier.value >= 0.99;
-    final isDashboardMinimized = screenScaleNotifier.value == 0.4;
+  void _onScreenScaleChanged() {
+    final isFull = screenScaleNotifier.value >= 0.99;
+    final isMinimized = screenScaleNotifier.value == 0.4;
 
-    if (isDashboardMinimized && _activeBeams.isEmpty) {
+    if (isMinimized && _activeBeams.isEmpty) {
       _handleIncomingSource();
-    } else if (isDashboardFull && _activeBeams.isNotEmpty) {
+    } else if (isFull && _activeBeams.isNotEmpty) {
       setState(() {
         _activeBeams.clear();
       });
@@ -161,7 +163,8 @@ class _MenuState extends State<Menu> {
       double dy = bottomArcCenter.dy;
 
       if (index == 0) { return Offset(dx - 130, dy); }
-      else if (index == 1) { return Offset(dx, dy + 60); }
+      else if (index == 1) { return Offset(dx, dy + 140); }
+      else if (index == 1) { return Offset(dx, dy + 140); }
       else if (index == 2) { return Offset(dx + 130, dy + 80); }
 
       return Offset(dx, dy);
@@ -179,6 +182,12 @@ class _MenuState extends State<Menu> {
     } else if (source == SettingsScreen) {
       _pendingScreenChange = ScreenType.settings;
       iconPosition = bottomIconsPositions[2];
+    } else if (source == EventsScreen){
+      _pendingScreenChange = ScreenType.events;
+      iconPosition = topIconsPositions[1];
+    } else if (source == ChatScreen){
+      _pendingScreenChange = ScreenType.chat;
+      iconPosition = bottomIconsPositions[1];
     } else {
       _pendingScreenChange = ScreenType.dashboard;
       iconPosition = topIconsPositions[0];
@@ -195,7 +204,7 @@ class _MenuState extends State<Menu> {
       maxParticles: 60,
       onComplete: () {
         selectedScreenNotifier.value = _pendingScreenChange!;
-        updateUI(); // Optional: if you still want that
+        updateUI();
         _pendingScreenChange = null;
       },
     );
@@ -269,13 +278,13 @@ class _MenuState extends State<Menu> {
                         } else if (icons[index] == LucideIcons.settings) {
                           _pendingScreenChange = ScreenType.settings;
                         } else if (icons[index] == LucideIcons.calendarDays) {
-                          _pendingScreenChange = ScreenType.calendar;
+                          _pendingScreenChange = ScreenType.events;
                         } else if (icons[index] == LucideIcons.users) {
                           _pendingScreenChange = ScreenType.users;
                         } else if (icons[index] == LucideIcons.contact) {
                           _pendingScreenChange = ScreenType.contact;
                         } else if (icons[index] == LucideIcons.brain) {
-                          _pendingScreenChange = ScreenType.brain;
+                          _pendingScreenChange = ScreenType.chat;
                         } else {
                           _pendingScreenChange = ScreenType.dashboard;
                         }
@@ -359,7 +368,7 @@ class _MenuState extends State<Menu> {
 
   @override
   void dispose() {
-    screenScaleNotifier.removeListener(_onDashboardScaleChanged);
+    screenScaleNotifier.removeListener(_onScreenScaleChanged);
     super.dispose();
   }
 }

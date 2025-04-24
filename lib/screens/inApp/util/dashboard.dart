@@ -26,7 +26,7 @@ class DashboardScreen extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 30),
             child: Column(
               children: [
-                const SizedBox(height: 30),
+                const SizedBox(height: 50),
                 _buildHeader(context),
                 const SizedBox(height: 30),
                 const LineChartCard(),
@@ -43,11 +43,7 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: aiAssistant,
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
         Builder(
           builder: (context) {
             return responsiveText(

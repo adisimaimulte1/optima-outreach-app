@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 
-class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+class EventsScreen extends StatelessWidget {
+  const EventsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return AbsScreen(
-      sourceType: ChatScreen,
+      sourceType: EventsScreen,
       builder: (context, isMinimized, scale) {
         return const SafeArea(
           child: Center(
             child: Text(
-              "AI Chat Screen",
+              "Events Screen",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
