@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/globals.dart';
 
 class EventCard extends StatelessWidget {
   final String title;
@@ -70,8 +71,8 @@ class EventCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
               ),
@@ -95,12 +96,12 @@ class EventCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.calendar_today, color: Colors.amberAccent, size: 20),
+                Icon(Icons.calendar_today, color: textHighlightedColor, size: 20),
                 const SizedBox(width: 6),
                 Text(
                   date,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textColor,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -111,12 +112,12 @@ class EventCard extends StatelessWidget {
               offset: const Offset(-15, 0), // shift both icon and text left together
               child: Row(
                 children: [
-                  const Icon(Icons.access_time, color: Colors.amberAccent, size: 20),
+                  Icon(Icons.access_time, color: textHighlightedColor, size: 20),
                   const SizedBox(width: 4),
                   Text(
                     time,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textColor,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -139,9 +140,9 @@ class EventCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFF24324A),
+        color: inAppForegroundColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

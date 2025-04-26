@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/screens/beforeApp/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/profile_avatar.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/tiles.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/services/local_storage_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -35,31 +35,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   IconData _getNextEasterEggIcon() =>
       _easterEggIcons[_iconIndex++ % _easterEggIcons.length];
 
+
+  @override
+  void initState() { super.initState(); }
+
   void _editName() {
     final controller = TextEditingController(text: _name);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF24324A),
+        backgroundColor: inAppForegroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Edit Name", style: TextStyle(color: Colors.white)),
+        title: Text("Edit Name", style: TextStyle(color: textColor)),
         content: TextField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: "Name",
-            labelStyle: const TextStyle(color: Colors.white70),
-            filled: true,
-            fillColor: Colors.black12,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
+          style: TextStyle(color: textColor),
+          decoration: standardInputDecoration(hint: "Your name", label: "Name"),
         ),
         actionsPadding: const EdgeInsets.only(bottom: 8, right: 12),
         actions: [
           TextButton(
             style: TextButton.styleFrom(
-              backgroundColor: const Color(0xFFFFC62D),
-              foregroundColor: Colors.black,
+              backgroundColor: textHighlightedColor,
+              foregroundColor: inAppForegroundColor,
               splashFactory: NoSplash.splashFactory,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -69,7 +67,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(context);
               // TODO: Save to Firestore
             },
-            child: const Text("Save"),
+            child: const Text(
+              "Save",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           )
         ],
       ),
@@ -82,36 +83,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF24324A),
+        backgroundColor: inAppForegroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Change Password", style: TextStyle(color: Colors.white)),
+        title: Text("Change Password", style: TextStyle(color: textColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: oldController,
               obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: "Current Password",
-                labelStyle: const TextStyle(color: Colors.white70),
-                filled: true,
-                fillColor: Colors.black12,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+              style: TextStyle(color: textColor),
+              decoration: standardInputDecoration(hint: "", label: "Current Password"),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: newController,
               obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: "New Password",
-                labelStyle: const TextStyle(color: Colors.white70),
-                filled: true,
-                fillColor: Colors.black12,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+              style: TextStyle(color: textColor),
+              decoration: standardInputDecoration(hint: "", label: "New Password"),
             ),
           ],
         ),
@@ -119,8 +108,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             style: TextButton.styleFrom(
-              backgroundColor: const Color(0xFFFFC62D),
-              foregroundColor: Colors.black,
+              backgroundColor: textHighlightedColor,
+              foregroundColor: inAppForegroundColor,
               splashFactory: NoSplash.splashFactory,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -129,12 +118,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(context);
               // TODO: Re-authenticate & update password
             },
-            child: const Text("Change"),
+            child: const Text(
+              "Change",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           )
         ],
       ),
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +200,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildSection("Appearance", [
           Tiles.themeDropdownTile(
             selectedTheme: selectedTheme,
-            onChanged: (mode) => setState(() => selectedTheme = mode),
+            onChanged: (mode) async {
+              setState(() { selectedTheme = mode; });
+              await LocalStorageService().setThemeMode(mode);
+            },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           )
@@ -340,9 +337,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+              Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 4),
-              Container(height: 2, width: double.infinity, color: Colors.white12),
+              Container(height: 2, width: double.infinity, color: textDimColor),
             ],
           ),
         ),
@@ -373,8 +370,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: const Icon(Icons.logout),
         label: const Text("Log Out"),
         style: ElevatedButton.styleFrom(
-          backgroundColor: _easterEggMode ? const Color(0xFF570987) : Colors.redAccent,
-          foregroundColor: Colors.white,
+          backgroundColor: _easterEggMode ? const Color(0xFF570987) : Colors.red,
+          foregroundColor: textColor,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           textStyle: const TextStyle(fontSize: 16),
         ),

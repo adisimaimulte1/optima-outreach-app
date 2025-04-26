@@ -21,8 +21,8 @@ class ChooseScreen extends StatelessWidget {
         if (user!.emailVerified) {
           return UserState.authenticated;
 
-        } else { debugPrint("⚠️ User is not verified."); }
-      } catch (e) { debugPrint('❌ Error reloading user: $e'); }
+        }
+      } catch (e) {}
       return UserState.unverified;
     }
 
@@ -33,7 +33,6 @@ class ChooseScreen extends StatelessWidget {
     return ValueListenableBuilder<ScreenType>(
       valueListenable: selectedScreenNotifier,
       builder: (context, selectedScreen, _) {
-        debugPrint("📱 Building screen for: $selectedScreen");
         switch (selectedScreen) {
           case ScreenType.dashboard:
             return const DashboardScreen();
@@ -84,7 +83,6 @@ class ChooseScreen extends StatelessWidget {
         }
 
         final state = snapshot.data!;
-        debugPrint("📌 UserState resolved to: $state");
 
         return AppMenuOverlay(
           child: _buildByUserState(state),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/globals.dart';
 
 class NewEventButton extends StatefulWidget {
   final VoidCallback onTap;
@@ -44,17 +45,17 @@ class _NewEventButtonState extends State<NewEventButton> {
               width: widget.width,
               height: widget.height,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFC62D),
+                color: textHighlightedColor,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Center(
+              child: Center(
                 child: FittedBox(
                   fit: BoxFit.contain,
                   child: Icon(
                     Icons.add,
                     size: 120,
                     weight: 800,
-                    color: Color(0xFF1C2837),
+                    color: inAppBackgroundColor,
                   ),
                 ),
               ),

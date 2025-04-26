@@ -31,12 +31,6 @@ enum ScreenType {
   settings,
 }
 
-enum AppThemeMode {
-  system,
-  light,
-  dark
-}
-
 enum UserState {
   authenticated,
   unverified,
@@ -44,7 +38,11 @@ enum UserState {
 }
 
 
-AppThemeMode selectedTheme = AppThemeMode.system;
+
+// local storage data
+ThemeMode selectedTheme = ThemeMode.system;
+
+
 
 
 final GlobalKey<AIStatusDotsState> aiDotsKey = GlobalKey<AIStatusDotsState>();
@@ -60,8 +58,8 @@ User? get user => FirebaseAuth.instance.currentUser;
 
 final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);
 
-final ValueNotifier<bool> isDarkModeNotifier = ValueNotifier(false);
 final ValueNotifier<bool> isMenuOpenNotifier = ValueNotifier(false);
+final ValueNotifier<bool> isDarkModeNotifier = ValueNotifier(false);
 
 final ValueNotifier<ScreenType> selectedScreenNotifier = ValueNotifier(ScreenType.dashboard);
 final ValueNotifier<JamieState> assistantState = ValueNotifier(JamieState.idle);
@@ -83,6 +81,26 @@ AppLifecycleState? currentAppState;
 
 
 
+// colors
+
+Color lightColorPrimary = const Color(0xFFFFC62D);
+Color lightColorSecondary = const Color(0xFFFFE8A7);
+
+Color darkColorPrimary = const Color(0xFF5D2C70);
+Color darkColorSecondary = const Color(0xFF973BBA);
+
+Color inAppBackgroundColor = const Color(0xFF1C2837);
+Color inAppForegroundColor = const Color(0xFF24324A);
+Color borderColor = Colors.white12;
+
+Color textColor = Colors.white;
+Color textDimColor = Colors.white12;
+Color textHighlightedColor = isDarkModeNotifier.value ? darkColorSecondary : lightColorPrimary;
+Color textSecondaryHighlightedColor = isDarkModeNotifier.value ? darkColorPrimary: lightColorSecondary;
+
+Color black = Colors.black;
+
+
 
 
 
@@ -91,6 +109,15 @@ void setupGlobalListeners() {
     final scale = screenScaleNotifier.value;
     isMenuOpenNotifier.value = scale < 0.99;
   });
+}
+
+void setIsDarkModeNotifier(bool isDarkSystem) {
+  if (selectedTheme == ThemeMode.system) { isDarkModeNotifier.value = isDarkSystem; }
+  else if (selectedTheme == ThemeMode.dark) { isDarkModeNotifier.value = true; }
+  else { isDarkModeNotifier.value = false; }
+
+  textHighlightedColor = isDarkModeNotifier.value ? darkColorSecondary : lightColorPrimary;
+  textSecondaryHighlightedColor = isDarkModeNotifier.value ? darkColorPrimary: lightColorSecondary;
 }
 
 Widget responsiveText(
@@ -113,6 +140,42 @@ Widget responsiveText(
     ),
   );
 }
+
+InputDecoration standardInputDecoration({
+  required String hint,
+  String? label,
+  Color? fillColor,
+  Color? hintColor,
+  Color? labelColor,
+  Color? borderColor,
+}) {
+  return InputDecoration(
+    hintText: hint,
+    labelText: label,
+    hintStyle: TextStyle(
+        color: hintColor ?? Colors.white54),
+    labelStyle: TextStyle(
+      color: labelColor ?? Colors.white70, // <-- use labelColor if provided
+    ),
+    filled: true,
+    fillColor: fillColor ?? Colors.white.withOpacity(0.06),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(
+          color: borderColor ?? Colors.white.withOpacity(0.2)),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(
+          color: borderColor ?? Colors.white.withOpacity(0.5)),
+      borderRadius: BorderRadius.circular(12),
+    ),
+  );
+}
+
 
 
 

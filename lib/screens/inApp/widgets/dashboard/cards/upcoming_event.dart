@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/globals.dart';
 
 class UpcomingEventCard extends StatefulWidget {
   final String initialTitle;
@@ -52,9 +53,12 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF24324A),
+        color: inAppForegroundColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(
+          color: textDimColor,
+          width: 1.2,
+        ),
       ),
       width: MediaQuery.of(context).size.width * 0.60,
       child: Column(
@@ -63,7 +67,7 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
           Text(
             "UPCOMING EVENT",
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: textColor.withOpacity(0.6),
               fontSize: 12,
               fontWeight: FontWeight.w500,
               letterSpacing: 1.1,
@@ -76,16 +80,16 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
                 children: [
                   Text(
                     _day,
-                    style: const TextStyle(
-                      color: Color(0xFFFFC62D),
+                    style: TextStyle(
+                      color: textHighlightedColor,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     _date,
-                    style: const TextStyle(
-                      color: Color(0xFFFFC62D),
+                    style: TextStyle(
+                      color: textHighlightedColor,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -99,8 +103,8 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
                   children: [
                     Text(
                       _title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
@@ -108,7 +112,7 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.access_time_rounded, size: 16, color: Colors.white.withOpacity(0.6)),
+                        Icon(Icons.access_time_rounded, size: 16, color: textColor.withOpacity(0.6)),
                         const SizedBox(width: 6),
                         Expanded(
                           child: FittedBox(
@@ -117,7 +121,7 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
                             child: Text(
                               _time,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: textColor.withOpacity(0.6),
                                 fontSize: 14,
                               ),
                             ),

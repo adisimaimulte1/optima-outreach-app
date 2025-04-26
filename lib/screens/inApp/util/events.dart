@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
+import 'package:optima/screens/inApp/widgets/events/add_event_form.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/filter_button.dart';
 import 'package:optima/screens/inApp/widgets/events/card.dart';
 
@@ -14,6 +16,8 @@ class EventsScreen extends StatefulWidget {
 
 class _EventsScreenState extends State<EventsScreen> {
   String selectedFilter = 'All';
+  bool _disableScroll = false;
+
 
   final List<Map<String, String>> eventData = [
     {"title": "Red Cross Fundraiser", "date": "Apr 30, 2025", "time": "3:00 PM", "status": "UPCOMING"},
@@ -39,6 +43,10 @@ class _EventsScreenState extends State<EventsScreen> {
     return AbsScreen(
       sourceType: EventsScreen,
       builder: (context, isMinimized, scale) {
+        if ((_disableScroll && scale >= 0.99) || (!_disableScroll && scale < 0.99)) {
+          _disableScroll = scale < 0.99;
+        }
+
         return SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,6 +59,7 @@ class _EventsScreenState extends State<EventsScreen> {
           ),
         );
       },
+
     );
   }
 
@@ -63,13 +72,13 @@ class _EventsScreenState extends State<EventsScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            children: const [
-              Icon(LucideIcons.calendarDays, color: Colors.white, size: 28),
+            children: [
+              Icon(LucideIcons.calendarDays, color: textColor, size: 28),
               SizedBox(width: 8),
               Text(
                 "Events",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textColor,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.1,
@@ -84,9 +93,7 @@ class _EventsScreenState extends State<EventsScreen> {
               NewEventButton(
                 width: 48,
                 height: 48,
-                onTap: () {
-                  // TODO: Navigate to Create Event screen
-                },
+                onTap: () { showAddEventForm(context); },
               ),
             ],
           ),
@@ -104,15 +111,18 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildDivider() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Divider(color: Colors.white12, thickness: 1),
+      child: Divider(color: textDimColor, thickness: 1),
     );
   }
 
   Widget _buildEventList(List<Map<String, String>> filteredData) {
     return Expanded(
       child: ListView.builder(
+        physics: _disableScroll
+            ? const NeverScrollableScrollPhysics()
+            : const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
         itemCount: filteredData.length,
         itemBuilder: (context, index) {
@@ -122,6 +132,52 @@ class _EventsScreenState extends State<EventsScreen> {
             date: e["date"]!,
             time: e["time"]!,
             status: e["status"]!,
+          );
+        },
+      ),
+    );
+  }
+
+
+
+  void showAddEventForm(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        transitionDuration: const Duration(milliseconds: 150),
+        reverseTransitionDuration: const Duration(milliseconds: 150),
+        pageBuilder: (_, __, ___) {
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Stack(
+              children: [
+                // Static black overlay background (not scaling)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                ),
+                // Centered form scales in
+                Center(
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: __,
+                        curve: Curves.easeOutBack,
+                      ),
+                    ),
+                    child: const AddEventForm(),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
           );
         },
       ),

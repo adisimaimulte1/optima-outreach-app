@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/globals.dart';
 
 class ReminderStatusCard extends StatefulWidget {
   final bool hasReminder;
@@ -37,15 +38,18 @@ class ReminderStatusCardState extends State<ReminderStatusCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF24324A),
+        color: inAppForegroundColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(
+            color: textDimColor,
+            width: 1.2,
+        ),
       ),
       alignment: Alignment.centerLeft,
       child: Text(
         _text,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.9),
+          color: textColor,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),

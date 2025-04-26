@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/globals.dart';
 
 class ReminderBellButton extends StatefulWidget {
   final int feedbackCount;
@@ -32,13 +33,13 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
   bool get _hasReminder => widget.feedbackCount > 0;
 
   Color get _backgroundColor =>
-      _hasReminder ? const Color(0xFFFFC62D) : const Color(0xFF24324A);
+      _hasReminder ? textHighlightedColor : inAppForegroundColor;
   Color get _iconColor =>
-      _hasReminder ? const Color(0xFF1C2837) : Colors.white.withOpacity(0.6);
+      _hasReminder ? inAppBackgroundColor : textColor.withOpacity(0.6);
   Color get _badgeBackground =>
-      _hasReminder ? const Color(0xFF1C2837) : Colors.transparent;
+      _hasReminder ? inAppBackgroundColor : Colors.transparent;
   Color get _badgeTextColor =>
-      _hasReminder ? const Color(0xFFFFC62D) : Colors.transparent;
+      _hasReminder ? textHighlightedColor : Colors.transparent;
 
 
 
@@ -76,8 +77,8 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
         color: _backgroundColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
-          width: 1.0,
+          color: textDimColor,
+          width: 1.2,
         ),
       ),
       child: Center(

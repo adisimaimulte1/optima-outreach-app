@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:optima/globals.dart';
 
 class FilterButton extends StatefulWidget {
   final String selectedValue;
@@ -48,10 +49,10 @@ class _FilterButtonState extends State<FilterButton> {
           padding: EdgeInsets.zero,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF24324A),
+              color: inAppForegroundColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.white10, // same subtle white border as cards
+                color: textDimColor,
                 width: 1.2,
               ),
             ),
@@ -82,14 +83,14 @@ class _FilterButtonState extends State<FilterButton> {
                           child: Icon(
                             _statusIcon(value),
                             size: 22,
-                            color: isSelected ? const Color(0xFFFFC62D) : Colors.white70,
+                            color: isSelected ? textHighlightedColor : Colors.white70,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           value[0] + value.substring(1).toLowerCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontWeight: FontWeight.w500,
                             fontSize: 18,
                           ),
@@ -143,13 +144,16 @@ class _FilterButtonState extends State<FilterButton> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF1C2837),
+                color: inAppBackgroundColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(
+                  color: textDimColor,
+                  width: 1.2,
+                ),
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.filter,
-                color: Colors.white,
+                color: textColor,
               ),
             ),
           );

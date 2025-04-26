@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -64,20 +66,20 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
   }
 
   void _showCropDialog(Uint8List imageBytes) {
+    bool isDone = false;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(
         builder: (context, setDialogState) {
-          bool isCropping = false;
-
           return AlertDialog(
-            backgroundColor: const Color(0xFF24324A),
+            backgroundColor: inAppForegroundColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             contentPadding: const EdgeInsets.all(16),
             content: SizedBox(
-              width: 300,
-              height: 300,
+              width: 290,
+              height: 290,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -85,60 +87,70 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
                     controller: _cropController,
                     image: imageBytes,
                     withCircleUi: true,
-                    baseColor: const Color(0xFF24324A),
-                    maskColor: const Color(0xFF24324A).withOpacity(0.5),
+                    baseColor: inAppForegroundColor,
+                    maskColor: inAppForegroundColor.withOpacity(0.5),
                     radius: 150,
                     onCropped: (cropped) async {
+                      if (isDone) return; // 🚫 Prevent duplicate execution
+                      isDone = true;
+
                       final dir = await getTemporaryDirectory();
                       final path = '${dir.path}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                      final file = await File(path).writeAsBytes(cropped);
 
+                      if (_profileImage != null) {
+                        try {
+                          await _profileImage!.delete();
+                        } catch (e) {
+                          debugPrint("Error deleting old image: $e");
+                        }
+                      }
+
+                      final file = await File(path).writeAsBytes(cropped);
                       if (!mounted) return;
+
                       setState(() => _profileImage = file);
-                      Navigator.pop(context);
+
+                      // ✅ Pop safely once
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
                     },
                   ),
-                  if (isCropping)
-                    const CircularProgressIndicator(color: Color(0xFFFFC62D)),
                 ],
               ),
             ),
             actionsAlignment: MainAxisAlignment.end,
             actionsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             actions: [
-              TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  splashFactory: NoSplash.splashFactory,
-                  textStyle: const TextStyle(fontSize: 15),
-                ),
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel"),
+              TextButtonWithoutIcon(
+                label: "Cancel",
+                onPressed: () {
+                  if (!isDone) Navigator.pop(context); // ensure only one pop
+                },
+                foregroundColor: Colors.white70,
+                fontSize: 17,
+                borderColor: textDimColor,
+                borderWidth: 1.2,
               ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFC62D),
-                  foregroundColor: Colors.black,
-                  splashFactory: NoSplash.splashFactory,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-                onPressed: () async {
-                  try {
-                    setDialogState(() => isCropping = true);
-                    _cropController.crop();
-                  } catch (e) {
-                    debugPrint("❌ Crop failed: $e");
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please select a valid crop area.")),
-                      );
-                      setDialogState(() => isCropping = false);
+              TextButtonWithoutIcon(
+                label: "Crop",
+                onPressed: () {
+                  if (!isDone) {
+                    try {
+                      _cropController.crop();
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Please select a valid crop area.")),
+                        );
+                      }
                     }
                   }
                 },
-                child: const Text("Crop"),
+                backgroundColor: textHighlightedColor,
+                foregroundColor: inAppForegroundColor,
+                fontSize: 17,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               ),
             ],
           );
@@ -160,7 +172,7 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 5),
+                  border: Border.all(color: textColor, width: 5),
                 ),
                 child: ClipOval(
                   child: _profileImage != null
@@ -182,11 +194,11 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFC62D),
+                  color: textHighlightedColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1),
+                  border: Border.all(color: textColor, width: 1),
                 ),
-                child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                child: Icon(Icons.edit, size: 16, color: textColor),
               ),
             ),
           ],
@@ -194,7 +206,7 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
         const SizedBox(height: 12),
         Column(
           children: [
-            Text(widget.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(widget.name, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor)),
             const SizedBox(height: 2),
             Text(widget.email, style: const TextStyle(fontSize: 14, color: Colors.white70)),
           ],
@@ -212,7 +224,7 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
       fit: BoxFit.cover,
       loadingBuilder: (context, child, progress) =>
       progress == null ? child : const CircularProgressIndicator(),
-      errorBuilder: (_, __, ___) => Container(color: const Color(0xFFFFC62D), width: 100, height: 100),
+      errorBuilder: (_, __, ___) => Container(color: textHighlightedColor, width: 100, height: 100),
     );
   }
 }

@@ -39,7 +39,15 @@ dependencies:
 
   dropdown_button2: ^2.3.9
 
+  table_calendar: ^3.0.9
+  flutter_time_picker_spinner: ^2.0.0
+
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  cloud_firestore: ^4.9.2
+
   path_provider: any
+
 
 
 dev_dependencies:

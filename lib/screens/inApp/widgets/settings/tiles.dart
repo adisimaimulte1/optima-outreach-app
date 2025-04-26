@@ -3,7 +3,7 @@ import 'package:optima/globals.dart';
 
 
 typedef EasterEggIconResolver = IconData Function();
-typedef ThemeSetter = void Function(AppThemeMode);
+typedef ThemeSetter = void Function(ThemeMode);
 
 class Tiles {
 
@@ -24,10 +24,10 @@ class Tiles {
         horizontalTitleGap: 10,
         leading: Icon(
           easterEggMode ? getNextEasterEggIcon() : icon,
-          color: const Color(0xFFFFC62D),
+          color: textHighlightedColor,
           size: 20,
         ),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
+        title: Text(title, style: TextStyle(color: textColor, fontSize: 15)),
         trailing: showArrow ? const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white70) : null,
         onTap: onTap,
       ),
@@ -51,15 +51,15 @@ class Tiles {
         horizontalTitleGap: 10,
         leading: Icon(
           easterEggMode ? getNextEasterEggIcon() : icon,
-          color: const Color(0xFFFFC62D),
+          color: textHighlightedColor,
           size: 20,
         ),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
+        title: Text(title, style: TextStyle(color: textColor, fontSize: 15)),
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFFFFC62D),
-          activeTrackColor: Colors.yellow.shade50,
+          activeColor: textHighlightedColor,
+          activeTrackColor: isDarkModeNotifier.value ? Colors.purple.shade50 : Colors.yellow.shade50,
           inactiveThumbColor: Colors.grey,
           inactiveTrackColor: Colors.grey.shade800,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -69,7 +69,7 @@ class Tiles {
   }
 
   static Widget themeDropdownTile({
-    required AppThemeMode selectedTheme,
+    required ThemeMode selectedTheme,
     required ThemeSetter onChanged,
     required bool easterEggMode,
     required EasterEggIconResolver getNextEasterEggIcon,
@@ -85,10 +85,10 @@ class Tiles {
             horizontalTitleGap: 10,
             leading: Icon(
               easterEggMode ? getNextEasterEggIcon() : Icons.color_lens,
-              color: const Color(0xFFFFC62D),
+              color: textHighlightedColor,
               size: 20,
             ),
-            title: const Text("App Theme", style: TextStyle(color: Colors.white, fontSize: 15)),
+            title: Text("App Theme", style: TextStyle(color: textColor, fontSize: 15)),
             trailing: _CustomThemeDropdown(
               selectedTheme: selectedTheme,
               onChanged: onChanged,
@@ -100,9 +100,8 @@ class Tiles {
   }
 }
 
-
 class _CustomThemeDropdown extends StatefulWidget {
-  final AppThemeMode selectedTheme;
+  final ThemeMode selectedTheme;
   final ThemeSetter onChanged;
 
   const _CustomThemeDropdown({
@@ -127,7 +126,7 @@ class _CustomThemeDropdownState extends State<_CustomThemeDropdown> {
     final RenderBox box = context.findRenderObject() as RenderBox;
     final Offset offset = box.localToGlobal(Offset.zero);
 
-    final result = await showMenu<AppThemeMode>(
+    final result = await showMenu<ThemeMode>(
       context: context,
       position: RelativeRect.fromLTRB(
         offset.dx,
@@ -138,21 +137,21 @@ class _CustomThemeDropdownState extends State<_CustomThemeDropdown> {
       elevation: 0,
       color: Colors.transparent,
       items: [
-        PopupMenuItem<AppThemeMode>(
+        PopupMenuItem<ThemeMode>(
           enabled: false,
           padding: EdgeInsets.zero,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF24324A),
+              color: inAppForegroundColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10, width: 1.2),
+              border: Border.all(color: textDimColor, width: 1.2),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _customOption(AppThemeMode.system, "System", Icons.devices),
-                _customOption(AppThemeMode.light, "Light", Icons.wb_sunny_rounded),
-                _customOption(AppThemeMode.dark, "Dark", Icons.nightlight_round),
+                _customOption(ThemeMode.system, "System", Icons.devices),
+                _customOption(ThemeMode.light, "Light", Icons.wb_sunny_rounded),
+                _customOption(ThemeMode.dark, "Dark", Icons.nightlight_round),
               ],
             ),
           ),
@@ -167,18 +166,18 @@ class _CustomThemeDropdownState extends State<_CustomThemeDropdown> {
     }
   }
 
-  IconData _iconForTheme(AppThemeMode theme) {
+  IconData _iconForTheme(ThemeMode theme) {
     switch (theme) {
-      case AppThemeMode.system:
+      case ThemeMode.system:
         return Icons.devices;
-      case AppThemeMode.light:
+      case ThemeMode.light:
         return Icons.wb_sunny_rounded;
-      case AppThemeMode.dark:
+      case ThemeMode.dark:
         return Icons.nightlight_round;
     }
   }
 
-  Widget _customOption(AppThemeMode mode, String label, IconData icon) {
+  Widget _customOption(ThemeMode mode, String label, IconData icon) {
     final isSelected = widget.selectedTheme == mode;
 
     return InkWell(
@@ -204,14 +203,14 @@ class _CustomThemeDropdownState extends State<_CustomThemeDropdown> {
               child: Icon(
                 icon,
                 size: 18,
-                color: isSelected ? const Color(0xFFFFC62D) : Colors.white70,
+                color: isSelected ? textHighlightedColor : Colors.white70,
               ),
             ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -241,9 +240,9 @@ class _CustomThemeDropdownState extends State<_CustomThemeDropdown> {
               height: 36,
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C2837),
+                  color: inAppBackgroundColor,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(color: textDimColor),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Row(
@@ -253,11 +252,11 @@ class _CustomThemeDropdownState extends State<_CustomThemeDropdown> {
                       data: const IconThemeData(opacity: 1.0),
                       child: Icon(
                         _iconForTheme(widget.selectedTheme),
-                        color: const Color(0xFFFFC62D),
+                        color: textHighlightedColor,
                         size: 18,
                       ),
                     ),
-                    const Icon(Icons.arrow_drop_down, color: Colors.white),
+                    Icon(Icons.arrow_drop_down, color: textColor),
                   ],
                 ),
               ),

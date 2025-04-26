@@ -151,7 +151,7 @@ class ParticleBeamEffectState extends State<ParticleBeamEffect>
                   height: p.size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isDarkModeNotifier.value ? Colors.white : Color(0xFF1C2837),
+                    color: inAppBackgroundColor,
                   ),
                 ),
               ),

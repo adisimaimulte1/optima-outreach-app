@@ -78,7 +78,6 @@ class _AbsScreenState extends State<AbsScreen> {
   Widget _buildScreenContent(double scale) {
     final double cornerRadius = 120.0 * (1 - scale);
     final double borderWidth = 30.0 * (1 - scale);
-    final borderColor = isDarkModeNotifier.value ? Colors.white : const Color(0xFF1C2837);
 
     return AnimatedScale(
       duration: _pinchDuration,
@@ -95,10 +94,10 @@ class _AbsScreenState extends State<AbsScreen> {
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C2837),
+                  color: inAppBackgroundColor,
                   borderRadius: BorderRadius.circular(cornerRadius),
                   border: borderWidth > 0
-                      ? Border.all(width: borderWidth, color: borderColor)
+                      ? Border.all(width: borderWidth, color: Colors.transparent)
                       : null,
                 ),
                 child: widget.builder(context, scale < 1.0, scale),
@@ -111,6 +110,22 @@ class _AbsScreenState extends State<AbsScreen> {
             right: 0,
             child: IgnorePointer(child: Center(child: aiAssistant)),
           ),
+
+          if (scale < 0.99)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: inAppBackgroundColor,
+                      width: borderWidth,
+                    ),
+                    borderRadius: BorderRadius.circular(cornerRadius),
+                  ),
+                ),
+              ),
+            ),
+
         ],
       ),
     );
@@ -129,6 +144,8 @@ class _AbsScreenState extends State<AbsScreen> {
       ),
     );
   }
+
+
 
   void _handleScaleStart(ScaleStartDetails details) {
     _isPinching = details.pointerCount >= 2;

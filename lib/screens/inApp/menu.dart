@@ -114,8 +114,8 @@ class _MenuState extends State<Menu> {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: isDarkModeNotifier.value
-            ? [const Color(0xFF292727), const Color(0xFF000000)]
-            : [const Color(0xFFFFE8A7), const Color(0xFFFFC62D)],
+            ? [darkColorSecondary, darkColorPrimary]
+            : [lightColorSecondary, lightColorPrimary],
       ),
     );
   }
@@ -325,7 +325,6 @@ class _MenuState extends State<Menu> {
                         tween: Tween(begin: 1.0, end: pressScales[index]!),
                         duration: const Duration(milliseconds: 100),
                         builder: (context, scaleVal, child) {
-                          final iconColor = isDarkModeNotifier.value ? Colors.white : const Color(0xFF1C2837);
                           return Transform.scale(
                             scale: scaleVal,
                             child: Container(
@@ -335,11 +334,11 @@ class _MenuState extends State<Menu> {
                                 shape: BoxShape.circle,
                                 color: Colors.transparent,
                                 border: Border.all(
-                                  color: iconColor,
+                                  color: inAppBackgroundColor,
                                   width: selectedTarget == Offset(dx, verticalOffset > 0 ? dy : dy + 80) ? 10 : 6,
                                 ),
                               ),
-                              child: Icon(icons[index], size: 40, color: iconColor),
+                              child: Icon(icons[index], size: 40, color: inAppBackgroundColor),
                             ),
                           );
                         },

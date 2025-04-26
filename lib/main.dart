@@ -4,20 +4,25 @@ import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'package:optima/screens/beforeApp/choose_screen.dart';
+import 'package:optima/services/local_storage_service.dart';
 import 'package:optima/globals.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp();
+  await LocalStorageService().init();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-  //await aiVoice.warmUpAssistant("optima-warmup");
 
   setupGlobalListeners();
 
   runApp(const Optima());
 }
+
+
 
 class Optima extends StatefulWidget {
   const Optima({super.key});
@@ -32,16 +37,12 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
     super.initState();
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    final brightness = SchedulerBinding.instance.window.platformBrightness;
-    final isDark = brightness == Brightness.dark;
-    isDarkModeNotifier.value = isDark;
+    setIsDarkModeNotifier(SchedulerBinding.instance.window.platformBrightness == Brightness.dark);
 
     WidgetsBinding.instance.addObserver(this);
     selectedScreenNotifier.addListener(() => setState(() {}));
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _setSystemUIOverlay();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) { _setSystemUIOverlay(); });
   }
 
   @override
@@ -49,6 +50,8 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
+
+
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -67,7 +70,7 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   void _setSystemUIOverlay() {
     final brightness = SchedulerBinding.instance.window.platformBrightness;
     final isDark = brightness == Brightness.dark;
-    isDarkModeNotifier.value = isDark;
+    setIsDarkModeNotifier(isDark);
 
     final usedBrightness = isDark ? Brightness.light : Brightness.dark;
     final overlayColor = Colors.transparent.withOpacity(0.002);
@@ -84,12 +87,15 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
     );
   }
 
+
+
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Optima',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.system,
+      themeMode: selectedTheme,
       darkTheme: ThemeData.dark(),
       home: ChooseScreen(),
     );

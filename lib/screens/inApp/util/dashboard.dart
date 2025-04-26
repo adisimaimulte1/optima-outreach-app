@@ -50,10 +50,10 @@ class DashboardScreen extends StatelessWidget {
               context,
               "Dashboard",
               maxWidthFraction: 0.6,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 40,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: textColor,
                 letterSpacing: 1.2,
               ),
             );

@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:optima/globals.dart';
 
 class LineChartCard extends StatelessWidget {
   const LineChartCard({super.key});
@@ -10,19 +11,12 @@ class LineChartCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF24324A),
+        color: inAppForegroundColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+          color: textDimColor,
+          width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: SizedBox(
         height: 120,

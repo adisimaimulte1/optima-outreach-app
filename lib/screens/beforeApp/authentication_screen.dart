@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:optima/screens/beforeApp/widgets/background_particles.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:particles_flutter/particles_flutter.dart';
 
+import 'package:optima/screens/beforeApp/widgets/buttons/bouncy_button.dart';
 import 'package:optima/screens/beforeApp/choose_screen.dart';
 import 'package:optima/globals.dart';
 
@@ -372,16 +374,16 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDarkModeNotifier.value ? Colors.black : Colors.white;
-    final fgColor = isDarkModeNotifier.value ? Colors.white : Colors.black;
-    final inputBg = isDarkModeNotifier.value ? Colors.grey[900] : Colors.grey[100];
+    final bgColor = isDarkModeNotifier.value ? Colors.black : lightColorPrimary;
+    final fgColor = isDarkModeNotifier.value ? Colors.white : inAppBackgroundColor;
+    final inputBg = isDarkModeNotifier.value ? Colors.grey[900] : lightColorSecondary;
 
     return Scaffold(
       extendBody: true,
       backgroundColor: bgColor,
       body: Stack(
         children: [
-          _buildParticleBackground(context),
+          const BackgroundParticles(),
           _buildFormUI(bgColor, fgColor, inputBg),
           if (_loading) _buildLoadingOverlay(bgColor, fgColor),
         ],
@@ -427,24 +429,12 @@ class _AuthScreenState extends State<AuthScreen> {
                           maxWidthFraction: 0.05,
                           style: TextStyle(
                             fontSize: 32,
-                            color: fgColor.withOpacity(0.7),
+                            color: fgColor.withOpacity(0.8),
                             fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
                     ],
-                  ),
-
-
-                  const SizedBox(height: 12),
-                  responsiveText(
-                    context,
-                    _isLogin ? 'Login to your account' : 'Create a new account',
-                    maxWidthFraction: 0.4,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: fgColor.withOpacity(0.6),
-                    ),
                   ),
 
                   const SizedBox(height: 32),
@@ -482,24 +472,15 @@ class _AuthScreenState extends State<AuthScreen> {
     return TextFormField(
       key: const ValueKey('email'),
       style: TextStyle(color: fgColor),
-      decoration: InputDecoration(
-        label: responsiveText(
-          context,
-          'Email',
-          maxWidthFraction: 0.1,
-          style: TextStyle(color: fgColor.withOpacity(0.8)),
-          align: TextAlign.left,
-        ),
-        filled: true,
+      decoration: standardInputDecoration(
+        hint: '.',
+        label: 'Email',
         fillColor: inputBg,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: fgColor.withOpacity(0.6)),
-        ),
+        labelColor: fgColor,
+        borderColor: fgColor,
+      ).copyWith(
         errorText: _emailError,
       ),
-
       keyboardType: TextInputType.emailAddress,
       onChanged: (value) => _email = value.trim(),
     );
@@ -508,94 +489,91 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildPasswordField(Color fgColor, Color inputBg) {
     return TextFormField(
       key: const ValueKey('password'),
-      style: TextStyle(color: fgColor),
       obscureText: _obscurePassword,
-      decoration: InputDecoration(
-        label: Align(
-          alignment: Alignment.centerLeft,
-          child: responsiveText(
-            context,
-            'Password',
-            maxWidthFraction: 0.18,
-            style: TextStyle(color: fgColor.withOpacity(0.8)),
-            align: TextAlign.left,
-          ),
-        ),
-        filled: true,
+      style: TextStyle(color: fgColor),
+      decoration: standardInputDecoration(
+        hint: '',
+        label: 'Password',
         fillColor: inputBg,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: fgColor.withOpacity(0.6)),
-        ),
+        labelColor: fgColor,
+        borderColor: fgColor,
+      ).copyWith(
         errorText: _passwordError,
         suffixIcon: IconButton(
+          style: TextButton.styleFrom(
+            splashFactory: NoSplash.splashFactory,
+            foregroundColor: fgColor,
+            overlayColor: Colors.transparent,
+          ),
           icon: Icon(
             _obscurePassword ? Icons.visibility_off : Icons.visibility,
-            color: fgColor.withOpacity(0.6),
+            color: fgColor.withOpacity(0.8),
           ),
-          onPressed: () {
-            setState(() {
-              _obscurePassword = !_obscurePassword;
-            });
-          },
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
       ),
       onChanged: (value) => _password = value,
     );
   }
 
-  Widget _buildActionButtons(Color bgColor, Color fgColor) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _submit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: fgColor,
-          foregroundColor: bgColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-        ),
-        child: responsiveText(
-          context,
-          _isLogin ? 'Login' : 'Register',
-          maxWidthFraction:
-          _isLogin ? 0.1 : 0.15,
-          style: TextStyle(color: bgColor),
-        ),
 
+  Widget _buildActionButtons(Color bgColor, Color fgColor) {
+    return BouncyButton(
+      onPressed: _submit,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: fgColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: responsiveText(
+            context,
+            _isLogin ? 'Login' : 'Register',
+            maxWidthFraction: _isLogin ? 0.1 : 0.15,
+            style: TextStyle(
+                color: bgColor,
+                fontWeight: FontWeight.bold
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildGoogleButton(Color bgColor, Color fgColor) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _signInWithGoogle,
-        icon: Container(
-          height: 24,
-          width: 24,
-          margin: const EdgeInsets.only(right: 12),
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: Image.asset('assets/images/icons/google_icon.png'),
-          ),
+    return BouncyButton(
+      onPressed: _signInWithGoogle,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: fgColor,
+          borderRadius: BorderRadius.circular(12),
         ),
-        label: responsiveText(
-          context,
-          'Sign in with Google',
-          maxWidthFraction: 0.35,
-          style: TextStyle(
-            color: bgColor, // or your button label style
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: fgColor,
-          foregroundColor: bgColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          elevation: 1,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: 24,
+              width: 24,
+              margin: const EdgeInsets.only(right: 12),
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: Image.asset('assets/images/icons/google_icon.png'),
+              ),
+            ),
+            responsiveText(
+              context,
+              'Sign in with Google',
+              maxWidthFraction: 0.35,
+              style: TextStyle(
+                  color: bgColor,
+                  fontWeight: FontWeight.bold
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -603,7 +581,14 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Widget _buildToggleTextButton(Color fgColor) {
     return TextButton(
+      style: TextButton.styleFrom(
+        splashFactory: NoSplash.splashFactory,
+        foregroundColor: fgColor,
+        overlayColor: Colors.transparent
+      ),
       onPressed: () {
+        FocusScope.of(context).unfocus();
+
         setState(() {
           _isLogin = !_isLogin;
           _errorMessage = null;
@@ -616,7 +601,10 @@ class _AuthScreenState extends State<AuthScreen> {
         _isLogin ? 'Don\'t have an account? Register' : 'Already registered? Login',
         maxWidthFraction:
         _isLogin ? 0.55 : 0.45,
-        style: TextStyle(color: fgColor.withOpacity(0.7)),
+        style: TextStyle(
+            color: fgColor,
+            fontWeight: FontWeight.bold
+        ),
       ),
     );
   }
@@ -624,7 +612,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildLoadingOverlay(Color bgColor, Color fgColor) {
     return Positioned.fill(
       child: Container(
-        color: fgColor.withOpacity(0.5),
+        color: textColor.withOpacity(0.5),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -654,6 +642,11 @@ class _AuthScreenState extends State<AuthScreen> {
     final textColor = isDarkModeNotifier.value ? Colors.white : Colors.black;
 
     return TextButton(
+      style: TextButton.styleFrom(
+          splashFactory: NoSplash.splashFactory,
+          foregroundColor: fgColor,
+          overlayColor: Colors.transparent
+      ),
       onPressed: () async {
         if (_email.trim().isEmpty || !_validateEmail(_email.trim())) {
           setState(() {
@@ -676,7 +669,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 context,
                 'Password reset email sent. Check your inbox.',
                 maxWidthFraction: 0.95,
-                style: TextStyle(color: textColor),
+                style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold
+                ),
               ),
               backgroundColor: snackColor,
               duration: const Duration(seconds: 3),
@@ -692,35 +688,11 @@ class _AuthScreenState extends State<AuthScreen> {
         context,
         'Forgot password?',
         maxWidthFraction: 0.3,
-        style: TextStyle(color: fgColor.withOpacity(0.7)),
+        style: TextStyle(
+            color: fgColor,
+            fontWeight: FontWeight.bold
+        ),
       ),
     );
   }
-
-  Widget _buildParticleBackground(BuildContext context) {
-    final particleColor = isDarkModeNotifier.value
-        ? Colors.white.withOpacity(0.3)
-        : Colors.black.withOpacity(0.3);
-
-    return IgnorePointer(
-      ignoring: true,
-      child: CircularParticle(
-        key: UniqueKey(),
-        awayRadius: 80,
-        numberOfParticles: 110,
-        speedOfParticles: 1.2,
-        height: MediaQuery.of(context).size.height,
-        width: MediaQuery.of(context).size.width,
-        onTapAnimation: false,
-        particleColor: particleColor,
-        awayAnimationDuration: const Duration(milliseconds: 600),
-        maxParticleSize: 4,
-        isRandSize: true,
-        isRandomColor: false,
-        connectDots: false,
-      ),
-    );
-  }
-
-
 }

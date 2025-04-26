@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 
 class ChatScreen extends StatelessWidget {
@@ -9,12 +10,12 @@ class ChatScreen extends StatelessWidget {
     return AbsScreen(
       sourceType: ChatScreen,
       builder: (context, isMinimized, scale) {
-        return const SafeArea(
+        return SafeArea(
           child: Center(
             child: Text(
               "AI Chat Screen",
               style: TextStyle(
-                color: Colors.white,
+                color: textColor,
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
               ),
