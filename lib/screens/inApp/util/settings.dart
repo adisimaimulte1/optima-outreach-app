@@ -176,6 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         _buildSection("Account", [
           Tiles.tile(
+            context: context,
             icon: Icons.person,
             title: "Edit Name",
             onTap: _editName,
@@ -183,6 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            context: context,
             icon: Icons.lock_outline,
             title: "Change Password",
             onTap: _changePassword,
@@ -190,6 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            context: context,
             icon: Icons.delete_outline,
             title: "Delete Account",
             onTap: () {},
@@ -254,6 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            context: context,
             icon: Icons.privacy_tip,
             title: "Privacy Settings",
             onTap: () {},
@@ -261,6 +265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            context: context,
             icon: Icons.devices,
             title: "Session Management",
             onTap: () {},
@@ -270,6 +275,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ]),
         _buildSection("Credits & Billing", [
           Tiles.tile(
+            context: context,
             icon: Icons.credit_score,
             title: "My Credits",
             onTap: () {},
@@ -277,6 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            context: context,
             icon: Icons.subscriptions,
             title: "Upgrade Plan",
             onTap: () {},
@@ -284,6 +291,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            context: context,
             icon: Icons.smart_display,
             title: "Watch Ads for Credits",
             onTap: () {},
@@ -293,6 +301,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ]),
         _buildSection("Help & About", [
           Tiles.tile(
+            context: context,
             icon: Icons.help_outline,
             title: "Help & FAQ",
             onTap: () {},
@@ -300,6 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            context: context,
             icon: Icons.mail_outline,
             title: "Contact Support",
             onTap: () {},
@@ -307,6 +317,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            context: context,
             icon: Icons.info_outline,
             title: "App Version 1.0.0",
             showArrow: false,

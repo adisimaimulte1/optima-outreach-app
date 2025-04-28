@@ -3,17 +3,24 @@
 <plist version="1.0">
 	<dict>
 	    <key>NSCameraUsageDescription</key>
-         <string>Optima uses your camera</string>
+         <string>We need to use your camera</string>
+
          <key>NSSpeechRecognitionUsageDescription</key>
          <string>We need access to speech recognition for transcribing your voice.</string>
+
          <key>NSMicrophoneUsageDescription</key>
          <string>We need access to the microphone for speech recognition.</string>
 
          <key>NSPhotoLibraryUsageDescription</key>
-         <string>This app needs access to your photo library to select a profile picture.</string>
+         <string>We need access to your photo library to select a profile picture.</string>
 
          <key>NSPhotoLibraryAddUsageDescription</key>
-         <string>This app needs permission to save your cropped profile picture.</string>
+         <string>We need permission to save your cropped profile picture.</string>
+
+         <key>NSLocationWhenInUseUsageDescription</key>
+         <string>We need your location to pick a place.</string>
+
+
 
          <key>UIBackgroundModes</key>
          <array>

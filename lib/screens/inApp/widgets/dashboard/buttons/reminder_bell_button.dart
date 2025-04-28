@@ -22,13 +22,31 @@ class ReminderBellButton extends StatefulWidget {
 class _ReminderBellButtonState extends State<ReminderBellButton> {
   double _scale = 1.0;
 
+  @override
+  void initState() {
+    super.initState();
+    screenScaleNotifier.addListener(_handleScaleChange);
+  }
+
+  void _handleScaleChange() {
+    if (screenScaleNotifier.value < 0.99 && _scale != 1.0) {
+      setState(() {
+        _scale = 1.0;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    screenScaleNotifier.removeListener(_handleScaleChange);
+    super.dispose();
+  }
 
   void _setPressed(bool isPressed) {
     setState(() {
       _scale = isPressed ? 0.7 : 1.0;
     });
   }
-
 
   bool get _hasReminder => widget.feedbackCount > 0;
 
@@ -41,8 +59,6 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
   Color get _badgeTextColor =>
       _hasReminder ? textHighlightedColor : Colors.transparent;
 
-
-
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
@@ -52,7 +68,9 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
         onPointerDown: (_) => _setPressed(true),
         onPointerUp: (_) {
           _setPressed(false);
-          widget.onTap?.call();
+          if (screenScaleNotifier.value >= 0.99) {
+            widget.onTap?.call();
+          }
         },
         onPointerCancel: (_) => _setPressed(false),
         child: Transform.scale(

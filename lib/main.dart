@@ -40,8 +40,6 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
     setIsDarkModeNotifier(SchedulerBinding.instance.window.platformBrightness == Brightness.dark);
 
     WidgetsBinding.instance.addObserver(this);
-    selectedScreenNotifier.addListener(() => setState(() {}));
-
     WidgetsBinding.instance.addPostFrameCallback((_) { _setSystemUIOverlay(); });
   }
 
@@ -96,8 +94,33 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
       title: 'Optima',
       debugShowCheckedModeBanner: false,
       themeMode: selectedTheme,
-      darkTheme: ThemeData.dark(),
+
+      theme: ThemeData.light().copyWith(
+        scaffoldBackgroundColor: inAppBackgroundColor,
+        progressIndicatorTheme: ProgressIndicatorThemeData(
+          color: textHighlightedColor,
+        ),
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: textHighlightedColor,
+          selectionColor: textHighlightedColor.withOpacity(0.4),
+          selectionHandleColor: textHighlightedColor,
+        ),
+      ),
+
+      darkTheme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: inAppBackgroundColor,
+        progressIndicatorTheme: ProgressIndicatorThemeData(
+          color: textHighlightedColor,
+        ),
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: textHighlightedColor,
+          selectionColor: textHighlightedColor.withOpacity(0.4),
+          selectionHandleColor: textHighlightedColor,
+        ),
+      ),
+
       home: ChooseScreen(),
     );
   }
+
 }

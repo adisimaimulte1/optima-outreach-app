@@ -21,6 +21,8 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
   late Animation<double> _dot2Opacity;
   late Animation<double> _dot3Opacity;
 
+  JamieState? _lastSeenState;
+
   JamieState _currentState = JamieState.idle;
   JamieState _fromState = JamieState.idle;
 
@@ -90,11 +92,15 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
     return ValueListenableBuilder<JamieState>(
       valueListenable: assistantState,
       builder: (context, state, _) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _handleDotAnimationState(state);
-        });
+        if (state != _lastSeenState) {
+          _lastSeenState = state;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _handleDotAnimationState(state);
+          });
+        }
         return _buildAnimatedDots();
       },
+
     );
   }
 

@@ -491,6 +491,9 @@ class _AuthScreenState extends State<AuthScreen> {
       key: const ValueKey('password'),
       obscureText: _obscurePassword,
       style: TextStyle(color: fgColor),
+      keyboardType: TextInputType.emailAddress,
+      autocorrect: false,
+      enableSuggestions: false,
       decoration: standardInputDecoration(
         hint: '',
         label: 'Password',
@@ -515,7 +518,6 @@ class _AuthScreenState extends State<AuthScreen> {
       onChanged: (value) => _password = value,
     );
   }
-
 
   Widget _buildActionButtons(Color bgColor, Color fgColor) {
     return BouncyButton(

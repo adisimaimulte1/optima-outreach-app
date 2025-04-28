@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/close_button.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/navigation_button.dart';
+import 'package:optima/screens/inApp/widgets/events/steps/event_name_step.dart';
+import 'package:optima/screens/inApp/widgets/events/steps/event_time_step.dart';
 
 class AddEventForm extends StatefulWidget {
   const AddEventForm({super.key});
@@ -14,7 +16,6 @@ class _AddEventFormState extends State<AddEventForm> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
   final int _totalSteps = 7;
-
 
 
   // step 1
@@ -38,6 +39,9 @@ class _AddEventFormState extends State<AddEventForm> {
     Icons.inventory,      // Resources
     Icons.smart_toy,      // AI + Visibility
   ];
+
+
+
 
   void _nextStep() {
     FocusScope.of(context).unfocus();
@@ -165,6 +169,7 @@ class _AddEventFormState extends State<AddEventForm> {
 
   Widget _buildNavigationControls() {
     final bool isLastStep = _currentStep == _totalSteps - 1;
+    final bool canProceed = _canProceedToNextStep();
 
     return Row(
       children: [
@@ -178,20 +183,34 @@ class _AddEventFormState extends State<AddEventForm> {
             fontSize: 20,
             borderColor: textDimColor,
             borderWidth: 1.2,
+            isEnabled: true, // Back is always enabled
           ),
         if (_currentStep > 0) const SizedBox(width: 16),
-          AnimatedScaleButton(
-            onPressed: _nextStep,
-            icon: isLastStep ? Icons.check : Icons.chevron_right,
-            label: isLastStep ? "Create" : "Next",
-            backgroundGradient: LinearGradient(
-              colors: [textHighlightedColor, textSecondaryHighlightedColor],
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-            ),
-            foregroundColor: inAppForegroundColor,
-            fontSize: 20,
-          ),
+        AnimatedScaleButton(
+          onPressed: canProceed ? _nextStep : () {}, // Must pass a non-null function
+          icon: isLastStep ? Icons.check : Icons.chevron_right,
+          label: isLastStep ? "Create" : "Next",
+          backgroundGradient: canProceed
+              ? LinearGradient(
+            colors: [
+              isDarkModeNotifier.value
+                  ? textSecondaryHighlightedColor
+                  : textHighlightedColor,
+              isDarkModeNotifier.value
+                  ? textHighlightedColor
+                  : textSecondaryHighlightedColor,
+            ],
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
+          )
+              : null,
+          backgroundColor: canProceed ? null : Colors.transparent,
+          foregroundColor: inAppForegroundColor,
+          fontSize: 20,
+          borderColor: textDimColor,
+          borderWidth: 1.2,
+          isEnabled: canProceed,
+        ),
       ],
     );
   }
@@ -270,7 +289,9 @@ class _AddEventFormState extends State<AddEventForm> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         gradient: LinearGradient(
-                          colors: [textSecondaryHighlightedColor, textHighlightedColor],
+                          colors: [
+                            isDarkModeNotifier.value ? textHighlightedColor: textSecondaryHighlightedColor,
+                            isDarkModeNotifier.value ? textSecondaryHighlightedColor : textHighlightedColor],
                         ),
                       ),
                     ),
@@ -281,23 +302,6 @@ class _AddEventFormState extends State<AddEventForm> {
           );
         },
       ),
-    );
-  }
-
-  Widget _step(int index) {
-    if (index == 0) return _buildEventNameStep();
-    if (index == 1) return _buildDateTimeStep();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Step ${index + 1}",
-          style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(hint: "Enter here..."),
-      ],
     );
   }
 
@@ -320,292 +324,39 @@ class _AddEventFormState extends State<AddEventForm> {
 
 
 
-
-
-  // step 1
-  Widget _buildEventNameStep() {
-    final bool isCustom = _organizationType == 'Custom';
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Event Name Title + Underline
-            Column(
-              children: [
-                Text(
-                  "What's your event called?",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  height: 2,
-                  width: 220,
-                  color: Colors.white24,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Event Name Input
-            TextField(
-              onChanged: (value) => setState(() => _eventName = value),
-              textAlign: TextAlign.center,
-              decoration: standardInputDecoration(hint: "e.g. Educational Workshop"),
-              style: TextStyle(color: textColor, fontSize: 18),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Organizer Label + Underline
-            Column(
-              children: [
-                Text(
-                  "Who's organizing this?",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  height: 2,
-                  width: 180,
-                  color: Colors.white24,
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              children: [
-                _orgOption("Personal"),
-                _orgOption("Team/Club"),
-                _orgOption("Company"),
-                _orgOption("Custom"),
-              ],
-            ),
-
-            // Custom org input
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: isCustom
-                  ? Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: TextField(
-                  key: const ValueKey('customOrg'),
-                  onChanged: (value) => setState(() => _customOrg = value),
-                  textAlign: TextAlign.center,
-                  decoration: standardInputDecoration(hint: "Enter organization name"),
-                  style: TextStyle(color: textColor, fontSize: 18),
-                ),
-              )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _orgOption(String label) {
-    final isSelected = _organizationType == label;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: TweenAnimationBuilder<double>(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutBack,
-        tween: Tween<double>(begin: 1.0, end: isSelected ? 1.1 : 1.0),
-        builder: (context, scale, child) {
-          return Transform.scale(
-            scale: scale,
-            child: child,
-          );
-        },
-        child: ChoiceChip(
-          selected: isSelected,
-          showCheckmark: false,
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isSelected)
-                Icon(Icons.check, size: 20, color: inAppForegroundColor),
-              if (isSelected) const SizedBox(width: 4),
-              Text(label),
-            ],
-          ),
-          labelStyle: TextStyle(
-            color: isSelected ? inAppForegroundColor : textColor,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-          selectedColor: textHighlightedColor,
-          backgroundColor: inAppForegroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: isSelected ? textHighlightedColor : textDimColor,
-              width: isSelected ? 0 : 1.2,
-            ),
-          ),
-          onSelected: (_) => setState(() => _organizationType = label),
-        ),
-      ),
-    );
-  }
-
-
-  // step 2
-  Widget _buildDateTimeStep() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "When is it happening?",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Container(height: 2, width: 220, color: Colors.white24),
-            const SizedBox(height: 24),
-
-            _buildPickerPreview(
-              icon: Icons.calendar_today,
-              label: _selectedDate != null
-                  ? "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}"
-                  : "Select a date",
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate ?? DateTime.now(),
-                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                  builder: (context, child) {
-                    return Theme(
-                      data: ThemeData.dark().copyWith(
-                        colorScheme: ColorScheme.dark(
-                          primary: textHighlightedColor,
-                          surface: inAppForegroundColor,
-                          onPrimary: inAppForegroundColor,
-                        ),
-                        dialogBackgroundColor: const Color(0xFF2F445E),
-                      ),
-                      child: child!,
-                    );
-                  },
-                );
-                if (picked != null) {
-                  setState(() => _selectedDate = picked);
-                }
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            _buildPickerPreview(
-              icon: Icons.access_time,
-              label: _selectedTime != null
-                  ? _selectedTime!.format(context)
-                  : "Select a time",
-              onTap: () async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: _selectedTime ?? TimeOfDay.now(),
-                  builder: (context, child) {
-                    return Theme(
-                      data: ThemeData.dark().copyWith(
-                        timePickerTheme: TimePickerThemeData(
-                          backgroundColor: inAppForegroundColor,
-                          hourMinuteTextColor: textColor,
-                          dayPeriodTextColor: Colors.white70,
-                          dialHandColor: textHighlightedColor,
-                          entryModeIconColor: textColor,
-                        ),
-                        colorScheme: ColorScheme.dark(
-                          primary: textHighlightedColor,
-                          onPrimary: inAppForegroundColor,
-                          surface: Color(0xFF2F445E),
-                        ),
-                      ),
-                      child: child!,
-                    );
-                  },
-                );
-                if (picked != null) {
-                  setState(() => _selectedTime = picked);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPickerPreview({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    bool isActive = false,
-  }) {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutBack,
-      tween: Tween<double>(begin: 1.0, end: isActive ? 1.03 : 1.0),
-      builder: (context, scale, child) {
-        return GestureDetector(
-          onTap: () {
-            onTap();
-          },
-          child: Transform.scale(
-            scale: scale,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: isActive ? textHighlightedColor.withOpacity(0.15) : textColor.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isActive ? textHighlightedColor : textDimColor, width: 1.2),
-              ),
-              child: Row(
-                children: [
-                  Icon(icon, color: isActive ? textHighlightedColor : Colors.white54),
-                  const SizedBox(width: 12),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: isActive ? textHighlightedColor : textColor,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+  Widget _step(int index) {
+    switch (index) {
+      case 0:
+        return EventNameStep(
+          eventName: _eventName,
+          organizationType: _organizationType,
+          customOrg: _customOrg,
+          onEventNameChanged: (value) => setState(() => _eventName = value),
+          onOrganizationTypeChanged: (value) => setState(() => _organizationType = value),
+          onCustomOrgChanged: (value) => setState(() => _customOrg = value),
         );
-      },
-    );
+      case 1:
+        return DateTimeStep(
+          selectedDate: _selectedDate,
+          selectedTime: _selectedTime,
+          onDateChanged: (value) => setState(() => _selectedDate = value),
+          onTimeChanged: (value) => setState(() => _selectedTime = value),
+        );
+    // TODO: Other steps
+      default:
+        return _buildTextField(hint: "Enter here...");
+    }
   }
 
+
+
+  bool _canProceedToNextStep() {
+    if (_currentStep == 0) {
+      return _eventName.length > 3;
+    } else if (_currentStep == 1) {
+      return _selectedDate != null && _selectedTime != null;
+    }
+    return true; // other steps: allow freely for now
+  }
 
 }

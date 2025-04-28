@@ -20,6 +20,26 @@ class NewEventButton extends StatefulWidget {
 class _NewEventButtonState extends State<NewEventButton> {
   double _scale = 1.0;
 
+  @override
+  void initState() {
+    super.initState();
+    screenScaleNotifier.addListener(_handleScaleChange);
+  }
+
+  void _handleScaleChange() {
+    if (screenScaleNotifier.value < 1.00 && _scale != 1.0) {
+      setState(() {
+        _scale = 1.0;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    screenScaleNotifier.removeListener(_handleScaleChange);
+    super.dispose();
+  }
+
   void _setPressed(bool isPressed) {
     setState(() {
       _scale = isPressed ? 0.7 : 1.0;
@@ -32,7 +52,9 @@ class _NewEventButtonState extends State<NewEventButton> {
       onPointerDown: (_) => _setPressed(true),
       onPointerUp: (_) {
         _setPressed(false);
-        widget.onTap();
+        if (screenScaleNotifier.value >= 0.99) {
+          widget.onTap();
+        }
       },
       onPointerCancel: (_) => _setPressed(false),
       child: TweenAnimationBuilder<double>(

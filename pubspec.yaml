@@ -6,6 +6,10 @@ version: 1.0.0+1
 environment:
   sdk: ^3.7.2
 
+
+
+
+
 dependencies:
   flutter:
     sdk: flutter
@@ -47,6 +51,10 @@ dependencies:
   cloud_firestore: ^4.9.2
 
   path_provider: any
+
+
+
+
 
 
 

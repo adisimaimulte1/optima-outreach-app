@@ -202,11 +202,6 @@ class _MenuState extends State<Menu> {
       end: center,
       spawnRate: const Duration(milliseconds: 80),
       maxParticles: 60,
-      onComplete: () {
-        selectedScreenNotifier.value = _pendingScreenChange!;
-        updateUI();
-        _pendingScreenChange = null;
-      },
     );
 
     setState(() {

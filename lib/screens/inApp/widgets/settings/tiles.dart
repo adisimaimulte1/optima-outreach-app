@@ -8,6 +8,7 @@ typedef ThemeSetter = void Function(ThemeMode);
 class Tiles {
 
   static Widget tile({
+    required BuildContext context,
     required IconData icon,
     required String title,
     bool showArrow = true,
@@ -15,21 +16,37 @@ class Tiles {
     required bool easterEggMode,
     required EasterEggIconResolver getNextEasterEggIcon,
   }) {
-    return SizedBox(
-      height: 44,
-      child: ListTile(
-        visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
-        dense: true,
-        minLeadingWidth: 0,
-        horizontalTitleGap: 10,
-        leading: Icon(
-          easterEggMode ? getNextEasterEggIcon() : icon,
-          color: textHighlightedColor,
-          size: 20,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Icon(
+              easterEggMode ? getNextEasterEggIcon() : icon,
+              color: textHighlightedColor,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            if (showArrow)
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: Colors.white70,
+              ),
+          ],
         ),
-        title: Text(title, style: TextStyle(color: textColor, fontSize: 15)),
-        trailing: showArrow ? const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white70) : null,
-        onTap: onTap,
       ),
     );
   }
@@ -116,10 +133,30 @@ class _CustomThemeDropdown extends StatefulWidget {
 class _CustomThemeDropdownState extends State<_CustomThemeDropdown> {
   double _scale = 1.0;
 
+  @override
+  void initState() {
+    super.initState();
+    screenScaleNotifier.addListener(_handleScaleChange);
+  }
+
+  @override
+  void dispose() {
+    screenScaleNotifier.removeListener(_handleScaleChange);
+    super.dispose();
+  }
+
   void _setPressed(bool isPressed) {
     setState(() {
       _scale = isPressed ? 0.7 : 1.0;
     });
+  }
+
+  void _handleScaleChange() {
+    if (screenScaleNotifier.value < 1.0 && _scale != 1.0) {
+      setState(() {
+        _scale = 1.0;
+      });
+    }
   }
 
   void _showMenu() async {
@@ -225,8 +262,10 @@ class _CustomThemeDropdownState extends State<_CustomThemeDropdown> {
     return Listener(
       onPointerDown: (_) => _setPressed(true),
       onPointerUp: (_) {
-        _setPressed(false);
-        _showMenu();
+        if (screenScaleNotifier.value == 1.0) {
+          _setPressed(false);
+          _showMenu();
+        }
       },
       onPointerCancel: (_) => _setPressed(false),
       child: TweenAnimationBuilder<double>(

@@ -11,8 +11,10 @@ class AnimatedScaleButton extends StatefulWidget {
   final double iconSize;
   final double? borderWidth;
   final Color? borderColor;
+  final bool isEnabled;
 
   const AnimatedScaleButton({
+    super.key,
     required this.onPressed,
     required this.icon,
     required this.label,
@@ -23,6 +25,7 @@ class AnimatedScaleButton extends StatefulWidget {
     this.iconSize = 30,
     this.borderWidth = 0,
     this.borderColor = Colors.transparent,
+    this.isEnabled = true,
   });
 
   @override
@@ -42,40 +45,50 @@ class _AnimatedScaleButtonState extends State<AnimatedScaleButton> {
   Widget build(BuildContext context) {
     return Expanded(
       child: Listener(
-        onPointerDown: (_) => _setPressed(true),
-        onPointerUp: (_) {
-          _setPressed(false);
-          widget.onPressed();
+        onPointerDown: (_) {
+          if (widget.isEnabled) _setPressed(true);
         },
-        onPointerCancel: (_) => _setPressed(false),
+        onPointerUp: (_) {
+          if (widget.isEnabled) {
+            _setPressed(false);
+            widget.onPressed();
+          }
+        },
+        onPointerCancel: (_) {
+          if (widget.isEnabled) _setPressed(false);
+        },
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 1.0, end: _scale),
           duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOutBack,
           builder: (context, scale, child) {
             return Transform.scale(
               scale: scale,
               child: Container(
                 decoration: BoxDecoration(
-                  color: widget.backgroundColor,
-                  gradient: widget.backgroundGradient,
+                  color: widget.isEnabled ? widget.backgroundColor : Colors.transparent,
+                  gradient: widget.isEnabled ? widget.backgroundGradient : null,
                   borderRadius: BorderRadius.circular(12),
-                  border: widget.borderWidth != null
-                      ? Border.all(
-                      color: widget.borderColor ?? Colors.transparent,
-                      width: widget.borderWidth!)
-                      : null
+                  border: Border.all(
+                    color: widget.isEnabled
+                        ? (widget.borderColor ?? Colors.transparent)
+                        : Colors.white24,
+                    width: widget.borderWidth ?? 1.2,
+                  ),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: TextButton.icon(
                     onPressed: null,
-                    icon: Icon(widget.icon,
-                        color: widget.foregroundColor,
-                        size: widget.iconSize),
+                    icon: Icon(
+                      widget.icon,
+                      color: widget.isEnabled ? widget.foregroundColor : Colors.white38,
+                      size: widget.iconSize,
+                    ),
                     label: Text(
                       widget.label,
                       style: TextStyle(
-                        color: widget.foregroundColor,
+                        color: widget.isEnabled ? widget.foregroundColor : Colors.white38,
                         fontWeight: FontWeight.w700,
                         fontSize: widget.fontSize,
                       ),

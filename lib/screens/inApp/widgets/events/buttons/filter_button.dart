@@ -21,7 +21,25 @@ class FilterButton extends StatefulWidget {
 class _FilterButtonState extends State<FilterButton> {
   double _scale = 1.0;
 
+  @override
+  void initState() {
+    super.initState();
+    screenScaleNotifier.addListener(_handleScaleChange);
+  }
 
+  void _handleScaleChange() {
+    if (screenScaleNotifier.value < 0.99 && _scale != 1.0) {
+      setState(() {
+        _scale = 1.0;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    screenScaleNotifier.removeListener(_handleScaleChange);
+    super.dispose();
+  }
 
   void _setPressed(bool isPressed) {
     setState(() {
@@ -45,7 +63,7 @@ class _FilterButtonState extends State<FilterButton> {
       color: Colors.transparent,
       items: [
         PopupMenuItem<String>(
-          enabled: false, // disable default wrapper
+          enabled: false,
           padding: EdgeInsets.zero,
           child: Container(
             decoration: BoxDecoration(
@@ -97,7 +115,6 @@ class _FilterButtonState extends State<FilterButton> {
                         ),
                       ],
                     ),
-
                   ),
                 );
               }).toList(),
@@ -123,15 +140,15 @@ class _FilterButtonState extends State<FilterButton> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Listener(
       onPointerDown: (_) => _setPressed(true),
       onPointerUp: (_) {
         _setPressed(false);
-        _showMenu();
+        if (screenScaleNotifier.value >= 0.99) {
+          _showMenu();
+        }
       },
       onPointerCancel: (_) => _setPressed(false),
       child: TweenAnimationBuilder<double>(
@@ -162,4 +179,3 @@ class _FilterButtonState extends State<FilterButton> {
     );
   }
 }
-
