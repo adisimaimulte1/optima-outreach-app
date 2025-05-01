@@ -141,7 +141,6 @@ class DateTimeStep extends StatelessWidget {
           if (pickedMinutes < nowPlusOneHourMinutes) {
             onTimeChanged(null);
 
-            // small centered snack
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 backgroundColor: textHighlightedColor,
@@ -191,7 +190,10 @@ class DateTimeStep extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: textHighlightedColor,
-              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              elevation: 6,
+              duration: const Duration(seconds: 1),
               content: Center(
                 child: Text(
                   (nowPlusOneHourMinutes - pickedMinutes < 60)
@@ -201,6 +203,7 @@ class DateTimeStep extends StatelessWidget {
                   style: TextStyle(
                     color: inAppForegroundColor,
                     fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
               ),

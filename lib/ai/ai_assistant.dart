@@ -233,19 +233,29 @@ class AIVoiceAssistant {
 
   Future<List<int>> sendTextToBackend(String message, String userId) async {
     final uri = Uri.parse('https://optima-livekit-token-server.onrender.com/chat');
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken();
+
+    if (token == null) {
+      debugPrint("❌ No Firebase token found. User might be logged out.");
+      return [];
+    }
+
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
       body: jsonEncode({
         "message": message,
-        "userId": userId,
       }),
     );
 
     if (response.statusCode == 200) {
       return response.bodyBytes;
     } else {
-      debugPrint("❌ Chat request failed: ${response.statusCode}");
+      debugPrint("❌ Chat request failed: ${response.statusCode} ${response.body}");
       return [];
     }
   }

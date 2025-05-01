@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:optima/ai/ai_assistant.dart';
 import 'package:optima/ai/ai_status_dots.dart';
 import 'package:optima/screens/inApp/menu.dart';
@@ -174,6 +177,18 @@ InputDecoration standardInputDecoration({
       borderRadius: BorderRadius.circular(12),
     ),
   );
+}
+
+Future<String> convertImageUrlToBase64(String url) async {
+  try {
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      return base64Encode(response.bodyBytes);
+    }
+  } catch (e) {
+    debugPrint('Failed to download or encode image: $e');
+  }
+  return '';
 }
 
 

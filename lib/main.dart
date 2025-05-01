@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'package:optima/screens/beforeApp/choose_screen.dart';
+import 'package:optima/services/cache/local_profile_cache.dart';
 import 'package:optima/services/local_storage_service.dart';
 import 'package:optima/globals.dart';
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +46,7 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    LocalProfileCache.clearProfile();
     super.dispose();
   }
 
@@ -90,36 +91,38 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Optima',
-      debugShowCheckedModeBanner: false,
-      themeMode: selectedTheme,
-
-      theme: ThemeData.light().copyWith(
-        scaffoldBackgroundColor: inAppBackgroundColor,
-        progressIndicatorTheme: ProgressIndicatorThemeData(
-          color: textHighlightedColor,
-        ),
-        textSelectionTheme: TextSelectionThemeData(
-          cursorColor: textHighlightedColor,
-          selectionColor: textHighlightedColor.withOpacity(0.4),
-          selectionHandleColor: textHighlightedColor,
-        ),
-      ),
-
-      darkTheme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: inAppBackgroundColor,
-        progressIndicatorTheme: ProgressIndicatorThemeData(
-          color: textHighlightedColor,
-        ),
-        textSelectionTheme: TextSelectionThemeData(
-          cursorColor: textHighlightedColor,
-          selectionColor: textHighlightedColor.withOpacity(0.4),
-          selectionHandleColor: textHighlightedColor,
-        ),
-      ),
-
-      home: ChooseScreen(),
+    return ValueListenableBuilder<bool>(
+      valueListenable: isDarkModeNotifier,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          title: 'Optima',
+          debugShowCheckedModeBanner: false,
+          themeMode: isDarkModeNotifier.value ? ThemeMode.dark : ThemeMode.light,
+          theme: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: inAppBackgroundColor,
+            progressIndicatorTheme: ProgressIndicatorThemeData(
+              color: textHighlightedColor,
+            ),
+            textSelectionTheme: TextSelectionThemeData(
+              cursorColor: textHighlightedColor,
+              selectionColor: textHighlightedColor.withOpacity(0.4),
+              selectionHandleColor: textHighlightedColor,
+            ),
+          ),
+          darkTheme: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: inAppBackgroundColor,
+            progressIndicatorTheme: ProgressIndicatorThemeData(
+              color: textHighlightedColor,
+            ),
+            textSelectionTheme: TextSelectionThemeData(
+              cursorColor: textHighlightedColor,
+              selectionColor: textHighlightedColor.withOpacity(0.4),
+              selectionHandleColor: textHighlightedColor,
+            ),
+          ),
+          home: ChooseScreen(),
+        );
+      },
     );
   }
 

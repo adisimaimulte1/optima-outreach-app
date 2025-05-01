@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,10 +6,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:optima/screens/beforeApp/widgets/background_particles.dart';
+import 'package:optima/services/local_storage_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
-
-import 'package:particles_flutter/particles_flutter.dart';
 
 import 'package:optima/screens/beforeApp/widgets/buttons/bouncy_button.dart';
 import 'package:optima/screens/beforeApp/choose_screen.dart';
@@ -105,6 +105,7 @@ class _AuthScreenState extends State<AuthScreen> {
           : await _register(auth);
 
       if (!mounted || !success) return;
+
       _navigateToHome();
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -247,19 +248,25 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _showVerificationSnackbar() {
-    final snackColor = isDarkModeNotifier.value ? Colors.grey[900] : Colors.grey[200];
-    final textColor = isDarkModeNotifier.value ? Colors.white : Colors.black;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: snackColor,
-        content: responsiveText(
-          context,
-          'A verification email has been sent. Please check your inbox.',
-          maxWidthFraction: 0.9,
-          style: TextStyle(color: textColor),
+        backgroundColor: isDarkModeNotifier.value ? Colors.white : inAppBackgroundColor,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        elevation: 6,
+        duration: const Duration(seconds: 2),
+        content: Center(
+          child: Text(
+            'A verification email has been sent. Please check your inbox.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: textHighlightedColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
         ),
-        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -275,6 +282,7 @@ class _AuthScreenState extends State<AuthScreen> {
         final refreshedUser = auth.currentUser;
 
         if (refreshedUser != null && refreshedUser.emailVerified) {
+          await initFirebaseDatabase(false);
           _navigateToHome();
           return;
         }
@@ -282,15 +290,14 @@ class _AuthScreenState extends State<AuthScreen> {
       tries++;
     }
 
-    // After timeout, check once more — maybe Firebase was slow
     await auth.currentUser?.reload();
     final finalUser = auth.currentUser;
     if (finalUser != null && finalUser.emailVerified) {
+      await initFirebaseDatabase(false);
       _navigateToHome();
       return;
     }
 
-    // Sign out and reset to registration state
     await FirebaseAuth.instance.signOut();
     setState(() {
       _isLogin = false;
@@ -348,13 +355,16 @@ class _AuthScreenState extends State<AuthScreen> {
       final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       final isNew = userCredential.additionalUserInfo?.isNewUser ?? false;
 
-      if (isNew) { _openWebsite("https://adisimaimulte1.github.io/optima-verification-site/?mode=verifyEmail&oobCode=love"); }
+      if (isNew) {
+        _openWebsite("https://adisimaimulte1.github.io/optima-verification-site/?mode=verifyEmail&oobCode=love");
+        await initFirebaseDatabase(true);
+      }
 
       if (!mounted) return;
       _navigateToHome();
     } catch (e) {
       setState(() {
-        _errorMessage = 'Google Sign-In failed. Please try again.';
+        _errorMessage = 'Google Sign-in failed. Please try again.';
       });
     } finally {
       if (mounted) {
@@ -441,7 +451,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   _buildEmailField(fgColor, inputBg!),
                   const SizedBox(height: 16),
                   _buildPasswordField(fgColor, inputBg),
-                  const SizedBox(height: 24),
+                  if (_errorMessage == null) const SizedBox(height: 24),
                   if (_errorMessage != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -449,7 +459,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         context,
                         _errorMessage!,
                         maxWidthFraction: 0.9,
-                        style: const TextStyle(color: Colors.red),
+                        style: const TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold
+                        ),
                         align: TextAlign.center,
                       ),
                     ),
@@ -640,9 +653,6 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildForgotPasswordButton(Color fgColor) {
-    final snackColor = isDarkModeNotifier.value ? Colors.grey[900] : Colors.grey[200];
-    final textColor = isDarkModeNotifier.value ? Colors.white : Colors.black;
-
     return TextButton(
       style: TextButton.styleFrom(
           splashFactory: NoSplash.splashFactory,
@@ -667,17 +677,22 @@ class _AuthScreenState extends State<AuthScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: responsiveText(
-                context,
-                'Password reset email sent. Check your inbox.',
-                maxWidthFraction: 0.95,
-                style: TextStyle(
-                    color: textColor,
-                    fontWeight: FontWeight.bold
+              backgroundColor: isDarkModeNotifier.value ? Colors.white : inAppBackgroundColor,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              elevation: 6,
+              duration: const Duration(seconds: 1),
+              content: Center(
+                child: Text(
+                  'Password reset email sent. Check your inbox.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textHighlightedColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
               ),
-              backgroundColor: snackColor,
-              duration: const Duration(seconds: 3),
             ),
           );
         } catch (e) {
@@ -696,5 +711,28 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       ),
     );
+  }
+
+
+
+  Future<void> initFirebaseDatabase(bool isGoogleUser) async {
+    debugPrint('Initializing Firebase Database...');
+    final authUser = FirebaseAuth.instance.currentUser;
+
+    if (authUser == null) {
+      throw FirebaseAuthException(message: "No user is logged in.", code: 'user-not-found');
+    }
+
+    final userDocRef = FirebaseFirestore.instance.collection('users').doc(authUser.uid);
+    final photoUrlBase64 = authUser.photoURL != null && authUser.photoURL!.isNotEmpty
+        ? await convertImageUrlToBase64(authUser.photoURL!)
+        : '';
+
+    await userDocRef.set({
+      'name': authUser.displayName ?? 'Unknown User',
+      'email': authUser.email ?? '',
+      'photoUrl': photoUrlBase64 ?? '',
+      'googleSignIn': isGoogleUser,
+    }).catchError((error) {});
   }
 }

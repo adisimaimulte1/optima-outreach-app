@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
@@ -11,39 +13,56 @@ import 'package:permission_handler/permission_handler.dart';
 class ProfileAvatar extends StatefulWidget {
   final String name;
   final String email;
-  final File? initialImage;
+  final String? photoUrl;
   final void Function(File)? onImageChanged;
+  final VoidCallback? onEditTapped;
+
 
   const ProfileAvatar({
     super.key,
     required this.name,
     required this.email,
-    this.initialImage,
+    this.photoUrl,
     this.onImageChanged,
+    this.onEditTapped,
   });
 
   @override
-  State<ProfileAvatar> createState() => _ProfileAvatarState();
+  State<ProfileAvatar> createState() => ProfileAvatarState();
 }
 
-class _ProfileAvatarState extends State<ProfileAvatar> {
+class ProfileAvatarState extends State<ProfileAvatar> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
   final CropController _cropController = CropController();
 
-  @override
-  void initState() {
-    super.initState();
-    _profileImage = widget.initialImage;
-  }
-
   Future<void> _pickImage() async {
-    final status = await Permission.photos.request();
+    var status = await Permission.photos.request();
 
     if (!status.isGranted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Gallery permission is required.")),
+          SnackBar(
+            backgroundColor: textHighlightedColor,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            elevation: 6,
+            duration: const Duration(seconds: 1),
+            content: Center(
+              child: Text(
+                "Gallery permission is required.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: inAppForegroundColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
         );
       }
       return;
@@ -52,14 +71,16 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
     try {
       final picked = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 85, // already compressed
-        maxWidth: 1024,   // keep dimensions reasonable
+        imageQuality: 85,
+        maxWidth: 1024,
         maxHeight: 1024,
       );
       if (picked == null) return;
 
       final bytes = await picked.readAsBytes();
-      if (mounted) _showCropDialog(bytes);
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showCropDialog(bytes);
+      });
     } catch (e) {
       debugPrint("❌ Error picking image: $e");
     }
@@ -91,26 +112,20 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
                     maskColor: inAppForegroundColor.withOpacity(0.5),
                     radius: 150,
                     onCropped: (cropped) async {
-                      if (isDone) return; // 🚫 Prevent duplicate execution
+                      if (isDone) return;
                       isDone = true;
 
                       final dir = await getTemporaryDirectory();
                       final path = '${dir.path}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-                      if (_profileImage != null) {
-                        try {
-                          await _profileImage!.delete();
-                        } catch (e) {
-                          debugPrint("Error deleting old image: $e");
-                        }
-                      }
-
                       final file = await File(path).writeAsBytes(cropped);
                       if (!mounted) return;
 
                       setState(() => _profileImage = file);
+                      if (widget.onImageChanged != null) {
+                        widget.onImageChanged!(file);
+                      }
 
-                      // ✅ Pop safely once
                       if (Navigator.of(context).canPop()) {
                         Navigator.of(context).pop();
                       }
@@ -125,7 +140,7 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
               TextButtonWithoutIcon(
                 label: "Cancel",
                 onPressed: () {
-                  if (!isDone) Navigator.pop(context); // ensure only one pop
+                  if (!isDone) Navigator.pop(context);
                 },
                 foregroundColor: Colors.white70,
                 fontSize: 17,
@@ -141,7 +156,24 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
                     } catch (e) {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Please select a valid crop area.")),
+                          SnackBar(
+                            backgroundColor: textHighlightedColor,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            elevation: 6,
+                            duration: const Duration(seconds: 1),
+                            content: Center(
+                              child: Text(
+                                "Please select a valid crop area.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: inAppForegroundColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
                         );
                       }
                     }
@@ -161,6 +193,8 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return Column(
       children: [
         Stack(
@@ -175,16 +209,7 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
                   border: Border.all(color: textColor, width: 5),
                 ),
                 child: ClipOval(
-                  child: _profileImage != null
-                      ? Image.file(
-                    _profileImage!,
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                    errorBuilder: (_, __, ___) => _fallbackAvatar(),
-                  )
-                      : _fallbackAvatar(),
+                  child: _buildAvatarImage(),
                 ),
               ),
             ),
@@ -198,7 +223,7 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
                   shape: BoxShape.circle,
                   border: Border.all(color: textColor, width: 1),
                 ),
-                child: Icon(Icons.edit, size: 16, color: textColor),
+                child: const Icon(Icons.edit, size: 16, color: Colors.white),
               ),
             ),
           ],
@@ -206,9 +231,11 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
         const SizedBox(height: 12),
         Column(
           children: [
-            Text(widget.name, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor)),
+            Text(widget.name.isEmpty ? "Unnamed User" : widget.name,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor)),
             const SizedBox(height: 2),
-            Text(widget.email, style: const TextStyle(fontSize: 14, color: Colors.white70)),
+            Text(widget.email.isEmpty ? "No Email" : widget.email,
+                style: const TextStyle(fontSize: 14, color: Colors.white70)),
           ],
         ),
         const SizedBox(height: 10),
@@ -216,15 +243,44 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
     );
   }
 
+  Widget _buildAvatarImage() {
+    if (_profileImage != null) {
+      return Image.file(
+        _profileImage!,
+        width: 100,
+        height: 100,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, __, ___) => _fallbackAvatar(),
+      );
+    } else if (widget.photoUrl != null && widget.photoUrl!.isNotEmpty) {
+      try {
+        final Uint8List imageBytes = base64Decode(widget.photoUrl!);
+        return Image.memory(
+          imageBytes,
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => _fallbackAvatar(),
+        );
+      } catch (_) {
+        return _fallbackAvatar();
+      }
+    } else {
+      return _fallbackAvatar();
+    }
+  }
+
   Widget _fallbackAvatar() {
-    return Image.network(
-      "https://i.pravatar.cc/150?img=3",
+    return Container(
       width: 100,
       height: 100,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, progress) =>
-      progress == null ? child : const CircularProgressIndicator(),
-      errorBuilder: (_, __, ___) => Container(color: textHighlightedColor, width: 100, height: 100),
+      decoration: BoxDecoration(
+        color: textHighlightedColor.withOpacity(0.7),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.person, size: 50, color: Colors.white),
     );
   }
 }

@@ -28,8 +28,15 @@ class CloudStorageService {
     if (_userId == null) return null;
 
     final doc = await _firestore.collection('users').doc(_userId).get();
-    return doc.data();
+    final data = doc.data();
+
+    if (data == null) return null;
+
+    return {
+      'name': data['name'] ?? '',
+      'email': data['email'] ?? '',
+      'photoUrl': data['photoUrl'],
+    };
   }
 
-// You can also add saveEvent, getEvents, saveCredits, etc later
 }

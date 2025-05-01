@@ -22,4 +22,13 @@ class LocalProfileCache {
       'photoUrl': prefs.getString('profile_photoUrl') ?? '',
     };
   }
+
+  static Future<void> clearProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('profile_name');
+    await prefs.remove('profile_email');
+    await prefs.remove('profile_photoUrl');
+    await prefs.remove('profile_cached_at');
+  }
+
 }
