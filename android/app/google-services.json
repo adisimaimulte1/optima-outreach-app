@@ -12,7 +12,20 @@
           "package_name": "ro.contras.optima"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "378911935439-tgr4d9usmmag3oip5bln8cra0n8n8j5q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ro.contras.optima",
+            "certificate_hash": "5a72605ebef5086fa81027b9f61373d5e00ca0ea"
+          }
+        },
+        {
+          "client_id": "378911935439-cqeft6f6kqgmg5jc8q605puj1md0eu7q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB_dh_-ZW4Tt9do13GNhXv-BR6_2Y8bIGA"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "378911935439-cqeft6f6kqgmg5jc8q605puj1md0eu7q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
