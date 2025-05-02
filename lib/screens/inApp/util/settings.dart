@@ -15,7 +15,7 @@ import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/tiles.dart';
 
 import 'package:optima/globals.dart';
-import 'package:optima/services/cache/local_profile_cache.dart';
+import 'package:optima/services/cache/local_cache.dart';
 
 import 'package:optima/services/local_storage_service.dart';
 import 'package:optima/services/cloud_storage_service.dart';
@@ -28,41 +28,24 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _name = "";
-  String _email = "";
-  String? _photoUrl;
-
   final GlobalKey<ProfileAvatarState> _profileAvatarKey = GlobalKey<ProfileAvatarState>();
 
   int _versionTapCount = 0;
   int _iconIndex = 0;
   bool _disableScroll = false;
   bool _easterEggMode = false;
-  bool _loading = true;
-
-  bool isGoogleUser = false;
 
   final List<IconData> _easterEggIcons = [
     Icons.egg, Icons.auto_awesome, Icons.nature, Icons.cake,
     Icons.favorite, Icons.star, Icons.wb_sunny, Icons.local_florist, Icons.eco,
   ];
 
-  bool notifications = true;
-  bool jamieEnabled = true;
-  bool locationAccess = false;
-  bool wakeWordEnabled = true;
-  bool jamieReminders = true;
+
 
   IconData _getNextEasterEggIcon() =>
       _easterEggIcons[_iconIndex++ % _easterEggIcons.length];
 
 
-  @override
-  void initState() {
-    super.initState();
-    _loadFromCacheThenFirestore();
-    _checkIfGoogleUser();
-  }
 
   @override
   void dispose() {
@@ -73,59 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 
 
-  Future<void> _checkIfGoogleUser() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      isGoogleUser = user.providerData.any((provider) => provider.providerId == 'google.com');
-      setState(() {});
-    }
-  }
 
-  Future<void> _loadUserProfile() async {
-    final authUser = FirebaseAuth.instance.currentUser;
-    if (authUser == null) return;
-
-    final cached = await LocalProfileCache.loadProfile();
-    String cachedName = cached['name'] ?? '';
-    String cachedEmail = cached['email'] ?? '';
-    String? cachedPhotoUrl = cached['photoUrl'];
-
-    setState(() {
-      _name = cachedName;
-      _email = cachedEmail;
-      _photoUrl = cachedPhotoUrl;
-      _loading = false;
-    });
-
-    final profile = await CloudStorageService().getUserProfile();
-    if (profile != null) {
-      final name = profile['name'] ?? cachedName;
-      final email = authUser.email ?? cachedEmail;
-      final photoUrl = profile['photoUrl'] ?? cachedPhotoUrl;
-
-      await LocalProfileCache.saveProfile(name: name, email: email, photoUrl: photoUrl);
-
-      if (name != _name || photoUrl != _photoUrl) {
-        setState(() {
-          _name = name;
-          _email = email;
-          _photoUrl = photoUrl;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadFromCacheThenFirestore() async {
-    final cached = await LocalProfileCache.loadProfile();
-
-    setState(() {
-      _name = cached['name']!;
-      _email = cached['email']!;
-      _photoUrl = cached['photoUrl'];
-    });
-
-    await _loadUserProfile();
-  }
 
   Future<String?> uploadProfileImage(File file) async {
     try {
@@ -343,21 +274,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
 
           await user.reauthenticateWithCredential(credential!);
-
-          LocalProfileCache.clearProfile();
-          FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
-          await user.delete();
+          LocalCache().deleteAll();
 
         } catch (e) {
           throw FirebaseAuthException(message: "Google reauthentication failed.", code: 'google-reauth-failed');
         }
       } else if (password != null && password.isNotEmpty) {
         final credential = EmailAuthProvider.credential(email: user.email!, password: password);
-        await user.reauthenticateWithCredential(credential);
 
-        LocalProfileCache.clearProfile();
-        FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
-        await user.delete();
+        await user.reauthenticateWithCredential(credential);
+        LocalCache().deleteAll();
 
       } else {
         throw FirebaseAuthException(message: "Password is required.", code: 'password-missing');
@@ -427,7 +353,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 
   void _editName() {
-    final controller = TextEditingController(text: _name);
+    final controller = TextEditingController(text: name);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -445,9 +371,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label: "Save",
             onPressed: () {
               final newName = controller.text.trim();
-              setState(() => _name = newName);
-              CloudStorageService().saveUserProfile(name: newName, email: _email);
-              LocalProfileCache.saveProfile(name: newName, email: _email, photoUrl: _photoUrl);
+              setState(() => name = newName);
+              CloudStorageService().saveUserSetting("profile_name", newName);
 
               Navigator.pop(context);
             },
@@ -652,45 +577,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           backgroundColor: Colors.transparent,
           body: SafeArea(
             child: SingleChildScrollView(
-              physics: _disableScroll
-                  ? const NeverScrollableScrollPhysics()
-                  : const BouncingScrollPhysics(),
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 30),
-              child: Column(
-                children: [
-                  const SizedBox(height: 50),
-                  if (_loading)
-                    const CircularProgressIndicator()
-                  else
-                    ProfileAvatar(
-                        key: _profileAvatarKey,
-                        name: _name,
-                        email: _email,
-                        photoUrl: _photoUrl, onImageChanged: (file) async {
-                          final uploadedUrl = await uploadProfileImage(file);
-
-                          if (uploadedUrl != null) {
-                            setState(() => _photoUrl = uploadedUrl);
-
-                            await CloudStorageService().saveUserProfile(
-                              name: _name,
-                              email: _email,
-                              photoUrl: uploadedUrl,
-                            );
-
-                            await LocalProfileCache.saveProfile(
-                              name: _name,
-                              email: _email,
-                              photoUrl: uploadedUrl,
-                            );
-                        }
-                      }
-                    ),
-                  _buildSettingsContent(),
-                  const SizedBox(height: 20),
-                  _buildLogoutButton(),
-                ],
-              ),
+                physics: _disableScroll
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 30),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 50),
+                    ProfileAvatar(key: _profileAvatarKey),
+                    _buildSettingsContent(),
+                    const SizedBox(height: 20),
+                    _buildLogoutButton(),
+                  ],
+                )
             ),
           ),
         );
@@ -747,7 +646,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.smart_toy,
             title: "Enable Jamie",
             value: jamieEnabled,
-            onChanged: (val) => setState(() => jamieEnabled = val),
+            onChanged: (val) {
+              setState(() => jamieEnabled = val);
+              CloudStorageService().saveUserSetting('jamieEnabled', val);
+            },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -755,7 +657,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.hearing,
             title: "Wake Word Detection",
             value: wakeWordEnabled,
-            onChanged: (val) => setState(() => wakeWordEnabled = val),
+            onChanged: (val) {
+              setState(() => wakeWordEnabled = val);
+              CloudStorageService().saveUserSetting('wakeWordEnabled', val);
+            },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -763,7 +668,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.alarm,
             title: "Jamie Reminders",
             value: jamieReminders,
-            onChanged: (val) => setState(() => jamieReminders = val),
+            onChanged: (val) {
+              setState(() => jamieReminders = val);
+              CloudStorageService().saveUserSetting('jamieReminders', val);
+              },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -773,7 +681,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.notifications,
             title: "Push Notifications",
             value: notifications,
-            onChanged: (val) => setState(() => notifications = val),
+            onChanged: (val) async {
+              setState(() => notifications = val);
+              await LocalStorageService().setNotificationsEnabled(val);
+              },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           )
@@ -783,7 +694,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.location_on,
             title: "Location Access",
             value: locationAccess,
-            onChanged: (val) => setState(() => locationAccess = val),
+            onChanged: (val) async {
+              setState(() => locationAccess = val);
+              await LocalStorageService().setLocationAccess(val);
+            },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -896,8 +810,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Center(
       child: ElevatedButton.icon(
           onPressed: () async {
-            await FirebaseAuth.instance.signOut();
-            await LocalProfileCache.clearProfile();
+            await LocalCache().logout();
 
             Navigator.of(context).pushAndRemoveUntil(
               PageRouteBuilder(
@@ -913,7 +826,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: const Icon(Icons.logout),
         label: const Text("Log Out"),
         style: ElevatedButton.styleFrom(
-          backgroundColor: _easterEggMode ? const Color(0xFF570987) : Colors.red,
+          backgroundColor: _easterEggMode ? darkColorPrimary : Colors.red,
           foregroundColor: textColor,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           textStyle: const TextStyle(fontSize: 16),

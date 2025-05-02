@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crop_your_image/crop_your_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,19 +13,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ProfileAvatar extends StatefulWidget {
-  final String name;
-  final String email;
-  final String? photoUrl;
-  final void Function(File)? onImageChanged;
   final VoidCallback? onEditTapped;
 
 
   const ProfileAvatar({
     super.key,
-    required this.name,
-    required this.email,
-    this.photoUrl,
-    this.onImageChanged,
     this.onEditTapped,
   });
 
@@ -122,9 +116,7 @@ class ProfileAvatarState extends State<ProfileAvatar> with AutomaticKeepAliveCli
                       if (!mounted) return;
 
                       setState(() => _profileImage = file);
-                      if (widget.onImageChanged != null) {
-                        widget.onImageChanged!(file);
-                      }
+                      _uploadToFirebase(file);
 
                       if (Navigator.of(context).canPop()) {
                         Navigator.of(context).pop();
@@ -191,6 +183,27 @@ class ProfileAvatarState extends State<ProfileAvatar> with AutomaticKeepAliveCli
     );
   }
 
+  Future<void> _uploadToFirebase(File file) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final bytes = await file.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({'photoUrl': base64Image}, SetOptions(merge: true));
+
+      photoUrl = base64Image;
+    } catch (e) {
+      debugPrint("❌ Failed to upload profile image: $e");
+    }
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -231,10 +244,10 @@ class ProfileAvatarState extends State<ProfileAvatar> with AutomaticKeepAliveCli
         const SizedBox(height: 12),
         Column(
           children: [
-            Text(widget.name.isEmpty ? "Unnamed User" : widget.name,
+            Text(name.isEmpty ? "Unnamed User" : name,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor)),
             const SizedBox(height: 2),
-            Text(widget.email.isEmpty ? "No Email" : widget.email,
+            Text(email.isEmpty ? "No Email" : email,
                 style: const TextStyle(fontSize: 14, color: Colors.white70)),
           ],
         ),
@@ -253,9 +266,9 @@ class ProfileAvatarState extends State<ProfileAvatar> with AutomaticKeepAliveCli
         gaplessPlayback: true,
         errorBuilder: (_, __, ___) => _fallbackAvatar(),
       );
-    } else if (widget.photoUrl != null && widget.photoUrl!.isNotEmpty) {
+    } else if (photoUrl != null && photoUrl!.isNotEmpty) {
       try {
-        final Uint8List imageBytes = base64Decode(widget.photoUrl!);
+        final Uint8List imageBytes = base64Decode(photoUrl!);
         return Image.memory(
           imageBytes,
           width: 100,

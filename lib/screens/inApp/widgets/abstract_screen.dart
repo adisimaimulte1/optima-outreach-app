@@ -27,7 +27,6 @@ class AbsScreen extends StatefulWidget {
 class _AbsScreenState extends State<AbsScreen> {
   double _currentScale = 1.0;
   bool _isPinching = false;
-  bool _animateScale = isMenuOpenNotifier.value ? false : true;
   static const double _minimizedScale = 0.4;
 
   @override
@@ -62,19 +61,13 @@ class _AbsScreenState extends State<AbsScreen> {
                 },
                 behavior: HitTestBehavior.translucent,
                 child: Center(
-                  child: _animateScale
-                      ? AnimatedScale(
+                  child: AnimatedScale(
                     scale: scale,
                     alignment: Alignment.center,
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutCubic,
                     child: _buildScreenContent(scale, isMinimized),
                   )
-                      : Transform.scale(
-                    scale: scale,
-                    alignment: Alignment.center,
-                    child: _buildScreenContent(scale, isMinimized),
-                  ),
                 ),
               );
             },
@@ -88,8 +81,6 @@ class _AbsScreenState extends State<AbsScreen> {
   Widget _buildScreenContent(double scale, bool isMinimized) {
     final cornerRadius = 120.0 * (1 - scale);
     final borderWidth = 30.0 * (1 - scale);
-
-    _animateScale = _currentScale == _minimizedScale ? false : true;
 
     return Stack(
       children: [

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'package:optima/screens/beforeApp/choose_screen.dart';
-import 'package:optima/services/cache/local_profile_cache.dart';
+import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/local_storage_service.dart';
 import 'package:optima/globals.dart';
 
@@ -12,7 +12,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+
   await LocalStorageService().init();
+  await LocalCache().initializeAndCacheUserData();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
@@ -46,7 +48,7 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    LocalProfileCache.clearProfile();
+
     super.dispose();
   }
 
@@ -125,5 +127,4 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
       },
     );
   }
-
 }

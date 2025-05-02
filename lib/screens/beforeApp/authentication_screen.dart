@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -6,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:optima/screens/beforeApp/widgets/background_particles.dart';
+import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/cloud_storage_service.dart';
 import 'package:optima/services/local_storage_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
@@ -106,7 +107,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!mounted || !success) return;
 
-      _navigateToHome();
+      _navigateToHome(false);
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = (e.code == 'user-not-found')
@@ -282,8 +283,8 @@ class _AuthScreenState extends State<AuthScreen> {
         final refreshedUser = auth.currentUser;
 
         if (refreshedUser != null && refreshedUser.emailVerified) {
-          await initFirebaseDatabase(false);
-          _navigateToHome();
+          await CloudStorageService().initDatabase();
+          _navigateToHome(false);
           return;
         }
       } catch (e) { break; }
@@ -293,8 +294,8 @@ class _AuthScreenState extends State<AuthScreen> {
     await auth.currentUser?.reload();
     final finalUser = auth.currentUser;
     if (finalUser != null && finalUser.emailVerified) {
-      await initFirebaseDatabase(false);
-      _navigateToHome();
+      await CloudStorageService().initDatabase();
+      _navigateToHome(false);
       return;
     }
 
@@ -310,8 +311,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
 
 
-  void _navigateToHome() {
+  void _navigateToHome(bool googleSignIn) {
     selectedScreenNotifier.value = ScreenType.dashboard;
+
+    LocalStorageService().setIsGoogleUser(googleSignIn);
+    LocalCache().initializeAndCacheUserData();
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
@@ -357,11 +361,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (isNew) {
         _openWebsite("https://adisimaimulte1.github.io/optima-verification-site/?mode=verifyEmail&oobCode=love");
-        await initFirebaseDatabase(true);
+        CloudStorageService().initDatabase();
       }
 
       if (!mounted) return;
-      _navigateToHome();
+      _navigateToHome(true);
     } catch (e) {
       setState(() {
         _errorMessage = 'Google Sign-in failed. Please try again.';
@@ -627,26 +631,9 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildLoadingOverlay(Color bgColor, Color fgColor) {
     return Positioned.fill(
       child: Container(
-        color: textColor.withOpacity(0.5),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 20),
-              responsiveText(
-                context,
-                _loadingText,
-                maxWidthFraction: 0.9,
-                style: TextStyle(
-                  color: fgColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
+        color: textColor.withOpacity(0.6),
+        child: const Center(
+          child: CircularProgressIndicator(),
         ),
       ),
     );
@@ -713,26 +700,4 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-
-
-  Future<void> initFirebaseDatabase(bool isGoogleUser) async {
-    debugPrint('Initializing Firebase Database...');
-    final authUser = FirebaseAuth.instance.currentUser;
-
-    if (authUser == null) {
-      throw FirebaseAuthException(message: "No user is logged in.", code: 'user-not-found');
-    }
-
-    final userDocRef = FirebaseFirestore.instance.collection('users').doc(authUser.uid);
-    final photoUrlBase64 = authUser.photoURL != null && authUser.photoURL!.isNotEmpty
-        ? await convertImageUrlToBase64(authUser.photoURL!)
-        : '';
-
-    await userDocRef.set({
-      'name': authUser.displayName ?? 'Unknown User',
-      'email': authUser.email ?? '',
-      'photoUrl': photoUrlBase64 ?? '',
-      'googleSignIn': isGoogleUser,
-    }).catchError((error) {});
-  }
 }

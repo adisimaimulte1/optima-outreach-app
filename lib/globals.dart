@@ -44,6 +44,19 @@ enum UserState {
 
 // local storage data
 ThemeMode selectedTheme = ThemeMode.system;
+bool notifications = true;
+bool locationAccess = false;
+bool isGoogleUser = false;
+
+
+// cloud storage data
+bool jamieEnabled = true;
+bool wakeWordEnabled = true;
+bool jamieReminders = true;
+String name = "";
+String email = "";
+String? photoUrl;
+
 
 
 
@@ -75,6 +88,7 @@ bool wakeWordDetected = false;
 bool isListeningForWake = false;
 bool keepAiRunning = true;
 bool appPaused = false;
+
 
 
 
@@ -190,6 +204,7 @@ Future<String> convertImageUrlToBase64(String url) async {
   }
   return '';
 }
+
 
 
 
