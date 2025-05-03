@@ -38,24 +38,46 @@ class ProfileAvatarState extends State<ProfileAvatar> with AutomaticKeepAliveCli
 
     if (!status.isGranted) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: textHighlightedColor,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            elevation: 6,
-            duration: const Duration(seconds: 1),
-            content: Center(
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: inAppForegroundColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              "Gallery Permission Required",
+              style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 8.0),
               child: Text(
-                "Gallery permission is required.",
+                "To change your profile picture, allow gallery access in your device settings.",
+                style: TextStyle(color: textColor, fontSize: 16, height: 1.5),
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: inAppForegroundColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
               ),
             ),
+            actions: [
+              TextButtonWithoutIcon(
+                label: "Cancel",
+                onPressed: () => Navigator.pop(context),
+                foregroundColor: Colors.white70,
+                fontSize: 17,
+                borderColor: textDimColor,
+                borderWidth: 1.2,
+              ),
+              TextButtonWithoutIcon(
+                label: "Open Settings",
+                onPressed: () async {
+                  updateSettingsAfterAppResume = true;
+                  Navigator.pop(context);
+                  await openAppSettings();
+                },
+                backgroundColor: textHighlightedColor,
+                foregroundColor: inAppForegroundColor,
+                fontSize: 17,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+            ],
           ),
         );
       }

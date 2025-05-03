@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -19,6 +20,8 @@ import 'package:optima/services/cache/local_cache.dart';
 
 import 'package:optima/services/local_storage_service.dart';
 import 'package:optima/services/cloud_storage_service.dart';
+import 'package:optima/services/notifications/push_notification_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 class SettingsScreen extends StatefulWidget {
@@ -50,9 +53,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _profileAvatarKey.currentState?.dispose();
+
+    notificationsPermissionNotifier.removeListener(_updatePermissions);
+    locationPermissionNotifier.removeListener(_updatePermissions);
+    jamieEnabledNotifier.removeListener(_updatePermissions);
+
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+
+    notificationsPermissionNotifier.addListener(_updatePermissions);
+    locationPermissionNotifier.addListener(_updatePermissions);
+    jamieEnabledNotifier.addListener(_updatePermissions);
+  }
+
+  void _updatePermissions() {
+    setState(() {});
+  }
 
 
 
@@ -288,8 +308,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } else {
         throw FirebaseAuthException(message: "Password is required.", code: 'password-missing');
       }
-
-      debugPrint("Account deleted successfully.");
 
       Navigator.of(context).pushAndRemoveUntil(
         PageRouteBuilder(
@@ -646,12 +664,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.smart_toy,
             title: "Enable Jamie",
             value: jamieEnabled,
-            onChanged: (val) {
-              setState(() {
-                jamieEnabled = val;
-                jamieEnabledNotifier.value = val;
-              });
-              CloudStorageService().saveUserSetting('jamieEnabled', val);
+            onChanged: (val) async {
+              if (val) {
+                final status = await Permission.microphone.request();
+
+                if (status.isGranted) {
+                  setState(() {
+                    jamieEnabled = true;
+                    jamieEnabledNotifier.value = true;
+                  });
+                  await CloudStorageService().saveUserSetting('jamieEnabled', true);
+                } else {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      backgroundColor: inAppForegroundColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: Text(
+                        "Microphone Permission Required",
+                        style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      content: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          "To enable Jamie, please allow microphone access in your device settings.",
+                          style: TextStyle(color: textColor, fontSize: 16, height: 1.5),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      actions: [
+                        TextButtonWithoutIcon(
+                          label: "Cancel",
+                          onPressed: () => Navigator.pop(context),
+                          foregroundColor: Colors.white70,
+                          fontSize: 17,
+                          borderColor: textDimColor,
+                          borderWidth: 1.2,
+                        ),
+                        TextButtonWithoutIcon(
+                          label: "Open Settings",
+                          onPressed: () async {
+                            updateSettingsAfterAppResume = true;
+                            Navigator.pop(context);
+                            await openAppSettings();
+                          },
+                          backgroundColor: textHighlightedColor,
+                          foregroundColor: inAppForegroundColor,
+                          fontSize: 17,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  setState(() => jamieEnabled = false);
+                }
+              } else {
+                setState(() {
+                  jamieEnabled = false;
+                  jamieEnabledNotifier.value = false;
+                });
+                await CloudStorageService().saveUserSetting('jamieEnabled', false);
+              }
             },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
@@ -688,9 +763,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: "Push Notifications",
             value: notifications,
             onChanged: (val) async {
-              setState(() => notifications = val);
-              await LocalStorageService().setNotificationsEnabled(val);
-              },
+              if (val) {
+                final settings = await FirebaseMessaging.instance.getNotificationSettings();
+                final alreadyGranted = settings.authorizationStatus == AuthorizationStatus.authorized;
+                var success = true;
+
+                if (!alreadyGranted) {
+                  success = await PushNotificationService.initialize(
+                      onHardDenied: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) =>
+                              AlertDialog(
+                                backgroundColor: inAppForegroundColor,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
+                                title: Text(
+                                  "Notifications Disabled",
+                                  style: TextStyle(color: textColor,
+                                      fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
+                                content: Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    "To enable push notifications, allow them in your device settings.",
+                                    style: TextStyle(color: textColor,
+                                        fontSize: 16,
+                                        height: 1.5),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButtonWithoutIcon(
+                                    label: "Cancel",
+                                    onPressed: () => Navigator.pop(context),
+                                    foregroundColor: Colors.white70,
+                                    fontSize: 17,
+                                    borderColor: textDimColor,
+                                    borderWidth: 1.2,
+                                  ),
+                                  TextButtonWithoutIcon(
+                                    label: "Open Settings",
+                                    onPressed: () {
+                                      updateSettingsAfterAppResume = true;
+                                      Navigator.pop(context);
+                                      PushNotificationService.openSettings();
+                                    },
+                                    backgroundColor: textHighlightedColor,
+                                    foregroundColor: inAppForegroundColor,
+                                    fontSize: 17,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 10),
+                                  ),
+                                ],
+                              ),
+                        );
+                      }
+                  );
+
+                  setState(() => notifications = success);
+                  notificationsPermissionNotifier.value = success;
+                  await LocalStorageService().setNotificationsEnabled(success);
+                } else {
+                  setState(() => notifications = success);
+                  notificationsPermissionNotifier.value = success;
+                  await LocalStorageService().setNotificationsEnabled(success);
+
+                  final token = await FirebaseMessaging.instance.getToken();
+
+                  if (token != null) {
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(FirebaseAuth.instance.currentUser!.uid)
+                        .update({'fcmToken': token});
+                  }
+                }
+
+              } else {
+                setState(() => notifications = false);
+                notificationsPermissionNotifier.value = false;
+                await LocalStorageService().setNotificationsEnabled(false);
+
+                FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .update({'fcmToken': ''});
+
+                await PushNotificationService.disableNotifications();
+              }
+            },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           )
@@ -701,8 +863,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: "Location Access",
             value: locationAccess,
             onChanged: (val) async {
-              setState(() => locationAccess = val);
-              await LocalStorageService().setLocationAccess(val);
+              if (val) {
+                final status = await Permission.location.request();
+                if (status.isGranted) {
+                  setState(() => locationAccess = true);
+                  await LocalStorageService().setLocationAccess(true);
+                } else {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      backgroundColor: inAppForegroundColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: Text(
+                        "Location Permission Required",
+                        style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      content: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          "To enable location features, allow location access in your device settings.",
+                          style: TextStyle(color: textColor, fontSize: 16, height: 1.5),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      actions: [
+                        TextButtonWithoutIcon(
+                          label: "Cancel",
+                          onPressed: () => Navigator.pop(context),
+                          foregroundColor: Colors.white70,
+                          fontSize: 17,
+                          borderColor: textDimColor,
+                          borderWidth: 1.2,
+                        ),
+                        TextButtonWithoutIcon(
+                          label: "Open Settings",
+                          onPressed: () async {
+                            updateSettingsAfterAppResume = true;
+                            Navigator.pop(context);
+                            await openAppSettings();
+                          },
+                          backgroundColor: textHighlightedColor,
+                          foregroundColor: inAppForegroundColor,
+                          fontSize: 17,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              } else {
+                setState(() => locationAccess = false);
+                await LocalStorageService().setLocationAccess(false);
+              }
             },
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,

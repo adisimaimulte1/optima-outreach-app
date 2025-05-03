@@ -156,6 +156,8 @@ class AIVoiceAssistant {
   }
 
   Future<void> _captureAndRespond(String userId) async {
+    debugPrint("Capturing and responding...");
+
     if (!jamieEnabledNotifier.value) {
       await Future.delayed(const Duration(milliseconds: 10));
       return;
@@ -264,7 +266,7 @@ class AIVoiceAssistant {
     if (jamieEnabledNotifier.value) {
       wakeWordDetected = true;
       assistantState.value = JamieState.listening;
-      _startCooldown();
+      startCooldown();
     } else {
       wakeWordDetected = false;
       assistantState.value = JamieState.idle;
@@ -358,10 +360,10 @@ class AIVoiceAssistant {
 
 
 
-  void _startCooldown() {
+  void startCooldown() {
     _cooldownActive = true;
     _cooldownTimer?.cancel();
-    debugPrint("🧊 Cooldown started. Assistant will pause for 50 seconds.");
+    debugPrint("🧊 Cooldown started. Assistant will listen for 50 seconds.");
 
     _cooldownTimer = Timer(const Duration(seconds: 50), () {
       _cooldownActive = false;

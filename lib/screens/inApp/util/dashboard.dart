@@ -7,9 +7,21 @@ import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_but
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
+import 'package:optima/services/local_storage_service.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    LocalStorageService().checkAndRequestPermissionsOnce();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +33,6 @@ class DashboardScreen extends StatelessWidget {
         return SizedBox(
           width: size.width,
           height: size.height,
-
           child: SingleChildScrollView(
             padding: const EdgeInsets.only(bottom: 30),
             child: Column(

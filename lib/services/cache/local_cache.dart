@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/services/local_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -80,6 +79,7 @@ class LocalCache {
 
     jamieEnabledNotifier.value = jamieEnabled;
     wakeWordEnabledNotifier.value = wakeWordEnabled;
+
 
     await saveProfile(name: name, email: email, photoUrl: photoUrl,);
     await saveSetting('jamieEnabled', jamieEnabled);

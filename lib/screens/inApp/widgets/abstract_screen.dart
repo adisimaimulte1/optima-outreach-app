@@ -106,7 +106,7 @@ class _AbsScreenState extends State<AbsScreen> {
           top: 40,
           left: 0,
           right: 0,
-          child: IgnorePointer(child: Center(child: aiAssistant)),
+          child: Center(child: aiAssistant),
         ),
         if (scale < 0.99)
           Positioned.fill(

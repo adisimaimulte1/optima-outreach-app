@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
@@ -5,8 +6,10 @@ import 'package:flutter/scheduler.dart';
 
 import 'package:optima/screens/beforeApp/choose_screen.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/cloud_storage_service.dart';
 import 'package:optima/services/local_storage_service.dart';
 import 'package:optima/globals.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +62,49 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
     if (appPaused && aiVoice.aiSpeaking) {
       aiVoice.pauseImmediately();
     }
+    if (state == AppLifecycleState.resumed && updateSettingsAfterAppResume) {
+      _checkNotificationPermission();
+      _checkLocationPermission();
+      _checkMicrophonePermission();
+      updateSettingsAfterAppResume = false;
+    }
   }
+
+  Future<void> _checkNotificationPermission() async {
+    final settings = await FirebaseMessaging.instance.getNotificationSettings();
+    final allowed = settings.authorizationStatus == AuthorizationStatus.authorized;
+
+    if (notifications != allowed) {
+      notifications = allowed;
+      notificationsPermissionNotifier.value = allowed;
+      await LocalStorageService().setNotificationsEnabled(allowed);
+    }
+  }
+
+  Future<void> _checkLocationPermission() async {
+    final status = await Permission.location.status;
+    final allowed = status.isGranted;
+
+    if (locationAccess != allowed) {
+      locationAccess = allowed;
+      locationPermissionNotifier.value = allowed;
+      await LocalStorageService().setLocationAccess(allowed);
+    }
+  }
+
+  Future<void> _checkMicrophonePermission() async {
+    final status = await Permission.microphone.status;
+    final allowed = status.isGranted;
+
+    if (jamieEnabled != allowed) {
+      jamieEnabled = allowed;
+      jamieEnabledNotifier.value = allowed;
+      await CloudStorageService().saveUserSetting("jamieEnabled", allowed);
+    }
+  }
+
+
+
 
   @override
   void didChangePlatformBrightness() {

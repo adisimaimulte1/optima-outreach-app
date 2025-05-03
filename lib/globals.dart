@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:optima/ai/ai_assistant.dart';
@@ -9,6 +10,7 @@ import 'package:optima/screens/inApp/menu.dart';
 
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
+import 'package:optima/services/local_storage_service.dart';
 
 
 final GlobalKey<ReminderStatusCardState> reminderCardKey = GlobalKey<ReminderStatusCardState>();
@@ -44,8 +46,8 @@ enum UserState {
 
 // local storage data
 ThemeMode selectedTheme = ThemeMode.system;
-bool notifications = true;
-bool locationAccess = false;
+bool notifications = LocalStorageService().getNotificationsEnabled();
+bool locationAccess = LocalStorageService().getLocationAccess();
 bool isGoogleUser = false;
 
 
@@ -76,6 +78,9 @@ final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);
 
 ValueNotifier<bool> jamieEnabledNotifier = ValueNotifier(true);
 ValueNotifier<bool> wakeWordEnabledNotifier = ValueNotifier(true);
+ValueNotifier<bool> notificationsPermissionNotifier = ValueNotifier(notifications);
+ValueNotifier<bool> locationPermissionNotifier = ValueNotifier(locationAccess);
+
 
 final ValueNotifier<bool> isMenuOpenNotifier = ValueNotifier(false);
 final ValueNotifier<bool> isDarkModeNotifier = ValueNotifier(false);
@@ -86,8 +91,8 @@ final ValueNotifier<JamieState> assistantState = ValueNotifier(JamieState.idle);
 final ValueNotifier<String> transcribedText = ValueNotifier('');
 
 
+bool updateSettingsAfterAppResume = false;
 bool wakeWordDetected = false;
-bool keepAiRunning = true;
 bool isListeningForWake = false;
 bool appPaused = false;
 
@@ -206,7 +211,6 @@ Future<String> convertImageUrlToBase64(String url) async {
   }
   return '';
 }
-
 
 
 

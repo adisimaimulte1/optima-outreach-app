@@ -1,7 +1,12 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/services/cloud_storage_service.dart';
+import 'package:optima/services/notifications/push_notification_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorageService {
   static final LocalStorageService _instance = LocalStorageService._internal();
@@ -18,7 +23,6 @@ class LocalStorageService {
 
   Future<void> initSettings() async {
     await setThemeMode(getThemeMode(), update: false);
-    await setNotificationsEnabled(getNotificationsEnabled(), update: false);
     await setLocationAccess(getLocationAccess(), update: false);
     await setIsGoogleUser(getIsGoogleUser(), update: false);
   }
@@ -65,4 +69,43 @@ class LocalStorageService {
     if (update) return _settingsBox.put('is_google_user', enabled);
   }
 
+
+
+  Future<void> checkAndRequestPermissionsOnce() async {
+    final alreadyAsked = await LocalStorageService().hasAskedPermissions();
+    if (alreadyAsked) return;
+
+    // notifications
+    final settings = await FirebaseMessaging.instance.requestPermission();
+    final notifGranted = settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
+
+    if (notifGranted) {
+      await PushNotificationService.initialize(onHardDenied: () async {});
+      await LocalStorageService().setNotificationsEnabled(true);
+    } else { await LocalStorageService().setNotificationsEnabled(false); }
+
+
+    // mic
+    final micStatus = await Permission.microphone.request();
+    final micGranted = micStatus == PermissionStatus.granted;
+
+    await CloudStorageService().saveUserSetting('jamieEnabled', micGranted);
+    jamieEnabledNotifier.value = micGranted;
+    jamieEnabled = micGranted;
+
+
+    // mark permissions as asked
+    await LocalStorageService().setAskedPermissions();
+  }
+
+  Future<bool> hasAskedPermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('asked_permissions') ?? false;
+  }
+
+  Future<void> setAskedPermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('asked_permissions', true);
+  }
 }
