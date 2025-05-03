@@ -48,7 +48,6 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-
     super.dispose();
   }
 

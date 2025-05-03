@@ -18,6 +18,7 @@ class AIVoiceAssistant {
   bool aiSpeaking = false;
   bool isListening = false;
   bool wakeWordDetected = false;
+  bool _hasAttachedListener = false;
 
   Timer? _cooldownTimer;
   bool _cooldownActive = false;
@@ -44,16 +45,44 @@ class AIVoiceAssistant {
 
 
 
+
   void startLoop() {
-    try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null) {
-        runAssistant(userId: userId);
-      }
-    } catch (e) {
-      debugPrint("❌ Jamie startup error: $e");
+    if (!_hasAttachedListener) {
+      _hasAttachedListener = true;
+
+      jamieEnabledNotifier.addListener(() {
+        debugPrint("🎛 Jamie setting changed: ${jamieEnabledNotifier.value}");
+
+        if (jamieEnabledNotifier.value) {
+          final userId = FirebaseAuth.instance.currentUser?.uid;
+          if (userId != null) {
+            runAssistant(userId: userId);
+          }
+        } else {
+          stopLoop();
+          debugPrint("🛑 Jamie disabled via settings.");
+        }
+      });
     }
   }
+
+  void stopLoop({settingsStop = false}) {
+    _loopRunning = false;
+    _cooldownActive = false;
+    wakeWordDetected = false;
+    isListening = false;
+
+    if (assistantState.value != JamieState.thinking && assistantState.value != JamieState.speaking) {
+      debugPrint("assistant state: ${assistantState.value}");
+      aiSpeaking = false;
+      assistantState.value = JamieState.idle;
+    }
+
+    if (settingsStop) {
+      debugPrint("💤 Jamie assistant manually stopped.");
+    }
+  }
+
 
 
 
@@ -73,28 +102,32 @@ class AIVoiceAssistant {
       return;
     }
 
-    while (true) {
-      if (!keepAiRunning || aiSpeaking || isListening) {
+
+    while (_loopRunning) {
+      if (aiSpeaking || isListening) {
         await Future.delayed(const Duration(milliseconds: 10));
         continue;
       }
 
       try {
-        if (!_cooldownActive && !wakeWordDetected) {
-          await _detectWakeWord();
-        }
+        if (!_cooldownActive && !wakeWordDetected) { await _detectWakeWord(); }
+        if (wakeWordDetected && !aiSpeaking && !isListening) { await _captureAndRespond(userId); }
 
-        if (wakeWordDetected && !aiSpeaking && !isListening) {
-          await _captureAndRespond(userId);
-        }
       } catch (e) {
         handleError(e);
         await Future.delayed(const Duration(seconds: 1));
       }
     }
+
+    _loopRunning = false;
   }
 
   Future<void> _detectWakeWord() async {
+    if (!wakeWordEnabledNotifier.value || !jamieEnabledNotifier.value) {
+      await Future.delayed(const Duration(milliseconds: 10));
+      return;
+    }
+
     assistantState.value = JamieState.idle;
     isListening = true;
 
@@ -102,6 +135,12 @@ class AIVoiceAssistant {
     await _speech.listenForWakeWordLoop(onTranscript: (text) {
       wakeTranscript = text;
     });
+
+    if (!wakeWordEnabledNotifier.value || !jamieEnabledNotifier.value) {
+      await Future.delayed(const Duration(milliseconds: 10));
+      isListening = false;
+      return;
+    }
 
     isListening = false;
     aiSpeaking = false;
@@ -117,32 +156,69 @@ class AIVoiceAssistant {
   }
 
   Future<void> _captureAndRespond(String userId) async {
+    if (!jamieEnabledNotifier.value) {
+      await Future.delayed(const Duration(milliseconds: 10));
+      return;
+    }
+
     assistantState.value = JamieState.listening;
     isListening = true;
     _listeningCompleter = Completer<void>();
     bool processed = false;
+    bool cancelled = false;
+    final cancelLock = Completer<void>();
 
-    await _speech.startListening(
-          (text) => transcribedText.value = text,
-          () async => await _handleTranscript(userId, () => processed = true, () => processed),
-    );
+    Future<void> cancelIfDisabled() async {
+      if (!jamieEnabledNotifier.value && !_listeningCompleter!.isCompleted) {
+        debugPrint("🛑 Jamie was disabled during capture");
+        cancelled = true;
 
-    while (!_listeningCompleter!.isCompleted) {
-      if (appPaused && _speech.isListening) {
-        debugPrint("⏸ Pausing listening due to background");
-        await _speech.stopListening();
+        try {
+          await _speech.stopListening();
+        } catch (e) {
+          debugPrint("❌ Error during stopListening: $e");
+        }
+
+        _completeListening();
+        assistantState.value = JamieState.idle;
+        if (!cancelLock.isCompleted) cancelLock.complete();
+      }
+    }
+
+    jamieEnabledNotifier.addListener(cancelIfDisabled);
+
+    try {
+      await _speech.startListening(
+            (text) => transcribedText.value = text,
+            () async => await _handleTranscript(userId, () => processed = true, () => processed),
+      );
+
+      while (!_listeningCompleter!.isCompleted && !cancelled) {
+        if (appPaused && _speech.isListening) {
+          debugPrint("⏸ Pausing listening due to background");
+          await _speech.stopListening();
+        }
+
+        if (!appPaused && !_speech.isListening && !processed) {
+          debugPrint("▶️ Resuming listening after app resumed");
+          transcribedText.value = '';
+          await _speech.resumeListeningAfterPlayback(
+            onResult: (text) => transcribedText.value = text,
+            onDone: () async => await _handleTranscript(userId, () => processed = true, () => processed),
+          );
+        }
+
+        await Future.delayed(const Duration(milliseconds: 200));
       }
 
-      if (!appPaused && !_speech.isListening && !processed) {
-        debugPrint("▶️ Resuming listening after app resumed");
-        transcribedText.value = '';
-        await _speech.resumeListeningAfterPlayback(
-          onResult: (text) => transcribedText.value = text,
-          onDone: () async => await _handleTranscript(userId, () => processed = true, () => processed),
-        );
+      if (cancelled) {
+        debugPrint("🔁 Waiting for cancellation lock...");
+        await cancelLock.future; // wait for cleanup
       }
-
-      await Future.delayed(const Duration(milliseconds: 200));
+    } catch (e) {
+      debugPrint("💥 Error in _captureAndRespond: $e");
+    } finally {
+      jamieEnabledNotifier.removeListener(cancelIfDisabled);
     }
   }
 
@@ -184,9 +260,15 @@ class AIVoiceAssistant {
 
     aiSpeaking = false;
     isListening = false;
-    wakeWordDetected = true;
-    assistantState.value = JamieState.listening;
-    _startCooldown();
+
+    if (jamieEnabledNotifier.value) {
+      wakeWordDetected = true;
+      assistantState.value = JamieState.listening;
+      _startCooldown();
+    } else {
+      wakeWordDetected = false;
+      assistantState.value = JamieState.idle;
+    }
   }
 
   Future<void> playResponseFile(List<int> bytes) async {

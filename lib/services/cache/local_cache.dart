@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/services/local_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -77,6 +78,9 @@ class LocalCache {
     wakeWordEnabled = settings['wakeWordEnabled'] ?? true;
     jamieReminders = settings['jamieReminders'] ?? true;
 
+    jamieEnabledNotifier.value = jamieEnabled;
+    wakeWordEnabledNotifier.value = wakeWordEnabled;
+
     await saveProfile(name: name, email: email, photoUrl: photoUrl,);
     await saveSetting('jamieEnabled', jamieEnabled);
     await saveSetting('wakeWordEnabled', wakeWordEnabled);
@@ -85,7 +89,12 @@ class LocalCache {
 
   Future<void> initializeAndCacheUserData() async {
     final authUser = FirebaseAuth.instance.currentUser;
-    if (authUser == null || await isCacheComplete()) return;
+
+    if (authUser == null) return;
+    if (await isCacheComplete()) {
+      await loadAndCacheUserData();
+      return;
+    }
 
     final docRef = FirebaseFirestore.instance.collection('users').doc(authUser.uid);
     final docSnapshot = await docRef.get();
@@ -104,8 +113,7 @@ class LocalCache {
       }, SetOptions(merge: true));
     }
 
-    // reuse the logic for caching
-    await LocalCache().loadAndCacheUserData();
+    await loadAndCacheUserData();
   }
 
 
@@ -134,6 +142,8 @@ class LocalCache {
 
   Future<void> logout() async {
     clearCache();
+    aiVoice.stopLoop();
+
     LocalStorageService().setIsGoogleUser(false);
     await FirebaseAuth.instance.signOut();
   }
@@ -143,9 +153,11 @@ class LocalCache {
     if (user == null) return;
 
     try {
-      FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
-      LocalStorageService().setIsGoogleUser(false);
       clearCache();
+      aiVoice.stopLoop();
+
+      LocalStorageService().setIsGoogleUser(false);
+      FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
 
       await user.delete();
     } catch (e) {

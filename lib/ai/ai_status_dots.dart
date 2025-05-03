@@ -50,8 +50,7 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
     _dot2Opacity = _buildDotOpacity(0.33, 0.66);
     _dot3Opacity = _buildDotOpacity(0.66, 1.0);
 
-    // TODO: Uncomment this in the main app
-    // aiVoice.startLoop();
+    aiVoice.startLoop();
   }
 
   @override

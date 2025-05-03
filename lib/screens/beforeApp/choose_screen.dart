@@ -6,7 +6,6 @@ import 'package:optima/globals.dart';
 
 import 'package:optima/screens/beforeApp/splash_screen_adaptive.dart';
 import 'package:optima/screens/beforeApp/authentication_screen.dart';
-import 'package:optima/screens/inApp/util/aichat.dart';
 import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
@@ -110,18 +109,20 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
   Widget _buildByUserState(UserState state) {
     switch (state) {
       case UserState.authenticated: {
+        jamieEnabledNotifier.value = jamieEnabled;
         if (isInitialLaunch) {
-          if (jamieEnabled) aiVoice.startLoop();
           isInitialLaunch = false;
         } return _buildAuthenticatedScreen();
 
       } case UserState.unauthenticated: {
+        jamieEnabledNotifier.value = false;
           if (isInitialLaunch) {
             isInitialLaunch = false;
             return const AnimatedSplashScreen();
           } return const AuthScreen();
 
       } case UserState.unverified: {
+        jamieEnabledNotifier.value = false;
         return const AuthScreen();
       }
     }

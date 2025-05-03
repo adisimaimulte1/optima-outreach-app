@@ -372,7 +372,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () {
               final newName = controller.text.trim();
               setState(() => name = newName);
-              CloudStorageService().saveUserSetting("profile_name", newName);
+              CloudStorageService().saveUserProfileIndividual("name", newName);
 
               Navigator.pop(context);
             },
@@ -647,7 +647,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: "Enable Jamie",
             value: jamieEnabled,
             onChanged: (val) {
-              setState(() => jamieEnabled = val);
+              setState(() {
+                jamieEnabled = val;
+                jamieEnabledNotifier.value = val;
+              });
               CloudStorageService().saveUserSetting('jamieEnabled', val);
             },
             easterEggMode: _easterEggMode,
@@ -658,7 +661,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: "Wake Word Detection",
             value: wakeWordEnabled,
             onChanged: (val) {
-              setState(() => wakeWordEnabled = val);
+              setState(() {
+                wakeWordEnabled = val;
+                wakeWordEnabledNotifier.value = val;
+              });
               CloudStorageService().saveUserSetting('wakeWordEnabled', val);
             },
             easterEggMode: _easterEggMode,

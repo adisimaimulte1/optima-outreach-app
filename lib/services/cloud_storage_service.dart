@@ -56,6 +56,15 @@ class CloudStorageService {
     }, SetOptions(merge: true));
   }
 
+  Future<void> saveUserProfileIndividual(String key, dynamic value) async {
+    if (_userId == null) return;
+
+    LocalCache().saveSetting(key, value);
+    await _firestore.collection('users').doc(_userId).set({
+      key: value
+    }, SetOptions(merge: true));
+  }
+
   Future<void> saveUserSetting(String key, dynamic value) async {
     if (_userId == null) return;
 
