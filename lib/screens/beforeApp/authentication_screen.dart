@@ -313,6 +313,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _navigateToHome(bool googleSignIn) {
     selectedScreenNotifier.value = ScreenType.dashboard;
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     LocalStorageService().setIsGoogleUser(googleSignIn);
     LocalCache().initializeAndCacheUserData();

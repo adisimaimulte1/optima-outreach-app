@@ -119,7 +119,7 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
           child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
               decoration: BoxDecoration(
-                color: Color(0xFF1C2837).withOpacity(0.99),
+                color: inAppBackgroundColor.withOpacity(0.99),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

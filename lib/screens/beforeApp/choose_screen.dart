@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:optima/globals.dart';
 
 import 'package:optima/screens/beforeApp/splash_screen_adaptive.dart';
@@ -10,9 +13,59 @@ import 'package:optima/screens/inApp/util/settings.dart';
 import 'package:optima/screens/inApp/widgets/menu/menu_overlay.dart';
 
 
-
-class ChooseScreen extends StatelessWidget {
+class ChooseScreen extends StatefulWidget {
   const ChooseScreen({super.key});
+
+  @override
+  State<ChooseScreen> createState() => _ChooseScreenState();
+}
+
+class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver {
+  bool _keyboardVisible = false;
+  Timer? _immersiveTimer;
+
+
+
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  void _startImmersiveTimer() {
+    _immersiveTimer?.cancel();
+    _immersiveTimer = Timer(const Duration(seconds: 1), () {
+      if (!_keyboardVisible) SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    });
+  }
+
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final isKeyboardNowVisible = bottomInset > 0;
+
+    if (_keyboardVisible != isKeyboardNowVisible) {
+      _keyboardVisible = isKeyboardNowVisible;
+
+      if (!_keyboardVisible) {
+        _startImmersiveTimer();
+      } else {
+        _immersiveTimer?.cancel();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _immersiveTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+
+
 
   Future<UserState> _getUserState() async {
     if (user != null) {
@@ -39,7 +92,8 @@ class ChooseScreen extends StatelessWidget {
           case ScreenType.settings:
             return const SettingsScreen();
           case ScreenType.chat:
-            return const ChatScreen();
+            debugPrint("Chat screen not implemented, defaulting to dashboard.");
+            return const DashboardScreen();
           case ScreenType.events:
             return const EventsScreen();
           case ScreenType.users:
@@ -56,8 +110,10 @@ class ChooseScreen extends StatelessWidget {
   Widget _buildByUserState(UserState state) {
     switch (state) {
       case UserState.authenticated: {
-        isInitialLaunch = false;
-        return _buildAuthenticatedScreen();
+        if (isInitialLaunch) {
+          if (jamieEnabled) aiVoice.startLoop();
+          isInitialLaunch = false;
+        } return _buildAuthenticatedScreen();
 
       } case UserState.unauthenticated: {
           if (isInitialLaunch) {

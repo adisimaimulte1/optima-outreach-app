@@ -17,7 +17,7 @@ Future<void> main() async {
   await LocalCache().initializeAndCacheUserData();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   setupGlobalListeners();
 

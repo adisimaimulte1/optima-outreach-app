@@ -74,6 +74,9 @@ User? get user => FirebaseAuth.instance.currentUser;
 
 final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);
 
+ValueNotifier<bool> jamieEnabledNotifier = ValueNotifier(true);
+ValueNotifier<bool> wakeWordEnabledNotifier = ValueNotifier(true);
+
 final ValueNotifier<bool> isMenuOpenNotifier = ValueNotifier(false);
 final ValueNotifier<bool> isDarkModeNotifier = ValueNotifier(false);
 
@@ -83,10 +86,9 @@ final ValueNotifier<JamieState> assistantState = ValueNotifier(JamieState.idle);
 final ValueNotifier<String> transcribedText = ValueNotifier('');
 
 
-
 bool wakeWordDetected = false;
-bool isListeningForWake = false;
 bool keepAiRunning = true;
+bool isListeningForWake = false;
 bool appPaused = false;
 
 
