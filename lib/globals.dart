@@ -10,6 +10,7 @@ import 'package:optima/screens/inApp/menu.dart';
 
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
+import 'package:optima/services/credits/credit_notifier.dart';
 import 'package:optima/services/local_storage_service.dart';
 
 
@@ -58,6 +59,7 @@ bool jamieReminders = true;
 String name = "";
 String email = "";
 String? photoUrl;
+int credits = 0; // teapa ca daca schimbi asta nu primesti credite in plus
 
 
 
@@ -89,12 +91,15 @@ final ValueNotifier<ScreenType> selectedScreenNotifier = ValueNotifier(ScreenTyp
 final ValueNotifier<JamieState> assistantState = ValueNotifier(JamieState.idle);
 
 final ValueNotifier<String> transcribedText = ValueNotifier('');
+CreditNotifier creditNotifier = CreditNotifier();
+
 
 
 bool updateSettingsAfterAppResume = false;
 bool wakeWordDetected = false;
 bool isListeningForWake = false;
 bool appPaused = false;
+bool lastCredit = false;
 
 
 

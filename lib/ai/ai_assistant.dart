@@ -4,8 +4,10 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:optima/services/credits/credit_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:optima/ai/stt/speech_to_text.dart';
@@ -104,7 +106,7 @@ class AIVoiceAssistant {
 
 
     while (_loopRunning) {
-      if (aiSpeaking || isListening) {
+      if (aiSpeaking || isListening || credits < 1) {
         await Future.delayed(const Duration(milliseconds: 10));
         continue;
       }
@@ -263,13 +265,16 @@ class AIVoiceAssistant {
     aiSpeaking = false;
     isListening = false;
 
-    if (jamieEnabledNotifier.value) {
+    credits = (await CreditService.getCredits())!;
+
+    if (!jamieEnabledNotifier.value || credits < 1) {
+      if (credits < 1) lastCredit = true;
+      wakeWordDetected = false;
+      assistantState.value = JamieState.idle;
+    } else {
       wakeWordDetected = true;
       assistantState.value = JamieState.listening;
       startCooldown();
-    } else {
-      wakeWordDetected = false;
-      assistantState.value = JamieState.idle;
     }
   }
 

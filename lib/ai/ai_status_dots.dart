@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 
 class AIStatusDots extends StatefulWidget {
   const AIStatusDots({super.key});
@@ -89,10 +90,25 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
   Widget build(BuildContext context) {
     super.build(context);
 
+    if (lastCredit) {
+      lastCredit = false;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showOutOfCreditsDialog(context);
+      });
+    }
+
     return ValueListenableBuilder<JamieState>(
       valueListenable: assistantState,
       builder: (context, state, _) {
         if (state != _lastSeenState) {
+          if (lastCredit) {
+            debugPrint("lastCredit is true");
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() {});
+            });
+          }
+
           _lastSeenState = state;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _handleDotAnimationState(state);
@@ -100,9 +116,9 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
         }
         return _buildAnimatedDots();
       },
-
     );
   }
+
 
   Widget _buildAnimatedDots() {
     final flickerAnimations = [_dot1Opacity, _dot2Opacity, _dot3Opacity];
@@ -200,10 +216,10 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
         !aiVoice.aiSpeaking &&
         !aiVoice.isListening) {
 
-      debugPrint("🟣 Jamie manually activated via dots");
 
       final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null) {
+      if (userId != null && credits > 0) {
+        debugPrint("🟣 Jamie manually activated via dots");
         aiVoice.aiSpeaking = false;
         aiVoice.isListening = false;
 
@@ -212,6 +228,8 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
         aiVoice.startCooldown();
       }
     }
+
+    if (credits < 1){ showOutOfCreditsDialog(context); }
   }
 
   _DotStyle _getDotStyleFromState(JamieState state) {
@@ -226,6 +244,82 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
       default:
         return _DotStyle(color: Colors.grey, opacity: 0.3, size: 15);
     }
+  }
+
+  void showOutOfCreditsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+        builder: (_) => ValueListenableBuilder<int>(
+        valueListenable: creditNotifier,
+        builder: (context, credits, __) {
+          // Auto-close dialog if credits > 0
+          if (credits > 0) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
+
+          return AlertDialog(
+            backgroundColor: inAppForegroundColor,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20)),
+            titlePadding: const EdgeInsets.only(top: 24),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 24, vertical: 12),
+            title: Column(
+              children: [
+                Icon(
+                    Icons.credit_card_off_rounded, size: 48, color: Colors.red),
+                const SizedBox(height: 12),
+                Text(
+                  "Out of Credits",
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 250,
+              child: Text(
+                "Watch ads or upgrade your plan to continue using voice assistance.",
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 15.5,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            actionsAlignment: MainAxisAlignment.spaceEvenly,
+            actions: [
+              TextButtonWithoutIcon(
+                label: "Close",
+                onPressed: () => Navigator.pop(context),
+                foregroundColor: Colors.white70,
+                fontSize: 16,
+                borderColor: Colors.white70,
+                borderWidth: 1.2,
+              ),
+              TextButtonWithoutIcon(
+                label: "Get More",
+                onPressed: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to Upgrade Plan or Watch Ads screen
+                },
+                backgroundColor: textHighlightedColor,
+                foregroundColor: inAppForegroundColor,
+                fontSize: 16,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 22, vertical: 10),
+              ),
+            ],
+          );
+        }
+        ),
+    );
   }
 }
 

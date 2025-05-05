@@ -90,9 +90,11 @@ class LocalStorageService {
     final micStatus = await Permission.microphone.request();
     final micGranted = micStatus == PermissionStatus.granted;
 
-    await CloudStorageService().saveUserSetting('jamieEnabled', micGranted);
-    jamieEnabledNotifier.value = micGranted;
-    jamieEnabled = micGranted;
+    if (!micGranted && jamieEnabled) {
+      await CloudStorageService().saveUserSetting('jamieEnabled', false);
+      jamieEnabledNotifier.value = false;
+      jamieEnabled = false;
+    }
 
 
     // mark permissions as asked
@@ -108,4 +110,32 @@ class LocalStorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('asked_permissions', true);
   }
+
+
+
+
+  Future<void> setSessionId(String sessionId) async {
+    await _settingsBox.put('session_id', sessionId);
+  }
+
+  Future<String?> getSessionId() async {
+    return _settingsBox.get('session_id');
+  }
+
+  Future<void> removeSessionId() async {
+    await _settingsBox.delete('session_id');
+  }
+
+  Future<void> setSessionData(Map<String, dynamic> data) async {
+    await _settingsBox.put('session_data', data);
+  }
+
+  Map<String, dynamic>? getSessionData() {
+    return _settingsBox.get('session_data');
+  }
+
+  Future<void> removeSessionData() async {
+    await _settingsBox.delete('session_data');
+  }
+
 }

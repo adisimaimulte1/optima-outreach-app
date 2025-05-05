@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:lottie/lottie.dart';
 
 import 'package:optima/screens/beforeApp/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
@@ -21,7 +22,9 @@ import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/local_storage_service.dart';
 import 'package:optima/services/cloud_storage_service.dart';
 import 'package:optima/services/notifications/push_notification_service.dart';
+import 'package:optima/services/sessions/session_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 class SettingsScreen extends StatefulWidget {
@@ -133,7 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             foregroundColor: Colors.white70,
             fontSize: 17,
-            borderColor: textDimColor,
+            borderColor: Colors.white70,
             borderWidth: 1.2,
           ),
           // Delete Button
@@ -187,7 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             foregroundColor: Colors.white70,
             fontSize: 17,
-            borderColor: textDimColor,
+            borderColor: Colors.white70,
             borderWidth: 1.2,
           ),
           // Submit Button
@@ -258,7 +261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             foregroundColor: Colors.white70,
             fontSize: 17,
-            borderColor: textDimColor,
+            borderColor: Colors.white70,
             borderWidth: 1.2,
           ),
           TextButtonWithoutIcon(
@@ -308,6 +311,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } else {
         throw FirebaseAuthException(message: "Password is required.", code: 'password-missing');
       }
+
+      await Future.delayed(Duration(milliseconds: 100));
 
       Navigator.of(context).pushAndRemoveUntil(
         PageRouteBuilder(
@@ -455,7 +460,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) =>
+          AlertDialog(
         backgroundColor: inAppForegroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text("Change Password", style: TextStyle(color: textColor)),
@@ -699,7 +705,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onPressed: () => Navigator.pop(context),
                           foregroundColor: Colors.white70,
                           fontSize: 17,
-                          borderColor: textDimColor,
+                          borderColor: Colors.white70,
                           borderWidth: 1.2,
                         ),
                         TextButtonWithoutIcon(
@@ -800,7 +806,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     onPressed: () => Navigator.pop(context),
                                     foregroundColor: Colors.white70,
                                     fontSize: 17,
-                                    borderColor: textDimColor,
+                                    borderColor: Colors.white70,
                                     borderWidth: 1.2,
                                   ),
                                   TextButtonWithoutIcon(
@@ -893,7 +899,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onPressed: () => Navigator.pop(context),
                           foregroundColor: Colors.white70,
                           fontSize: 17,
-                          borderColor: textDimColor,
+                          borderColor: Colors.white70,
                           borderWidth: 1.2,
                         ),
                         TextButtonWithoutIcon(
@@ -924,7 +930,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             icon: Icons.privacy_tip,
             title: "Privacy Settings",
-            onTap: () {},
+            onTap: _showPrivacySettingsDialog,
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -932,7 +938,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             icon: Icons.devices,
             title: "Session Management",
-            onTap: () {},
+            onTap: _showSessionManagementDialog,
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -942,7 +948,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             icon: Icons.credit_score,
             title: "My Credits",
-            onTap: () {},
+            onTap: _showCreditBalanceDialog,
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -968,7 +974,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             icon: Icons.help_outline,
             title: "Help & FAQ",
-            onTap: () {},
+            onTap: _showHelpDialog,
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -976,7 +982,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             icon: Icons.mail_outline,
             title: "Contact Support",
-            onTap: () {},
+            onTap: _contactSupport,
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -1014,7 +1020,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
               const SizedBox(height: 4),
-              Container(height: 2, width: double.infinity, color: textDimColor),
+              Container(height: 2, width: double.infinity, color: Colors.white70),
             ],
           ),
         ),
@@ -1030,6 +1036,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ElevatedButton.icon(
           onPressed: () async {
             await LocalCache().logout();
+            await SessionService().deleteCurrentSession();
 
             Navigator.of(context).pushAndRemoveUntil(
               PageRouteBuilder(
@@ -1056,4 +1063,519 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 
 
+  String _formatDateTime(DateTime time) {
+    final date = "${_monthName(time.month)} ${time.day}";
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return "$date, $hour:$minute";
+  }
+
+  String _monthName(int month) {
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+    return months[month - 1];
+  }
+
+  Widget _privacyItem({
+    required IconData icon,
+    required String text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: textHighlightedColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: textColor, fontSize: 14.5, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+  void _showPrivacySettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: inAppForegroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Privacy Settings",
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        content: Container(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Here's how Optima protects your data:",
+                style: TextStyle(color: textColor, fontSize: 15.5),
+              ),
+              const SizedBox(height: 14),
+
+              _privacyItem(
+                icon: Icons.lock_outline,
+                text: "All your data is encrypted and stored securely in Firebase.",
+              ),
+              _privacyItem(
+                icon: Icons.visibility_off_outlined,
+                text: "Only you and other members can view your events and settings. No one else has access.",
+              ),
+              _privacyItem(
+                icon: Icons.place_outlined,
+                text: "Location access is optional and used only to optimize event planning.",
+              ),
+              _privacyItem(
+                icon: Icons.mic_none_outlined,
+                text: "Your voice is never stored. It's used only as input for your secure AI conversation.",
+              ),
+              _privacyItem(
+                icon: Icons.shield_outlined,
+                text: "Crash logs and analytics are only used to improve stability — never for profiling.",
+              ),
+
+              const SizedBox(height: 14),
+              Center(
+                child: Text(
+                  "For more details, refer to our full Privacy Policy.",
+                  style: TextStyle(
+                    color: textColor.withOpacity(0.6),
+                    fontSize: 13.5,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButtonWithoutIcon(
+            label: "Close",
+            onPressed: () => Navigator.pop(context),
+            foregroundColor: Colors.white70,
+            fontSize: 17,
+            borderColor: Colors.white70,
+            borderWidth: 1.2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSessionManagementDialog() async {
+    final sessions = await SessionService().getSessions();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: inAppForegroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Active Sessions",
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        content: SizedBox(
+          width: 420,
+          height: 150,
+          child: sessions.isEmpty
+              ? Center(
+            child: Text(
+              "No active sessions found.",
+              style: TextStyle(color: textColor),
+              textAlign: TextAlign.center,
+            ),
+          )
+              : ListView.builder(
+            itemCount: sessions.length,
+            itemBuilder: (_, index) {
+              final session = sessions[index];
+              final Timestamp last = session['lastActive'];
+              final formattedTime = _formatDateTime(
+                DateTime.fromMillisecondsSinceEpoch(last.millisecondsSinceEpoch),
+              );
+              final isCurrent = session['isCurrent'];
+
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  color: isCurrent ? inAppForegroundColor : Colors.transparent,
+                  border: Border.all(
+                    color: isCurrent ? textHighlightedColor : Colors.white70,
+                    width: 1.4,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child:
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Device name (takes full remaining width)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            session['device'],
+                            style: TextStyle(
+                              color: isCurrent ? textColor : Colors.white70,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Last active: $formattedTime",
+                            style: TextStyle(
+                              color: isCurrent ? textColor : Colors.white54,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          if (isCurrent)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                "This device",
+                                style: TextStyle(
+                                  color: textHighlightedColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // Logout button
+                    if (!isCurrent)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0, top: 8),
+                        child: IconButton(
+                          icon: const Icon(Icons.logout, color: Colors.red),
+                          onPressed: () async {
+                            await SessionService().deleteSession(session['id']);
+                            Navigator.pop(context);
+                            _showSessionManagementDialog();
+                          },
+                          style: ButtonStyle(
+                            overlayColor: MaterialStateProperty.all(Colors.transparent),
+                            splashFactory: NoSplash.splashFactory,
+                            padding: MaterialStateProperty.all(EdgeInsets.zero),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+              );
+            },
+          ),
+        ),
+        actions: [
+          if (sessions.length > 1)
+            TextButtonWithoutIcon(
+              label: "Log Out Others",
+              onPressed: () async {
+                await SessionService().deleteAllOtherSessions();
+                Navigator.pop(context);
+                _showSessionManagementDialog(); // Refresh
+              },
+              backgroundColor: Colors.red,
+              foregroundColor: inAppForegroundColor,
+              fontSize: 17,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+          TextButtonWithoutIcon(
+            label: "Close",
+            onPressed: () => Navigator.pop(context),
+            foregroundColor: Colors.white70,
+            fontSize: 17,
+            borderColor: Colors.white70,
+            borderWidth: 1.2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: inAppForegroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Help & FAQ",
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        content: SizedBox(
+          width: 420,
+          height: 400,
+          child: Scrollbar(
+            thumbVisibility: true,
+            thickness: 4,
+            radius: const Radius.circular(6),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white70, width: 1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    _HelpItem(
+                      question: "How do I create an event?",
+                      answer: "Tap the '+' button on the dashboard, then follow the guided form.",
+                    ),
+                    _HelpItem(
+                      question: "What is Jamie?",
+                      answer: "Jamie is your built-in outreach assistant that can help plan and optimize events using AI.",
+                    ),
+                    _HelpItem(
+                      question: "Can I access Optima on multiple devices?",
+                      answer: "Yes. Each session is tracked and manageable under Privacy & Security.",
+                    ),
+                    _HelpItem(
+                      question: "Where is my data stored?",
+                      answer: "All data is encrypted and stored securely in Firebase, managed by your account.",
+                    ),
+                    _HelpItem(
+                      question: "What is an Optima credit?",
+                      answer: "Credits let you use advanced AI features. You can earn them by watching ads or upgrading.",
+                    ),
+                    _HelpItem(
+                      question: "How do I enable Jamie reminders?",
+                      answer: "In Settings > Jamie Assistant, toggle the 'Jamie Reminders' switch.",
+                    ),
+                    _HelpItem(
+                      question: "Is my data private?",
+                      answer: "Yes. Only you can access your account data. Optima does not sell or share user data.",
+                    ),
+                    _HelpItem(
+                      question: "How do I contact support?",
+                      answer: "Use the 'Contact Support' button in Settings to email us directly.",
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButtonWithoutIcon(
+            label: "Close",
+            onPressed: () => Navigator.pop(context),
+            foregroundColor: Colors.white70,
+            fontSize: 17,
+            borderColor: Colors.white70,
+            borderWidth: 1.2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _contactSupport() async {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: inAppForegroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Contact Support",
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          "This will open your email app to send a message to our support team. ",
+          style: TextStyle(color: textColor, fontSize: 15.5, height: 1.4),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButtonWithoutIcon(
+            label: "Cancel",
+            onPressed: () => Navigator.pop(context),
+            foregroundColor: Colors.white70,
+            fontSize: 17,
+            borderColor: Colors.white70,
+            borderWidth: 1.2,
+          ),
+          TextButtonWithoutIcon(
+            label: "Continue",
+            onPressed: () async {
+              Navigator.pop(context); // Close the dialog
+
+              final uriString =
+                  'mailto:adrian.c.contras@gmail.com?subject=Optima%20Support&body=Hi%20Optima team,%0A%0A';
+              await launchUrl(Uri.parse(uriString), mode: LaunchMode.externalApplication);
+            },
+            backgroundColor: textHighlightedColor,
+            foregroundColor: inAppForegroundColor,
+            fontSize: 17,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+  void _showCreditBalanceDialog() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (_) => ValueListenableBuilder<int>(
+        valueListenable: creditNotifier,
+        builder: (context, currentCredits, _) {
+          return AlertDialog(
+            backgroundColor: inAppForegroundColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            titlePadding: const EdgeInsets.only(top: 24),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            title: Column(
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                  child: Icon(
+                    credits == 1203 ? Icons.auto_awesome : (currentCredits == 0 ? Icons.credit_card_off : Icons.credit_score),
+                    key: ValueKey(
+                      currentCredits == 1203
+                          ? 'easterEgg'
+                          : (currentCredits == 0 ? 'zero' : 'normal'),
+                    ),
+                    size: 48,
+                    color: currentCredits == 0 ? Colors.red : textHighlightedColor,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Your Balance",
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 260, maxWidth: 420),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 600),
+                switchInCurve: Curves.easeOutExpo,
+                switchOutCurve: Curves.easeInExpo,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                ),
+                child: Text(
+                  "$currentCredits Credits",
+                  key: ValueKey(currentCredits),
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            actionsAlignment: MainAxisAlignment.spaceEvenly,
+            actions: [
+              TextButtonWithoutIcon(
+                label: "Close",
+                onPressed: () => Navigator.pop(context),
+                foregroundColor: Colors.white70,
+                borderColor: Colors.white70,
+                fontSize: 16,
+                borderWidth: 1,
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+              ),
+              TextButtonWithoutIcon(
+                label: "Get More",
+                onPressed: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to Upgrade Plan or Watch Ads screen
+                },
+                backgroundColor: textHighlightedColor,
+                foregroundColor: inAppForegroundColor,
+                fontSize: 16,
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
+
+
+
+class _HelpItem extends StatelessWidget {
+  final String question;
+  final String answer;
+  const _HelpItem({required this.question, required this.answer});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          Text(
+            question,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.amber,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            answer,
+            style: TextStyle(
+              fontSize: 14.5,
+              color: textColor,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

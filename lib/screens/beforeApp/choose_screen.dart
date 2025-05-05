@@ -10,6 +10,7 @@ import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
 import 'package:optima/screens/inApp/widgets/menu/menu_overlay.dart';
+import 'package:optima/services/sessions/session_service.dart';
 
 
 class ChooseScreen extends StatefulWidget {
@@ -111,6 +112,7 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
       case UserState.authenticated: {
         jamieEnabledNotifier.value = jamieEnabled;
         if (isInitialLaunch) {
+          SessionService().updateLastActive();
           isInitialLaunch = false;
         } return _buildAuthenticatedScreen();
 
