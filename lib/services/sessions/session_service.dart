@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:optima/services/local_storage_service.dart';
+import 'package:optima/services/storage/local_storage_service.dart';
 
 class SessionService {
   static final SessionService instance = SessionService._internal();

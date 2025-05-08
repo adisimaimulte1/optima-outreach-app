@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:optima/ai/ai_assistant.dart';
@@ -10,8 +9,11 @@ import 'package:optima/screens/inApp/menu.dart';
 
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
+import 'package:optima/services/ads/ad_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
-import 'package:optima/services/local_storage_service.dart';
+import 'package:optima/services/credits/plan_notifier.dart';
+import 'package:optima/services/credits/sub_credit_notifier.dart';
+import 'package:optima/services/storage/local_storage_service.dart';
 
 
 final GlobalKey<ReminderStatusCardState> reminderCardKey = GlobalKey<ReminderStatusCardState>();
@@ -60,6 +62,8 @@ String name = "";
 String email = "";
 String? photoUrl;
 int credits = 0; // teapa ca daca schimbi asta nu primesti credite in plus
+String plan = ""; // teapa ca daca schimbi asta nu ai alt plan ;)
+double subCredits = 0;
 
 
 
@@ -91,8 +95,13 @@ final ValueNotifier<ScreenType> selectedScreenNotifier = ValueNotifier(ScreenTyp
 final ValueNotifier<JamieState> assistantState = ValueNotifier(JamieState.idle);
 
 final ValueNotifier<String> transcribedText = ValueNotifier('');
-CreditNotifier creditNotifier = CreditNotifier();
 
+
+SubCreditNotifier subCreditNotifier = SubCreditNotifier();
+CreditNotifier creditNotifier = CreditNotifier();
+PlanNotifier selectedPlan = PlanNotifier();
+
+final adService = AdService();
 
 
 bool updateSettingsAfterAppResume = false;

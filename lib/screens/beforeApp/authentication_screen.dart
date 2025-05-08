@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -9,9 +6,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:optima/screens/beforeApp/widgets/background_particles.dart';
 import 'package:optima/services/cache/local_cache.dart';
-import 'package:optima/services/cloud_storage_service.dart';
+import 'package:optima/services/storage/cloud_storage_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
-import 'package:optima/services/local_storage_service.dart';
+import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:optima/services/sessions/session_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';

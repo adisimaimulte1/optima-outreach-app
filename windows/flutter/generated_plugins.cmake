@@ -12,6 +12,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_storage
   flutter_volume_controller
   flutter_webrtc
+  geolocator_windows
   livekit_client
   permission_handler_windows
   record_windows

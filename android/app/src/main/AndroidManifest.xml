@@ -32,6 +32,10 @@
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/LaunchTheme">
 
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-7393750397776697~6972086503"/>
+
         <!-- Enables Android 13+ themed icons support -->
         <meta-data
             android:name="android.theme.icon"

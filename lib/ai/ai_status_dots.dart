@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
+import 'package:optima/screens/inApp/widgets/settings/dialogs/update_plan_dialog.dart';
 
 class AIStatusDots extends StatefulWidget {
   const AIStatusDots({super.key});
@@ -246,6 +247,8 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
     }
   }
 
+
+
   void showOutOfCreditsDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -307,7 +310,7 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
                 label: "Get More",
                 onPressed: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to Upgrade Plan or Watch Ads screen
+                  UpgradePlanDialog.show(context, selectedPlan);
                 },
                 backgroundColor: textHighlightedColor,
                 foregroundColor: inAppForegroundColor,
@@ -321,6 +324,7 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
         ),
     );
   }
+
 }
 
 class _DotStyle {

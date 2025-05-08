@@ -32,6 +32,7 @@ class CloudStorageService {
       'name': authUser.displayName ?? 'Unknown User',
       'email': authUser.email ?? '',
       'photoUrl': photoUrlBase64,
+      'countryCode': 'UNKNOWN',
       'settings': {
         'jamieEnabled': true,
         'wakeWordEnabled': true,

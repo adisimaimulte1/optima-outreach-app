@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'package:optima/screens/beforeApp/choose_screen.dart';
 import 'package:optima/services/cache/local_cache.dart';
-import 'package:optima/services/cloud_storage_service.dart';
-import 'package:optima/services/local_storage_service.dart';
+import 'package:optima/services/location/location_processor.dart';
+import 'package:optima/services/storage/cloud_storage_service.dart';
+import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:optima/globals.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -15,9 +17,15 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+  await MobileAds.instance.initialize();
+  MobileAds.instance.updateRequestConfiguration(
+    RequestConfiguration(),
+  );
 
   await LocalStorageService().init();
   await LocalCache().initializeAndCacheUserData();
+
+  LocationProcessor.updateUserCountryCode();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);

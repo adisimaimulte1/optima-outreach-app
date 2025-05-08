@@ -20,7 +20,8 @@
          <key>NSLocationWhenInUseUsageDescription</key>
          <string>We need your location to pick a place.</string>
 
-
+          <key>GADApplicationIdentifier</key>
+          <string>ca-app-pub-7393750397776697~6972086503</string>
 
          <key>UIBackgroundModes</key>
          <array>

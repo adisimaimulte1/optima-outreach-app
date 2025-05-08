@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/services/credits/credit_service.dart';
-import 'package:optima/services/local_storage_service.dart';
+import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalCache {
@@ -72,6 +72,8 @@ class LocalCache {
     email = data['email'] ?? user.email ?? '';
     photoUrl = data['photoUrl'];
     credits = data['credits'] ?? 0;
+    subCredits = (data['credits'] as num).toDouble();
+    plan = data['plan'] ?? 'free';
 
     final settings = Map<String, dynamic>.from(data['settings'] ?? {});
 
@@ -158,6 +160,11 @@ class LocalCache {
     try {
       clearCache();
       aiVoice.stopLoop();
+
+      final allSessions = await FirebaseFirestore.instance.collection('sessions').get();
+      for (final doc in allSessions.docs) {
+        await doc.reference.delete();
+      }
 
       LocalStorageService().setIsGoogleUser(false);
       CreditService.deleteCredits();

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/services/cloud_storage_service.dart';
+import 'package:optima/services/storage/cloud_storage_service.dart';
 import 'package:optima/services/notifications/push_notification_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
