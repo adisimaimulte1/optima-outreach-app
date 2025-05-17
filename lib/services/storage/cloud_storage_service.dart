@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/cache/local_cache.dart';
 
 class CloudStorageService {
@@ -79,6 +80,47 @@ class CloudStorageService {
     }, SetOptions(merge: true));
   }
 
+  Future<void> saveEvent(EventData event) async {
+    if (_userId == null) return;
+
+    final userEventsRef = _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('events');
+
+    final docRef = event.id != null
+        ? userEventsRef.doc(event.id)
+        : await userEventsRef.add(event.toMap());
+
+    if (event.id == null) {
+      event.id = docRef.id;
+    } else {
+      await docRef.set(event.toMap());
+    }
+
+    await LocalCache().cacheSingleEvent(event);
+  }
+
+
+
+
+
+  Future<void> deleteEvent(EventData event) async {
+    if (_userId == null || event.id == null) return;
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('events')
+        .doc(event.id);
+
+    await docRef.delete();
+    await LocalCache().deleteCachedEvent(event.id!);
+  }
+
+
+
+
 
   Future<Map<String, dynamic>?> getUserProfile() async {
     if (_userId == null) return null;
@@ -101,7 +143,7 @@ class CloudStorageService {
 
     final userRef = _firestore.collection('users').doc(uid);
 
-    final subcollections = ['sessions'];
+    final subcollections = ['sessions', 'events'];
     for (final sub in subcollections) {
       final subRef = userRef.collection(sub);
       final snapshot = await subRef.get();

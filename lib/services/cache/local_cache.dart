@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/credits/credit_service.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,6 +47,7 @@ class LocalCache {
           'Unsupported SharedPreferences type: ${value.runtimeType}');
     }
   }
+
 
 
   Future<Map<String, dynamic>> loadProfile() async {
@@ -99,6 +103,8 @@ class LocalCache {
     if (authUser == null) return;
     if (await isCacheComplete()) {
       await loadAndCacheUserData();
+      await _cacheUserEventsFromFirestore();
+
       return;
     }
 
@@ -123,7 +129,9 @@ class LocalCache {
     }
 
     await loadAndCacheUserData();
+    await _cacheUserEventsFromFirestore();
   }
+
 
 
   Future<void> clearCache() async {
@@ -134,6 +142,8 @@ class LocalCache {
     await prefs.remove('jamieEnabled');
     await prefs.remove('wakeWordEnabled');
     await prefs.remove('jamieReminders');
+
+    clearCachedEvents();
   }
 
   Future<bool> isCacheComplete() async {
@@ -147,6 +157,7 @@ class LocalCache {
   }
 
 
+
   Future<void> cacheMemberPhoto(String memberId, String base64) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('member_photo_$memberId', base64);
@@ -156,6 +167,92 @@ class LocalCache {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('member_photo_$memberId');
   }
+
+
+
+
+  Future<void> cacheUserEventsFromApp(List<EventData> events) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> jsonList =
+    events.map((e) => jsonEncode(e.toMap())).toList();
+    await prefs.setStringList('cached_user_events', jsonList);
+  }
+
+  Future<void> _cacheUserEventsFromFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('events')
+        .orderBy('selectedDate')
+        .get();
+
+    final e = snapshot.docs.map((doc) {
+      final data = doc.data();
+      final event = EventData.fromMap(data)..id = doc.id;
+      return event;
+    }).toList();
+
+    await cacheUserEventsFromApp(e);
+    events = e;
+  }
+
+  Future<void> cacheSingleEvent(EventData event) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getStringList('cached_user_events') ?? [];
+
+    final updated = existing.map((e) {
+      final decoded = jsonDecode(e);
+      return decoded['id'] == event.id
+          ? jsonEncode(event.toMap())
+          : e;
+    }).toList();
+
+    final contains = updated.any((e) {
+      final decoded = jsonDecode(e);
+      return decoded['id'] == event.id;
+    });
+
+    // If it wasn't found (new), add it
+    if (!contains) {
+      updated.insert(0, jsonEncode(event.toMap()));
+    }
+
+    await prefs.setStringList('cached_user_events', updated);
+  }
+
+
+
+  Future<List<EventData>> getCachedUserEvents() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String>? jsonList = prefs.getStringList('cached_user_events');
+    if (jsonList == null) return [];
+
+    return jsonList.map((jsonStr) {
+      final Map<String, dynamic> map = jsonDecode(jsonStr);
+      return EventData.fromMap(map);
+    }).toList();
+  }
+
+  Future<void> deleteCachedEvent(String eventId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getStringList('cached_user_events') ?? [];
+
+    final updated = existing.where((e) {
+      final decoded = jsonDecode(e);
+      return decoded['id'] != eventId;
+    }).toList();
+
+    await prefs.setStringList('cached_user_events', updated);
+  }
+
+  Future<void> clearCachedEvents() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('cached_user_events');
+  }
+
 
 
 

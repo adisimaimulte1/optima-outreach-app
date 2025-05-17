@@ -320,6 +320,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     LocalStorageService().setIsGoogleUser(googleSignIn);
     LocalCache().initializeAndCacheUserData();
+
     SessionService().registerSession();
 
     creditNotifier = CreditNotifier();

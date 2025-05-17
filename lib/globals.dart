@@ -9,6 +9,7 @@ import 'package:optima/screens/inApp/menu.dart';
 
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/ads/ad_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
 import 'package:optima/services/credits/plan_notifier.dart';
@@ -64,6 +65,7 @@ String? photoUrl;
 int credits = 0; // teapa ca daca schimbi asta nu primesti credite in plus
 String plan = ""; // teapa ca daca schimbi asta nu ai alt plan ;)
 double subCredits = 0;
+List<EventData> events = [];
 
 
 
@@ -232,6 +234,29 @@ Future<String> convertImageUrlToBase64(String url) async {
   }
   return '';
 }
+
+
+
+
+String formatDate(DateTime date) {
+  const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  final day = date.day;
+  final month = monthNames[date.month - 1];
+  final year = date.year;
+  return '$month $day, $year';
+}
+
+String formatTime(TimeOfDay time) {
+  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  final minute = time.minute.toString().padLeft(2, '0');
+  final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+  return '$hour:$minute $period';
+}
+
+
 
 
 

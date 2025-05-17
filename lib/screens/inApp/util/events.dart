@@ -5,7 +5,9 @@ import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
 import 'package:optima/screens/inApp/widgets/events/add_event_form.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/filter_button.dart';
-import 'package:optima/screens/inApp/widgets/events/card.dart';
+import 'package:optima/screens/inApp/widgets/events/event_card.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -31,27 +33,11 @@ class _EventsScreenState extends State<EventsScreen> {
     });
   }
 
-
-  final List<Map<String, String>> eventData = [
-    {"title": "Red Cross Fundraiser", "date": "Apr 30, 2025", "time": "3:00 PM", "status": "UPCOMING"},
-    {"title": "Beach Cleanup", "date": "May 4, 2025", "time": "10:00 AM", "status": "UPCOMING"},
-    {"title": "Leadership Workshop", "date": "Mar 12, 2025", "time": "5:00 PM", "status": "COMPLETED"},
-    {"title": "Volunteer Coordination", "date": "May 8, 2025", "time": "2:00 PM", "status": "UPCOMING"},
-    {"title": "Fundraiser Wrap-Up", "date": "May 12, 2025", "time": "4:00 PM", "status": "COMPLETED"},
-    {"title": "Hospital Donation Drive", "date": "May 15, 2025", "time": "11:00 AM", "status": "UPCOMING"},
-    {"title": "Blood Drive", "date": "May 20, 2025", "time": "9:00 AM", "status": "UPCOMING"},
-    {"title": "Disaster Response Training", "date": "May 22, 2025", "time": "3:30 PM", "status": "COMPLETED"},
-    {"title": "Medical Supply Sorting", "date": "May 25, 2025", "time": "1:00 PM", "status": "UPCOMING"},
-    {"title": "Community Safety Day", "date": "May 28, 2025", "time": "12:00 PM", "status": "UPCOMING"},
-    {"title": "First Aid Workshop", "date": "May 30, 2025", "time": "10:00 AM", "status": "CANCELLED"},
-    {"title": "Emergency Prep Drill", "date": "Jun 2, 2025", "time": "6:00 PM", "status": "UPCOMING"},
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final filteredData = selectedFilter == 'All'
-        ? eventData
-        : eventData.where((e) => e['status'] == selectedFilter).toList();
+    final filteredEvents = selectedFilter == 'All'
+        ? events
+        : events.where((e) => e.status == selectedFilter).toList();
 
     return AbsScreen(
       sourceType: EventsScreen,
@@ -67,7 +53,7 @@ class _EventsScreenState extends State<EventsScreen> {
               const SizedBox(height: 24),
               _buildHeader(),
               _buildDivider(),
-              _buildEventList(filteredData),
+              _buildEventList(filteredEvents),
             ],
           ),
         );
@@ -130,21 +116,124 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  Widget _buildEventList(List<Map<String, String>> filteredData) {
+  String _friendlyFilterLabel(String filter) {
+    switch (filter) {
+      case 'UPCOMING':
+        return "upcoming events";
+      case 'COMPLETED':
+        return "completed events";
+      case 'CANCELLED':
+        return "cancelled events";
+      default:
+        return "events";
+    }
+  }
+
+  Widget _buildEventList(List<EventData> filteredEvents) {
+    if (filteredEvents.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: Text(
+            "no ${_friendlyFilterLabel(selectedFilter)}",
+            style: TextStyle(
+              color: Colors.white30,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Expanded(
-      child: ListView.builder(
+      child: ReorderableListView.builder(
         physics: _disableScroll
             ? const NeverScrollableScrollPhysics()
             : const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-        itemCount: filteredData.length,
+        itemCount: filteredEvents.length,
+        buildDefaultDragHandles: false,
+        proxyDecorator: (child, index, animation) {
+          final event = filteredEvents[index];
+          return Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+            child: EventCard(
+              eventData: event,
+              onDelete: (eventToDelete) {
+                setState(() {
+                  CloudStorageService().deleteEvent(eventToDelete);
+                  events.removeWhere((e) => e.id == eventToDelete.id);
+                });
+              },
+              onEdit: (eventToEdit) async {
+                final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
+
+                if (updatedEvent != null) {
+                  setState(() {
+                    final index = events.indexOf(eventToEdit);
+                    if (index != -1) {
+                      events[index] = updatedEvent;
+                    }
+                  });
+                }
+              },
+              onReplace: (oldEvent, newEvent) {
+                setState(() {
+                  final oldIndex = events.indexOf(oldEvent);
+                  if (oldIndex != -1) {
+                    events.removeAt(oldIndex);
+                    events.insert(oldIndex, newEvent);
+                  }
+                });
+              },
+            ),
+
+          );
+        },
+        onReorder: (oldIndex, newIndex) {
+          setState(() {
+            if (newIndex > oldIndex) newIndex -= 1;
+            final item = filteredEvents.removeAt(oldIndex);
+            filteredEvents.insert(newIndex, item);
+          });
+        },
         itemBuilder: (context, index) {
-          final e = filteredData[index];
-          return EventCard(
-            title: e["title"]!,
-            date: e["date"]!,
-            time: e["time"]!,
-            status: e["status"]!,
+          final event = filteredEvents[index];
+          return ReorderableDragStartListener(
+            key: ValueKey(event.id ?? event.eventName),
+            index: index,
+            child: EventCard(
+              eventData: event,
+              onDelete: (eventToDelete) {
+                setState(() {
+                  CloudStorageService().deleteEvent(eventToDelete);
+                  events.removeWhere((e) => e.id == eventToDelete.id);
+                });
+              },
+              onEdit: (eventToEdit) async {
+                final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
+
+                if (updatedEvent != null) {
+                  setState(() {
+                    final index = events.indexOf(eventToEdit);
+                    if (index != -1) {
+                      events[index] = updatedEvent;
+                    }
+                  });
+                }
+              },
+              onReplace: (oldEvent, newEvent) {
+                setState(() {
+                  final oldIndex = events.indexOf(oldEvent);
+                  if (oldIndex != -1) {
+                    events.removeAt(oldIndex);
+                    events.insert(oldIndex, newEvent);
+                  }
+                });
+              },
+            ),
           );
         },
       ),
@@ -153,8 +242,9 @@ class _EventsScreenState extends State<EventsScreen> {
 
 
 
-  void showAddEventForm(BuildContext context) {
-    Navigator.of(context).push(
+
+  void showAddEventForm(BuildContext context) async {
+    final result = await Navigator.of(context).push<EventData>(
       PageRouteBuilder(
         opaque: false,
         barrierDismissible: true,
@@ -165,13 +255,9 @@ class _EventsScreenState extends State<EventsScreen> {
             backgroundColor: Colors.transparent,
             body: Stack(
               children: [
-                // Static black overlay background (not scaling)
                 Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withOpacity(0.5),
-                  ),
+                  child: Container(color: Colors.black.withOpacity(0.5)),
                 ),
-                // Centered form scales in
                 Center(
                   child: ScaleTransition(
                     scale: Tween<double>(begin: 0.95, end: 1.0).animate(
@@ -188,12 +274,47 @@ class _EventsScreenState extends State<EventsScreen> {
           );
         },
         transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        events.insert(0, result);
+      });
+    }
+  }
+
+  Future<EventData?> showEventFormOverlay(BuildContext context, {EventData? initial}) {
+    return Navigator.of(context).push<EventData>(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        pageBuilder: (_, __, ___) => Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Container(color: Colors.black.withOpacity(0.5)),
+              ),
+              Center(
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                    CurvedAnimation(parent: __, curve: Curves.easeOutBack),
+                  ),
+                  child: AddEventForm(initialData: initial),
+                ),
+              ),
+            ],
+          ),
+        ),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
         },
       ),
     );
   }
+
+
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/close_button.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/navigation_button.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_ai_step.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_audience_step.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_goals_step.dart';
@@ -10,13 +12,17 @@ import 'package:optima/screens/inApp/widgets/events/steps/event_location_step.da
 import 'package:optima/screens/inApp/widgets/events/steps/event_members_step.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_name_step.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_time_step.dart';
+import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class AddEventForm extends StatefulWidget {
-  const AddEventForm({super.key});
+  final EventData? initialData;
+
+  const AddEventForm({super.key, this.initialData});
 
   @override
   State<AddEventForm> createState() => _AddEventFormState();
 }
+
 
 class _AddEventFormState extends State<AddEventForm> {
   final PageController _pageController = PageController();
@@ -55,6 +61,32 @@ class _AddEventFormState extends State<AddEventForm> {
   bool _jamieEnabled = credits > 0;
 
 
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.initialData != null) {
+      final data = widget.initialData!;
+      _eventName = data.eventName;
+      _organizationType = data.organizationType;
+      _customOrg = data.customOrg;
+      _selectedDate = data.selectedDate;
+      _selectedTime = data.selectedTime;
+      _locationAddress = data.locationAddress;
+      _locationLatLng = data.locationLatLng;
+      _eventMembers = List.from(data.eventMembers);
+      _eventGoals = List.from(data.eventGoals);
+      _audienceTags = List.from(data.audienceTags);
+      _isPublic = data.isPublic;
+      _isPaid = data.isPaid;
+      _eventPrice = data.eventPrice;
+      _eventCurrency = data.eventCurrency;
+      _jamieEnabled = data.jamieEnabled;
+    }
+  }
+
+
+
 
 
 
@@ -74,7 +106,53 @@ class _AddEventFormState extends State<AddEventForm> {
       setState(() => _currentStep++);
       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
-      // TODO: Submit
+
+      if (widget.initialData != null) {
+        widget.initialData!
+          ..eventName = _eventName
+          ..organizationType = _organizationType
+          ..customOrg = _customOrg
+          ..selectedDate = _selectedDate
+          ..selectedTime = _selectedTime
+          ..locationAddress = _locationAddress
+          ..locationLatLng = _locationLatLng
+          ..eventMembers = _eventMembers
+          ..eventGoals = _eventGoals
+          ..audienceTags = _audienceTags
+          ..isPublic = _isPublic
+          ..isPaid = _isPaid
+          ..eventPrice = _eventPrice
+          ..eventCurrency = _eventCurrency
+          ..jamieEnabled = _jamieEnabled;
+
+        CloudStorageService().saveEvent(widget.initialData!);
+        Navigator.of(context).pop(widget.initialData);
+        return;
+      }
+
+      // If new, create a fresh object
+      final eventData = EventData(
+        eventName: _eventName,
+        organizationType: _organizationType,
+        customOrg: _customOrg,
+        selectedDate: _selectedDate,
+        selectedTime: _selectedTime,
+        locationAddress: _locationAddress,
+        locationLatLng: _locationLatLng,
+        eventMembers: _eventMembers,
+        eventGoals: _eventGoals,
+        audienceTags: _audienceTags,
+        isPublic: _isPublic,
+        isPaid: _isPaid,
+        eventPrice: _eventPrice,
+        eventCurrency: _eventCurrency,
+        jamieEnabled: _jamieEnabled,
+        status: 'UPCOMING',
+      );
+
+
+      CloudStorageService().saveEvent(eventData);
+      Navigator.of(context).pop(eventData);
     }
   }
 
@@ -162,7 +240,7 @@ class _AddEventFormState extends State<AddEventForm> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                "Create New Event",
+                widget.initialData == null ? "Create New Event" : "Edit This Event",
                 style: TextStyle(
                   color: textColor,
                   fontSize: 30,
