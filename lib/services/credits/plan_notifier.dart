@@ -25,6 +25,10 @@ class PlanNotifier extends ValueNotifier<String> {
     }
   }
 
+  void cancel() {
+    _subscription?.cancel();
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/close_button.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/navigation_button.dart';
+import 'package:optima/screens/inApp/widgets/events/steps/event_ai_step.dart';
+import 'package:optima/screens/inApp/widgets/events/steps/event_audience_step.dart';
+import 'package:optima/screens/inApp/widgets/events/steps/event_goals_step.dart';
+import 'package:optima/screens/inApp/widgets/events/steps/event_location_step.dart';
+import 'package:optima/screens/inApp/widgets/events/steps/event_members_step.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_name_step.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_time_step.dart';
 
@@ -14,6 +20,7 @@ class AddEventForm extends StatefulWidget {
 
 class _AddEventFormState extends State<AddEventForm> {
   final PageController _pageController = PageController();
+
   int _currentStep = 0;
   final int _totalSteps = 7;
 
@@ -27,6 +34,27 @@ class _AddEventFormState extends State<AddEventForm> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
+  // step 3
+  String? _locationAddress;
+  LatLng? _locationLatLng;
+
+  // step 4
+  List<String> _eventMembers = [];
+
+  // step 5
+  List<String> _eventGoals = [];
+
+  // step 6
+  List<String> _audienceTags = [];
+  bool _isPublic = true;
+  bool _isPaid = false;
+  double? _eventPrice;
+  String? _eventCurrency;
+
+  // step 7
+  bool _jamieEnabled = credits > 0;
+
+
 
 
 
@@ -39,9 +67,6 @@ class _AddEventFormState extends State<AddEventForm> {
     Icons.inventory,      // Resources
     Icons.smart_toy,      // AI + Visibility
   ];
-
-
-
 
   void _nextStep() {
     FocusScope.of(context).unfocus();
@@ -342,6 +367,67 @@ class _AddEventFormState extends State<AddEventForm> {
           onDateChanged: (value) => setState(() => _selectedDate = value),
           onTimeChanged: (value) => setState(() => _selectedTime = value),
         );
+      case 2:
+        return EventLocationStep(
+          onLocationPicked: (address, lat, lng) {
+            setState(() {
+              _locationAddress = address;
+              _locationLatLng = LatLng(lat, lng);
+            });
+          },
+          initialAddress: _locationAddress,
+          initialLatLng: _locationLatLng,
+        );
+      case 3:                       // 👈 NEW — Add-Members step
+        return EventMembersStep(
+          initialMembers: _eventMembers,
+          onChanged: (list) => setState(() => _eventMembers = list),
+        );
+      case 4:
+        return EventGoalsStep(
+          goals: _eventGoals.join('\n'),
+          onGoalsAdded: (goals) => setState(() {
+            _eventGoals = goals
+                .split('\n')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+          }),
+        );
+      case 5:
+        return EventAudienceStep(
+          selectedTags: _audienceTags,
+          isPublic: _isPublic,
+          isPaid: _isPaid,
+          price: _eventPrice,
+          currency: _eventCurrency,
+          onChanged: ({
+            required audience,
+            required isPublic,
+            required isPaid,
+            required price,
+            required currency,
+          }) {
+            setState(() {
+              _audienceTags = audience;
+              _isPublic = isPublic;
+              _isPaid = isPaid;
+              _eventPrice = price;
+              _eventCurrency = currency;
+            });
+          },
+        );
+      case 6:
+        return EventAIStep(
+          jamieEnabled: _jamieEnabled,
+          onChanged: (val) => setState(() => _jamieEnabled = val),
+        );
+
+
+
+
+
+
     // TODO: Other steps
       default:
         return _buildTextField(hint: "Enter here...");
@@ -352,11 +438,29 @@ class _AddEventFormState extends State<AddEventForm> {
 
   bool _canProceedToNextStep() {
     if (_currentStep == 0) {
-      return _eventName.length > 3;
+      return _eventName.length > 3 && (_organizationType != 'Custom' || _customOrg.length > 3);
     } else if (_currentStep == 1) {
       return _selectedDate != null && _selectedTime != null;
+    } else if (_currentStep == 2) {
+      return _locationAddress != null && _locationAddress!.trim().length > 5;
+    } else if (_currentStep == 4) {
+      return _eventGoals.isNotEmpty;
+    } else if (_currentStep == 5) {
+      final hasCustomSelected = _audienceTags.any((e) => e.startsWith("Custom"));
+      final hasValidCustom = _audienceTags.any(
+            (e) => e.startsWith("Custom:") && e.substring(7).trim().length >= 2,
+      );
+      final hasValidPredefined = _audienceTags.any((e) => !e.startsWith("Custom"));
+      final hasAudience = hasCustomSelected ? hasValidCustom : hasValidPredefined;
+
+      final hasValidPrice = _eventPrice != null && _eventPrice! > 0;
+      final hasValidCurrency = _eventCurrency != null && _eventCurrency!.isNotEmpty;
+      final paidValid = !_isPaid || (hasValidPrice && hasValidCurrency);
+
+      return hasAudience && paidValid;
     }
-    return true; // other steps: allow freely for now
+
+    return true;
   }
 
 }

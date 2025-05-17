@@ -11,7 +11,13 @@ class LocationProcessor {
     try {
       // Check location permission
       final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied) {
+        final requested = await Geolocator.requestPermission();
+        if (requested == LocationPermission.denied || requested == LocationPermission.deniedForever) {
+          await handlePermissionDenied();
+          return;
+        }
+      } else if (permission == LocationPermission.deniedForever) {
         await handlePermissionDenied();
         return;
       }

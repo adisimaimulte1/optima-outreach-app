@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:optima/screens/beforeApp/widgets/background_particles.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/credits/plan_notifier.dart';
+import 'package:optima/services/credits/sub_credit_notifier.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
@@ -14,7 +16,7 @@ import 'package:optima/services/sessions/session_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:optima/screens/beforeApp/widgets/buttons/bouncy_button.dart';
-import 'package:optima/screens/beforeApp/choose_screen.dart';
+import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/globals.dart';
 
 
@@ -45,6 +47,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();
+    isFirstDashboardLaunch = true;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
@@ -285,7 +288,6 @@ class _AuthScreenState extends State<AuthScreen> {
         final refreshedUser = auth.currentUser;
 
         if (refreshedUser != null && refreshedUser.emailVerified) {
-          await CloudStorageService().initDatabase();
           _navigateToHome(false);
           return;
         }
@@ -296,7 +298,6 @@ class _AuthScreenState extends State<AuthScreen> {
     await auth.currentUser?.reload();
     final finalUser = auth.currentUser;
     if (finalUser != null && finalUser.emailVerified) {
-      await CloudStorageService().initDatabase();
       _navigateToHome(false);
       return;
     }
@@ -320,7 +321,12 @@ class _AuthScreenState extends State<AuthScreen> {
     LocalStorageService().setIsGoogleUser(googleSignIn);
     LocalCache().initializeAndCacheUserData();
     SessionService().registerSession();
+
     creditNotifier = CreditNotifier();
+    subCreditNotifier = SubCreditNotifier();
+    selectedPlan = PlanNotifier();
+
+    isFirstDashboardLaunch = true;
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
@@ -364,9 +370,12 @@ class _AuthScreenState extends State<AuthScreen> {
       final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       final isNew = userCredential.additionalUserInfo?.isNewUser ?? false;
 
-      if (isNew) {
+      await FirebaseAuth.instance.currentUser?.reload();
+      final user = userCredential.user;
+
+      if (isNew && user != null) {
+        await CloudStorageService().initDatabaseWithUser(user);
         _openWebsite("https://adisimaimulte1.github.io/optima-verification-site/?mode=verifyEmail&oobCode=love");
-        CloudStorageService().initDatabase();
       }
 
       if (!mounted) return;

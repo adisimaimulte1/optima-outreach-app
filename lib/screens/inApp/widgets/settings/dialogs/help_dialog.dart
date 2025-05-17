@@ -100,10 +100,10 @@ class _HelpItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             question,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: Colors.amber,
+              color: textHighlightedColor,
             ),
           ),
           const SizedBox(height: 4),

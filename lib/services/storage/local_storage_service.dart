@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -127,8 +128,16 @@ class LocalStorageService {
   }
 
   Future<void> setSessionData(Map<String, dynamic> data) async {
-    await _settingsBox.put('session_data', data);
+    final cleanedData = data.map((key, value) {
+      if (value is Timestamp) {
+        return MapEntry(key, value.toDate()); // ✅ Convert to DateTime
+      }
+      return MapEntry(key, value);
+    });
+
+    await _settingsBox.put('session_data', cleanedData);
   }
+
 
   Map<String, dynamic>? getSessionData() {
     return _settingsBox.get('session_data');

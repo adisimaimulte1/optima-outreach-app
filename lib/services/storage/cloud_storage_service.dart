@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/services/cache/local_cache.dart';
 
@@ -13,32 +14,32 @@ class CloudStorageService {
 
 
 
-  Future<void> initDatabase() async {
-    final authUser = FirebaseAuth.instance.currentUser;
-    if (authUser == null) {
-      throw FirebaseAuthException(
-        message: "No user is logged in.",
-        code: 'user-not-found',
-      );
-    }
+  Future<void> initDatabaseWithUser(User user) async {
+    final userDocRef = _firestore.collection('users').doc(user.uid);
 
-    final userDocRef = _firestore.collection('users').doc(authUser.uid);
-
-    final photoUrlBase64 = authUser.photoURL != null && authUser.photoURL!.isNotEmpty
-        ? await convertImageUrlToBase64(authUser.photoURL!)
+    final photoUrlBase64 = user.photoURL != null && user.photoURL!.isNotEmpty
+        ? await convertImageUrlToBase64(user.photoURL!)
         : '';
 
     await userDocRef.set({
-      'name': authUser.displayName ?? 'Unknown User',
-      'email': authUser.email ?? '',
-      'photoUrl': photoUrlBase64,
+      'name': user.displayName ?? 'Unknown User',
+      'email': user.email ?? '',
+      'photo': photoUrlBase64,
       'countryCode': 'UNKNOWN',
+      'fcmToken': '',
+      'lastRewardedAd': '',
       'settings': {
         'jamieEnabled': true,
         'wakeWordEnabled': true,
         'jamieReminders': true,
       },
     }, SetOptions(merge: true));
+
+    await FirebaseFirestore.instance.collection('public_data').doc(user.uid).set({
+      'email': user.email,
+      'name': user.displayName ?? 'Unknown User',
+      'photo': photoUrlBase64 ?? '',
+    });
   }
 
 
@@ -46,14 +47,14 @@ class CloudStorageService {
   Future<void> saveUserProfile({
     required String name,
     required String email,
-    String? photoUrl,
+    String? photo,
   }) async {
     if (_userId == null) return;
 
     await _firestore.collection('users').doc(_userId).set({
       'name': name,
       'email': email,
-      'photoUrl': photoUrl,
+      'photo': photo,
     }, SetOptions(merge: true));
   }
 
@@ -63,6 +64,9 @@ class CloudStorageService {
     LocalCache().saveSetting(key, value);
     await _firestore.collection('users').doc(_userId).set({
       key: value
+    }, SetOptions(merge: true));
+    await _firestore.collection('public_data').doc(_userId).set({
+      key: value,
     }, SetOptions(merge: true));
   }
 
@@ -87,7 +91,27 @@ class CloudStorageService {
     return {
       'name': data['name'] ?? '',
       'email': data['email'] ?? '',
-      'photoUrl': data['photoUrl'],
+      'photo': data['photo'],
     };
   }
+
+  Future<void> deleteAll() async {
+    final uid = _userId;
+    if (uid == null) return;
+
+    final userRef = _firestore.collection('users').doc(uid);
+
+    final subcollections = ['sessions'];
+    for (final sub in subcollections) {
+      final subRef = userRef.collection(sub);
+      final snapshot = await subRef.get();
+      for (final doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    }
+
+    await userRef.delete();
+    await _firestore.collection('public_data').doc(uid).delete();
+  }
+
 }

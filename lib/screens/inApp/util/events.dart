@@ -19,6 +19,19 @@ class _EventsScreenState extends State<EventsScreen> {
   bool _disableScroll = false;
 
 
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (showAddEventOnLaunch) {
+        showAddEventForm(context);
+        showAddEventOnLaunch = false;
+      }
+    });
+  }
+
+
   final List<Map<String, String>> eventData = [
     {"title": "Red Cross Fundraiser", "date": "Apr 30, 2025", "time": "3:00 PM", "status": "UPCOMING"},
     {"title": "Beach Cleanup", "date": "May 4, 2025", "time": "10:00 AM", "status": "UPCOMING"},

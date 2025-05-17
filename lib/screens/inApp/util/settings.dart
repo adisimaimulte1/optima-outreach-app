@@ -7,7 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter/material.dart';
 
-import 'package:optima/screens/beforeApp/choose_screen.dart';
+import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 import 'package:optima/screens/inApp/widgets/settings/dialogs/account_delete_dialogs.dart';
 import 'package:optima/screens/inApp/widgets/settings/dialogs/change_password_dialog.dart';
@@ -92,9 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final bytes = await file.readAsBytes();
       final base64Image = base64Encode(bytes);
 
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'photoUrl': base64Image,
-      }, SetOptions(merge: true));
+      CloudStorageService().saveUserProfileIndividual('photo', base64Image);
 
       return base64Image;
     } catch (e) { return null; }
@@ -598,6 +596,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Center(
       child: ElevatedButton.icon(
           onPressed: () async {
+            selectedPlan.cancel();
+            creditNotifier.cancel();
+            subCreditNotifier.cancel();
+
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(FirebaseAuth.instance.currentUser!.uid)
+                .update({'fcmToken': ''});
+
             await LocalCache().logout();
             await SessionService().deleteCurrentSession();
 

@@ -16,13 +16,18 @@ class SubCreditNotifier extends ValueNotifier<double> {
           .doc(user.uid)
           .snapshots()
           .listen((snapshot) {
-        final subcr = (snapshot.data()?['subCredits'] as num).toDouble();
+
+        final subcr = (snapshot.data()?['subCredits'] ?? 0).toDouble();
         if (subcr != value) {
           value = subcr;
           subCredits = subcr; // update global if you use one
         }
       });
     }
+  }
+
+  void cancel() {
+    _subscription?.cancel();
   }
 
   @override

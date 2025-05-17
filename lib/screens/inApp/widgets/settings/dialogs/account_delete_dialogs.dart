@@ -3,8 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/services/cache/local_cache.dart';
-import 'package:optima/screens/beforeApp/choose_screen.dart';
+import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
+import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class AccountDeleteDialogs {
   static Future<void> showDeleteConfirmationDialog(BuildContext context) async {
@@ -232,13 +233,27 @@ class AccountDeleteDialogs {
         );
 
         await user.reauthenticateWithCredential(credential);
+
+        creditNotifier.cancel();
+        subCreditNotifier.cancel();
+        selectedPlan.cancel();
+
+        await CloudStorageService().deleteAll();
         LocalCache().deleteAll();
+        await user.delete();
 
       } else if (password != null && password.isNotEmpty) {
         final credential = EmailAuthProvider.credential(email: user.email!, password: password);
 
         await user.reauthenticateWithCredential(credential);
+
+        creditNotifier.cancel();
+        subCreditNotifier.cancel();
+        selectedPlan.cancel();
+
+        await CloudStorageService().deleteAll();
         LocalCache().deleteAll();
+        await user.delete();
 
       } else {
         throw FirebaseAuthException(message: "Password is required.", code: 'password-missing');

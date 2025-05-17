@@ -76,6 +76,7 @@ final AIVoiceAssistant aiVoice = AIVoiceAssistant();
 final appMenu = Menu();
 
 
+bool isFirstDashboardLaunch = true;
 bool isInitialLaunch = true;
 User? get user => FirebaseAuth.instance.currentUser;
 
@@ -102,6 +103,11 @@ CreditNotifier creditNotifier = CreditNotifier();
 PlanNotifier selectedPlan = PlanNotifier();
 
 final adService = AdService();
+
+
+
+bool showAddEventOnLaunch = false;
+
 
 
 bool updateSettingsAfterAppResume = false;
@@ -217,6 +223,7 @@ InputDecoration standardInputDecoration({
 Future<String> convertImageUrlToBase64(String url) async {
   try {
     final response = await http.get(Uri.parse(url));
+
     if (response.statusCode == 200) {
       return base64Encode(response.bodyBytes);
     }

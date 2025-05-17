@@ -1,4 +1,10 @@
+import 'dart:math';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:optima/ai/ai_recordings.dart';
 import 'package:optima/globals.dart';
 
 import 'package:optima/screens/inApp/widgets/dashboard/chart.dart';
@@ -7,6 +13,7 @@ import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_but
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
+import 'package:optima/services/location/location_processor.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,7 +27,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    LocalStorageService().checkAndRequestPermissionsOnce();
+    _handleFirstLaunch();
+  }
+
+  void _handleFirstLaunch() async {
+    if (isFirstDashboardLaunch) {
+      // Check and request permissions
+      await LocalStorageService().checkAndRequestPermissionsOnce();
+
+      // Get FCM token and update Firestore
+      if (notifications) {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .update({'fcmToken': token});
+        }
+      }
+
+      // Random Jamie reminder
+      final chance = Random().nextInt(10);
+      if (jamieReminders && chance == 3) {
+        assistantState.value = JamieState.thinking;
+        await Future.delayed(Duration(milliseconds: 500 + Random().nextInt(500)));
+        await AiRecordings.playRandomIntro();
+      }
+
+      await LocationProcessor.updateUserCountryCode();
+      isFirstDashboardLaunch = false;
+    }
   }
 
   @override
@@ -129,7 +165,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Expanded(
                   child: NewEventButton(
-                    onTap: () => debugPrint('New Event tapped'),
+                    onTap: () {
+                      showAddEventOnLaunch = true;
+                      selectedScreenNotifier.value = ScreenType.events;
+                    },
                     width: buttonSize,
                     height: buttonSize,
                   ),

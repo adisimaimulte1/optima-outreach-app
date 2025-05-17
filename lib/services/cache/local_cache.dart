@@ -7,9 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalCache {
   static final LocalCache instance = LocalCache._internal();
-  factory LocalCache() => instance;
-  LocalCache._internal();
 
+  factory LocalCache() => instance;
+
+  LocalCache._internal();
 
 
   Future<void> saveProfile({
@@ -20,7 +21,9 @@ class LocalCache {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('profile_name', name);
     await prefs.setString('profile_email', email);
-    if (photoUrl != null) { await prefs.setString('profile_photoUrl', photoUrl); }
+    if (photoUrl != null) {
+      await prefs.setString('profile_photoUrl', photoUrl);
+    }
   }
 
   Future<void> saveSetting(String key, dynamic value) async {
@@ -37,11 +40,10 @@ class LocalCache {
     } else if (value is List<String>) {
       await prefs.setStringList(key, value);
     } else {
-      throw ArgumentError('Unsupported SharedPreferences type: ${value.runtimeType}');
+      throw ArgumentError(
+          'Unsupported SharedPreferences type: ${value.runtimeType}');
     }
   }
-
-
 
 
   Future<Map<String, dynamic>> loadProfile() async {
@@ -70,9 +72,9 @@ class LocalCache {
     final data = doc.data()!;
     name = data['name'] ?? user.displayName ?? 'Unknown User';
     email = data['email'] ?? user.email ?? '';
-    photoUrl = data['photoUrl'];
+    photoUrl = data['photo'];
     credits = data['credits'] ?? 0;
-    subCredits = (data['credits'] as num).toDouble();
+    subCredits = (data['subCredits'] ?? 0).toDouble();
     plan = data['plan'] ?? 'free';
 
     final settings = Map<String, dynamic>.from(data['settings'] ?? {});
@@ -100,7 +102,8 @@ class LocalCache {
       return;
     }
 
-    final docRef = FirebaseFirestore.instance.collection('users').doc(authUser.uid);
+    final docRef = FirebaseFirestore.instance.collection('users').doc(
+        authUser.uid);
     final docSnapshot = await docRef.get();
 
     if (!docSnapshot.exists) {
@@ -115,12 +118,12 @@ class LocalCache {
           'wakeWordEnabled': true,
           'jamieReminders': true,
         },
+
       }, SetOptions(merge: true));
     }
 
     await loadAndCacheUserData();
   }
-
 
 
   Future<void> clearCache() async {
@@ -144,6 +147,17 @@ class LocalCache {
   }
 
 
+  Future<void> cacheMemberPhoto(String memberId, String base64) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('member_photo_$memberId', base64);
+  }
+
+  Future<String?> getCachedMemberPhoto(String memberId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('member_photo_$memberId');
+  }
+
+
 
   Future<void> logout() async {
     clearCache();
@@ -154,26 +168,7 @@ class LocalCache {
   }
 
   Future<void> deleteAll() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      clearCache();
-      aiVoice.stopLoop();
-
-      final allSessions = await FirebaseFirestore.instance.collection('sessions').get();
-      for (final doc in allSessions.docs) {
-        await doc.reference.delete();
-      }
-
-      LocalStorageService().setIsGoogleUser(false);
-      CreditService.deleteCredits();
-      FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
-
-      await user.delete();
-    } catch (e) {
-      rethrow;
-    }
+    clearCache();
+    aiVoice.stopLoop();
   }
-
 }

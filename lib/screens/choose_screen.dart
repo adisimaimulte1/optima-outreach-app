@@ -113,6 +113,7 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
         jamieEnabledNotifier.value = jamieEnabled;
         if (isInitialLaunch) {
           SessionService().updateLastActive();
+
           isInitialLaunch = false;
         } return _buildAuthenticatedScreen();
 

@@ -25,6 +25,10 @@ class CreditNotifier extends ValueNotifier<int> {
     }
   }
 
+  void cancel() {
+    _subscription?.cancel();
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();

@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:optima/ai/ai_recordings.dart';
 import 'package:optima/services/credits/credit_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -146,14 +148,28 @@ class AIVoiceAssistant {
 
     isListening = false;
     aiSpeaking = false;
-    wakeWordDetected = true;
-    assistantState.value = JamieState.thinking;
 
-    if ((wakeTranscript ?? "").toLowerCase().contains("hey jamie")) {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null) {
-        await _respondToUser("hey jamie", userId);
-      }
+    final transcript = (wakeTranscript ?? "").toLowerCase();
+    if (transcript.contains("hey jamie")) {
+      debugPrint("👂 Wake word detected: $transcript");
+
+      wakeWordDetected = true;
+      assistantState.value = JamieState.thinking;
+
+      // 🕒 Simulated thinking delay (random between 1200–1800ms)
+      final delayMs = 700 + Random().nextInt(600);
+      await Future.delayed(Duration(milliseconds: delayMs));
+
+      assistantState.value = JamieState.speaking;
+
+      final wakeResponseText = await AiRecordings.playWakeResponse(); // ✅ plays friendly audio
+      debugPrint("🎤 Wake response: $wakeResponseText");
+
+      assistantState.value = JamieState.listening;
+      startCooldown(); // ✅ Begin 50s cooldown for continuous listening
+    } else {
+      wakeWordDetected = false;
+      assistantState.value = JamieState.idle;
     }
   }
 
