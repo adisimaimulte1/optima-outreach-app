@@ -27,7 +27,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (showAddEventOnLaunch) {
-        showAddEventForm(context);
+        _showAddEventForm(context);
         showAddEventOnLaunch = false;
       }
     });
@@ -92,7 +92,7 @@ class _EventsScreenState extends State<EventsScreen> {
               NewEventButton(
                 width: 48,
                 height: 48,
-                onTap: () { showAddEventForm(context); },
+                onTap: () { _showAddEventForm(context); },
               ),
             ],
           ),
@@ -147,10 +147,46 @@ class _EventsScreenState extends State<EventsScreen> {
     }
 
     return Expanded(
-      child: ReorderableListView.builder(
-        physics: _disableScroll
-            ? const NeverScrollableScrollPhysics()
-            : const BouncingScrollPhysics(),
+      child: screenScaleNotifier.value < 0.99
+          ? ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+        itemCount: filteredEvents.length,
+        itemBuilder: (context, index) {
+          final event = filteredEvents[index];
+          return EventCard(
+            key: ValueKey(event.id ?? event.eventName),
+            eventData: event,
+            onDelete: (eventToDelete) {
+              setState(() {
+                CloudStorageService().deleteEvent(eventToDelete);
+                events.removeWhere((e) => e.id == eventToDelete.id);
+              });
+            },
+            onEdit: (eventToEdit) async {
+              final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
+              if (updatedEvent != null) {
+                setState(() {
+                  final index = events.indexOf(eventToEdit);
+                  if (index != -1) events[index] = updatedEvent;
+                });
+              }
+            },
+            onReplace: (oldEvent, newEvent) {
+              setState(() {
+                final oldIndex = events.indexOf(oldEvent);
+                if (oldIndex != -1) {
+                  events.removeAt(oldIndex);
+                  events.insert(oldIndex, newEvent);
+                }
+              });
+            },
+            onStatusChange: (event) => { setState(() {}) },
+          );
+        },
+      )
+          : ReorderableListView.builder(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
         itemCount: filteredEvents.length,
         buildDefaultDragHandles: false,
@@ -169,13 +205,10 @@ class _EventsScreenState extends State<EventsScreen> {
               },
               onEdit: (eventToEdit) async {
                 final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
-
                 if (updatedEvent != null) {
                   setState(() {
                     final index = events.indexOf(eventToEdit);
-                    if (index != -1) {
-                      events[index] = updatedEvent;
-                    }
+                    if (index != -1) events[index] = updatedEvent;
                   });
                 }
               },
@@ -188,8 +221,8 @@ class _EventsScreenState extends State<EventsScreen> {
                   }
                 });
               },
+              onStatusChange: (event) => { setState(() {}) },
             ),
-
           );
         },
         onReorder: (oldIndex, newIndex) {
@@ -214,13 +247,10 @@ class _EventsScreenState extends State<EventsScreen> {
               },
               onEdit: (eventToEdit) async {
                 final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
-
                 if (updatedEvent != null) {
                   setState(() {
                     final index = events.indexOf(eventToEdit);
-                    if (index != -1) {
-                      events[index] = updatedEvent;
-                    }
+                    if (index != -1) events[index] = updatedEvent;
                   });
                 }
               },
@@ -233,50 +263,57 @@ class _EventsScreenState extends State<EventsScreen> {
                   }
                 });
               },
+              onStatusChange: (event) => { setState(() {}) },
             ),
           );
         },
       ),
     );
+
   }
 
 
 
 
-  void showAddEventForm(BuildContext context) async {
-    final result = await Navigator.of(context).push<EventData>(
-      PageRouteBuilder(
-        opaque: false,
-        barrierDismissible: true,
-        transitionDuration: const Duration(milliseconds: 150),
-        reverseTransitionDuration: const Duration(milliseconds: 150),
-        pageBuilder: (_, __, ___) {
-          return Scaffold(
+  void _showAddEventForm(BuildContext context) async {
+    final result = await showGeneralDialog<EventData>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "AddEventForm",
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 150),
+      pageBuilder: (context, animation1, animation2) {
+        return SafeArea(
+          child: Scaffold(
             backgroundColor: Colors.transparent,
-            body: Stack(
-              children: [
-                Positioned.fill(
-                  child: Container(color: Colors.black.withOpacity(0.5)),
-                ),
-                Center(
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-                      CurvedAnimation(
-                        parent: __,
-                        curve: Curves.easeOutBack,
+            body: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).pop(), // Tap outside = pop
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // This is the only tappable background
+                  const SizedBox.expand(),
+
+                  // Prevent taps from leaking through the form
+                  GestureDetector(
+                    onTap: () {}, // absorb taps on form
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                        CurvedAnimation(parent: animation1, curve: Curves.easeOutBack),
                       ),
+                      child: const AddEventForm(),
                     ),
-                    child: const AddEventForm(),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
+          ),
+        );
+      },
+      transitionBuilder: (_, anim, __, child) {
+        return FadeTransition(opacity: anim, child: child);
+      },
     );
 
     if (result != null) {
@@ -287,34 +324,39 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Future<EventData?> showEventFormOverlay(BuildContext context, {EventData? initial}) {
-    return Navigator.of(context).push<EventData>(
-      PageRouteBuilder(
-        opaque: false,
-        barrierDismissible: true,
-        pageBuilder: (_, __, ___) => Scaffold(
+    return showGeneralDialog<EventData>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "EditEventForm",
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 150),
+      pageBuilder: (context, anim1, anim2) {
+        return Scaffold(
           backgroundColor: Colors.transparent,
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: Container(color: Colors.black.withOpacity(0.5)),
-              ),
-              Center(
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-                    CurvedAnimation(parent: __, curve: Curves.easeOutBack),
+          body: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(context).pop(),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const SizedBox.expand(),
+                GestureDetector(
+                  onTap: () {}, // absorb popup taps
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                      CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+                    ),
+                    child: AddEventForm(initialData: initial),
                   ),
-                  child: AddEventForm(initialData: initial),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
+        );
+      },
+      transitionBuilder: (_, anim, __, child) {
+        return FadeTransition(opacity: anim, child: child);
+      },
     );
   }
-
-
 }

@@ -48,7 +48,7 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     isFirstDashboardLaunch = true;
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
 

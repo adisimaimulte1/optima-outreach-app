@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/screens/inApp/widgets/events/event_details.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 
 class EventCard extends StatefulWidget {
   final EventData eventData;
   final void Function(EventData oldEvent, EventData newEvent)? onReplace;
+  final void Function(EventData event)? onStatusChange;
   final void Function(EventData event)? onEdit;
   final void Function(EventData event)? onDelete;
 
@@ -15,19 +17,14 @@ class EventCard extends StatefulWidget {
     required this.eventData,
     this.onReplace,
     this.onEdit,
-    this.onDelete
+    this.onDelete,
+    this.onStatusChange
   });
 
   static const TextStyle statusTextStyle = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.bold,
   );
-
-  static final Map<String, Color> statusColor = {
-    "UPCOMING": Colors.greenAccent,
-    "COMPLETED": Colors.grey,
-    "CANCELLED": Colors.redAccent,
-  };
 
   @override
   State<EventCard> createState() => _EventCardState();
@@ -60,13 +57,17 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
     });
   }
 
+
   Future<void> _handleDragEnd(BoxConstraints constraints) async {
     final width = constraints.maxWidth;
     final progress = _dragOffset.abs() / width;
 
     if (progress > _threshold) {
       if (_dragOffset > 0) {
-        widget.onEdit?.call(widget.eventData);
+        final isUpcoming = widget.eventData.status == "UPCOMING";
+        if (isUpcoming) {
+          widget.onEdit?.call(widget.eventData);
+        }
       } else {
         final shouldDelete = await _showEventDeleteDialog(context);
         if (shouldDelete) {
@@ -96,6 +97,11 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
       padding: const EdgeInsets.only(bottom: 14),
       child: LayoutBuilder(
         builder: (context, constraints) => GestureDetector(
+          onTap: () {
+            if (_dragOffset.abs() < 5) {
+              _showEventDetailsPopup(context);
+            }
+          },
           onHorizontalDragUpdate: (d) => _handleDragUpdate(d, constraints),
           onHorizontalDragEnd: (_) => _handleDragEnd(constraints),
           child: Stack(
@@ -116,14 +122,27 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
           if (_dragOffset > 0)
             SizedBox(
               width: constraints.maxWidth,
-              child: _buildSwipeAction(Icons.edit, textHighlightedColor, Alignment.centerLeft),
+              child: _buildSwipeAction(
+                widget.eventData.status == "UPCOMING" ? Icons.edit : Icons.edit_off,
+                widget.eventData.status == "UPCOMING"
+                    ? textHighlightedColor : textHighlightedColor.withOpacity(0.6),
+                Alignment.centerLeft,
+                iconColor: inAppBackgroundColor,
+                iconSize: 40,
+              ),
             )
           else
             const Spacer(),
           if (_dragOffset < 0)
             SizedBox(
               width: constraints.maxWidth,
-              child: _buildSwipeAction(Icons.delete, Colors.red, Alignment.centerRight),
+              child: _buildSwipeAction(
+                Icons.delete,
+                Colors.red,
+                Alignment.centerRight,
+                iconColor: inAppBackgroundColor,
+                iconSize: 40,
+              ),
             )
           else
             const Spacer(),
@@ -164,15 +183,29 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildSwipeAction(IconData icon, Color color, Alignment alignment) {
+  Widget _buildSwipeAction(
+      IconData icon,
+      Color backgroundColor,
+      Alignment alignment, {
+        Color iconColor = Colors.white,
+        double iconSize = 28,
+      }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
       alignment: alignment,
       padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Icon(icon, color: Colors.white, size: 28),
+      child: Icon(
+        icon,
+        color: iconColor,
+        size: iconSize,
+      ),
     );
   }
+
 
   Widget _buildTitleRow(EventData event) {
     return Row(
@@ -195,19 +228,33 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
   }
 
   Widget _buildStatusLabel(EventData event) {
-    final offset = _calculateOffset(event.status);
-    return Transform.translate(
-      offset: Offset(offset, 0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: EventCard.statusColor[event.status]?.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          event.status,
-          style: EventCard.statusTextStyle.copyWith(color: EventCard.statusColor[event.status]),
-        ),
+    final status = event.status;
+
+    final isCompleted = status == "COMPLETED";
+    final isCancelled = status == "CANCELLED";
+    final isUpcoming = status == "UPCOMING";
+
+    final Color baseColor = textHighlightedColor;
+    final Color borderColor = baseColor;
+    final Color backgroundColor = isCompleted
+        ? baseColor
+        : isUpcoming
+        ? textHighlightedColor.withOpacity(0.2)
+        : Colors.transparent;
+    final Color textColor = !isCompleted
+        ? baseColor
+        : inAppForegroundColor;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor.withOpacity(isCompleted ? 0 : 0.7), width: 2),
+      ),
+      child: Text(
+        status,
+        style: EventCard.statusTextStyle.copyWith(color: textColor, fontSize: 14),
       ),
     );
   }
@@ -300,19 +347,36 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
         false;
   }
 
-  double _calculateOffset(String status) {
-    if (status == "UPCOMING") return 0;
-    final currentWidth = _measureWidth(status);
-    final referenceWidth = _measureWidth("UPCOMING");
-    return (currentWidth - referenceWidth) / 2;
-  }
-
-  double _measureWidth(String text) {
-    final tp = TextPainter(
-      text: TextSpan(text: text, style: EventCard.statusTextStyle),
-      maxLines: 1,
-      textDirection: TextDirection.ltr,
-    )..layout();
-    return tp.width;
+  void _showEventDetailsPopup(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "EventDetails",
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 150),
+      pageBuilder: (dialogContext, __, ___) { // <- use this context instead
+        return GestureDetector(
+          onTap: () => Navigator.of(dialogContext).pop(), // use dialogContext here!
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Center(
+              child: GestureDetector(
+                onTap: () {}, // Absorb inside
+                child: EventDetails(
+                  eventData: widget.eventData,
+                  onStatusChange: (_) {
+                    widget.onStatusChange?.call(widget.eventData);
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (_, anim, __, child) {
+        return FadeTransition(opacity: anim, child: child);
+      },
+    );
   }
 }

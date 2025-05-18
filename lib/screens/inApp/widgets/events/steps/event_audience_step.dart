@@ -208,12 +208,23 @@ class AudienceOptions extends StatelessWidget {
           return GestureDetector(
             onTap: () {
               final updated = List<String>.from(selectedTags);
+
               if (isSelected) {
+                // Deselect: remove "Custom" and all "Custom:..."
                 updated.remove(entry.key);
                 updated.removeWhere((e) => e.startsWith("Custom:"));
               } else {
-                updated.add(entry.key);
+                // Select: first remove "Custom:" if exists
+                updated.removeWhere((e) => e.startsWith("Custom:"));
+
+                // Only add plain "Custom" if it's not already in (avoid duplicates)
+                if (entry.key == "Custom") {
+                  updated.add("Custom");
+                } else {
+                  updated.add(entry.key);
+                }
               }
+
               onChanged(updated);
             },
             child: AnimatedContainer(
@@ -585,7 +596,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
     final updated = List<String>.from(widget.selectedTags)
       ..removeWhere((e) => e.startsWith("Custom:"))
-      ..add("Custom:$_customText");
+      ..add("Custom: $_customText");
 
     widget.onChanged(audience: updated);
     setState(() {

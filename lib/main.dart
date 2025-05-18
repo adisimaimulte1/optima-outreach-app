@@ -159,6 +159,10 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
               selectionColor: textHighlightedColor.withOpacity(0.4),
               selectionHandleColor: textHighlightedColor,
             ),
+            pageTransitionsTheme: PageTransitionsTheme(builders: {
+              TargetPlatform.android: ZoomPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            }),
           ),
           darkTheme: ThemeData.dark().copyWith(
             scaffoldBackgroundColor: inAppBackgroundColor,
@@ -170,6 +174,10 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
               selectionColor: textHighlightedColor.withOpacity(0.4),
               selectionHandleColor: textHighlightedColor,
             ),
+            pageTransitionsTheme: PageTransitionsTheme(builders: {
+              TargetPlatform.android: ZoomPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            }),
           ),
           home: ChooseScreen(),
         );

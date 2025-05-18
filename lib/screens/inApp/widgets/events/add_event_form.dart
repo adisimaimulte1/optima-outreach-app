@@ -121,8 +121,8 @@ class _AddEventFormState extends State<AddEventForm> {
           ..audienceTags = _audienceTags
           ..isPublic = _isPublic
           ..isPaid = _isPaid
-          ..eventPrice = _eventPrice
-          ..eventCurrency = _eventCurrency
+          ..eventPrice = _isPaid ? _eventPrice : null
+          ..eventCurrency = _isPaid ? _eventCurrency : null
           ..jamieEnabled = _jamieEnabled;
 
         CloudStorageService().saveEvent(widget.initialData!);
@@ -130,7 +130,6 @@ class _AddEventFormState extends State<AddEventForm> {
         return;
       }
 
-      // If new, create a fresh object
       final eventData = EventData(
         eventName: _eventName,
         organizationType: _organizationType,
@@ -144,8 +143,8 @@ class _AddEventFormState extends State<AddEventForm> {
         audienceTags: _audienceTags,
         isPublic: _isPublic,
         isPaid: _isPaid,
-        eventPrice: _eventPrice,
-        eventCurrency: _eventCurrency,
+        eventPrice: _isPaid ? _eventPrice : null,
+        eventCurrency: _isPaid ? _eventCurrency: null,
         jamieEnabled: _jamieEnabled,
         status: 'UPCOMING',
       );
@@ -170,62 +169,56 @@ class _AddEventFormState extends State<AddEventForm> {
   Widget build(BuildContext context) {
     final viewInsets = MediaQuery.of(context).viewInsets;
 
-    return Scaffold(
-      backgroundColor: Colors.black.withOpacity(0),
-      resizeToAvoidBottomInset: false,  // Prevent the scaffold from resizing its body
-      body: Center(
-        child: AnimatedPadding(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(bottom: viewInsets.bottom),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 700),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF24324A), Color(0xFF2F445E)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
-                  blurRadius: 24,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: viewInsets.bottom),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 700),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF24324A), Color(0xFF2F445E)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 16),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 16),
 
-                // Wrapping the PageView with Flexible to ensure it takes only available space
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: SizedBox(
-                      height: 380,  // Set the fixed height for your PageView
-                      child: PageView(
-                        controller: _pageController,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: List.generate(
-                          _totalSteps,
-                              (index) => _step(index),
-                        ),
-                      ),
+            // Wrapping the PageView with Flexible to ensure it takes only available space
+            Flexible(
+              child: SingleChildScrollView(
+                child: SizedBox(
+                  height: 380, // Fixed height for steps
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: List.generate(
+                      _totalSteps,
+                          (index) => _step(index),
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 24),
-                _buildNavigationControls(),
-                _buildProgressBarWithMorphingIcon(),
-              ],
+              ),
             ),
-          ),
+
+            const SizedBox(height: 24),
+            _buildNavigationControls(),
+            _buildProgressBarWithMorphingIcon(),
+          ],
         ),
       ),
     );
@@ -250,7 +243,7 @@ class _AddEventFormState extends State<AddEventForm> {
               ),
               const SizedBox(height: 6),
               SizedBox(
-                width: 500, // You can tweak this (try 120-160 depending on design)
+                width: 500,
                 child: Container(
                   height: 3,
                   decoration: BoxDecoration(
@@ -286,11 +279,11 @@ class _AddEventFormState extends State<AddEventForm> {
             fontSize: 20,
             borderColor: textDimColor,
             borderWidth: 1.2,
-            isEnabled: true, // Back is always enabled
+            isEnabled: true,
           ),
         if (_currentStep > 0) const SizedBox(width: 16),
         AnimatedScaleButton(
-          onPressed: canProceed ? _nextStep : () {}, // Must pass a non-null function
+          onPressed: canProceed ? _nextStep : () {},
           icon: isLastStep ? Icons.check : Icons.chevron_right,
           label: isLastStep ? "Create" : "Next",
           backgroundGradient: canProceed
@@ -456,7 +449,7 @@ class _AddEventFormState extends State<AddEventForm> {
           initialAddress: _locationAddress,
           initialLatLng: _locationLatLng,
         );
-      case 3:                       // 👈 NEW — Add-Members step
+      case 3:
         return EventMembersStep(
           initialMembers: _eventMembers,
           onChanged: (list) => setState(() => _eventMembers = list),
@@ -501,12 +494,6 @@ class _AddEventFormState extends State<AddEventForm> {
           onChanged: (val) => setState(() => _jamieEnabled = val),
         );
 
-
-
-
-
-
-    // TODO: Other steps
       default:
         return _buildTextField(hint: "Enter here...");
     }

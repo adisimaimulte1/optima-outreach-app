@@ -77,7 +77,7 @@ class _CustomCurrencyDropdownState extends State<CustomCurrencyDropdown> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: _currencies.map((data) {
-                final isSelected = widget.selectedCurrency == data["symbol"];
+                final isSelected = widget.selectedCurrency == null ? "lei" == data["symbol"] : widget.selectedCurrency == data["symbol"];
                 return InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () => Navigator.pop(context, data["symbol"]),
@@ -133,7 +133,7 @@ class _CustomCurrencyDropdownState extends State<CustomCurrencyDropdown> {
       case "\$":
         return Icons.attach_money;
       default:
-        return Icons.attach_money;
+        return Icons.money;
     }
   }
 
@@ -155,17 +155,16 @@ class _CustomCurrencyDropdownState extends State<CustomCurrencyDropdown> {
           return Transform.scale(
             scale: scale,
             child: SizedBox(
-              width: 64,
+              width: 56,
               height: 36,
               child: Container(
                 decoration: BoxDecoration(
                   color: inAppForegroundColor,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: textDimColor),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Icon(
                       _iconForCurrency(widget.selectedCurrency),
