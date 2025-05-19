@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 
 class EventGoalsStep extends StatefulWidget {
-  final String goals;                     // newline-separated list coming in
+  final String goals;
   final ValueChanged<String> onGoalsAdded;
 
   const EventGoalsStep({
@@ -12,10 +12,10 @@ class EventGoalsStep extends StatefulWidget {
   });
 
   @override
-  State<EventGoalsStep> createState() => _EventGoalsStepState();
+  State<EventGoalsStep> createState() => EventGoalsStepState();
 }
 
-class _EventGoalsStepState extends State<EventGoalsStep> {
+class EventGoalsStepState extends State<EventGoalsStep> {
   late final TextEditingController _controller;
   final ScrollController _scrollController = ScrollController();
 
@@ -33,6 +33,28 @@ class _EventGoalsStepState extends State<EventGoalsStep> {
 
     _controller = TextEditingController();
   }
+
+  Future<bool> saveIfPendingGoal() async {
+    FocusScope.of(context).unfocus();
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    final txt = _controller.text.trim();
+    if (txt.isEmpty) return false;
+
+    final idx = _editingIndex ?? _slots.indexWhere((e) => e == null);
+    if (idx == -1) return false;
+
+    setState(() {
+      _slots[idx] = txt;
+      _editingIndex = null;
+      _controller.clear();
+      _emitGoals();
+    });
+
+    return true;
+  }
+
+
 
   @override
   void dispose() {
@@ -73,7 +95,7 @@ class _EventGoalsStepState extends State<EventGoalsStep> {
 
 
   void _emitGoals() {
-    widget.onGoalsAdded(_slots.where((e) => e != null && e!.isNotEmpty).join('\n'));
+    widget.onGoalsAdded(_slots.where((e) => e != null && e.isNotEmpty).join('\n'));
   }
 
   @override
@@ -235,7 +257,7 @@ class _ScatteredGoalCircles extends StatelessWidget {
                         ScaleTransition(scale: anim, child: FadeTransition(opacity: anim, child: child)),
                     child: filled
                         ? Text(
-                      _wrapGoal(txt!),
+                      _wrapGoal(txt),
                       key: const ValueKey('filled'),
                       textAlign: TextAlign.center,
                       maxLines: 3,

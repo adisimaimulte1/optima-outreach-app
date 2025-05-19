@@ -29,23 +29,88 @@ class _EventDetailsState extends State<EventDetails> {
     _loadResolvedMembers();
   }
 
-  Future<void> _loadResolvedMembers() async {
-    final rawIds = widget.eventData.eventMembers;
-    final List<Member> loaded = [];
 
-    for (final email in rawIds) {
-      final photo = await LocalCache().getCachedMemberPhoto(email);
-      loaded.add(Member(
-        id: email,
-        displayName: email,
+
+
+  Future<void> _loadResolvedMembers() async {
+    final rawMembers = widget.eventData.eventMembers;
+    final creatorEmail = widget.eventData.createdBy.toLowerCase();
+
+    final List<Member> initial = [];
+
+    // Add creator explicitly first
+    if (creatorEmail.isNotEmpty) {
+      final photo = await LocalCache().getCachedMemberPhoto(creatorEmail);
+      initial.add(Member(
+        id: creatorEmail,
+        displayName: creatorEmail,
         resolvedPhoto: photo,
+        isPending: false,
       ));
     }
 
-    if (mounted) {
-      setState(() => _resolvedMembers = loaded);
+    // Build initial members with full opacity (assume accepted)
+    for (final member in rawMembers) {
+      final email = member['email'] ?? '';
+      final photo = await LocalCache().getCachedMemberPhoto(email);
+
+      initial.add(Member(
+        id: email,
+        displayName: email,
+        resolvedPhoto: photo,
+        isPending: false,
+      ));
     }
+
+    // Set them immediately to render full opacity first
+    if (mounted) setState(() => _resolvedMembers = initial);
+
+    // Recache statuses (this will also update global events)
+    for (final member in rawMembers) {
+      final email = member['email'];
+      if (email != null) {
+        await LocalCache().recacheMemberStatus(email, widget.eventData.id!);
+      }
+    }
+
+    // Update the isPending flag *only* on the existing members
+    if (mounted) {
+      setState(() {
+        _resolvedMembers = _resolvedMembers.map((member) {
+          final status = getGlobalMemberStatus(member.id, widget.eventData.id!);
+          final isCreator = member.id.toLowerCase() == creatorEmail;
+          final isPending = isCreator ? false : status == 'pending';
+
+          return member.isPending == isPending
+              ? member
+              : Member(
+            id: member.id,
+            displayName: member.displayName,
+            resolvedPhoto: member.resolvedPhoto,
+            isPending: isPending,
+          );
+        }).toList();
+      });
+    }
+
   }
+
+  String getGlobalMemberStatus(String email, String eventId) {
+    final event = events.firstWhere(
+          (e) => e.id == eventId,
+    );
+
+    final member = event.eventMembers.firstWhere(
+          (m) => (m['email'] as String?)?.toLowerCase() == email.toLowerCase(),
+      orElse: () => {'status': 'pending'},
+    );
+
+    return (member['status'] ?? 'pending').toString().toLowerCase();
+  }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +141,7 @@ class _EventDetailsState extends State<EventDetails> {
           const SizedBox(height: 16),
           _buildTitleBlock(context),
           LocationBlock(address: widget.eventData.locationAddress!),
-          CollaboratorsBlock(members: _resolvedMembers),
+          CollaboratorsBlock(members: _resolvedMembers, creatorId: widget.eventData.createdBy),
           _buildGoalsBlock(),
           _buildVisibilityAudienceBlock(),
           const Spacer(),
@@ -338,38 +403,45 @@ class _EventDetailsState extends State<EventDetails> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Left Column
-              IntrinsicWidth(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _sectionTitle("Visibility"),
-                    Text("Public", style: isPublic ? selectedStyle : unselectedStyle),
-                    Text("Private", style: !isPublic ? selectedStyle : unselectedStyle),
-                    const SizedBox(height: 16),
-                    _sectionTitle("Cost"),
-                    Text("Free", style: !isPaid ? selectedStyle : unselectedStyle),
-                    Text("Paid", style: isPaid ? selectedStyle : unselectedStyle),
-                    const SizedBox(height: 6),
-                    if (isPaid)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: textHighlightedColor,
-                            width: 3,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _sectionTitle("Visibility"),
+                      Text("Public", style: isPublic ? selectedStyle : unselectedStyle),
+                      Text("Private", style: !isPublic ? selectedStyle : unselectedStyle),
+                      const SizedBox(height: 16),
+                      _sectionTitle("Cost"),
+                      Text("Free", style: !isPaid ? selectedStyle : unselectedStyle),
+                      Text("Paid", style: isPaid ? selectedStyle : unselectedStyle),
+                      const SizedBox(height: 6),
+                      if (isPaid)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: textHighlightedColor,
+                              width: 3,
+                            ),
+                          ),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 78),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                "${widget.eventData.eventPrice?.toStringAsFixed(2) ?? '?'} ${widget.eventData.eventCurrency ?? ''}",
+                                style: selectedStyle.copyWith(fontSize: 18),
+                              ),
+                            ),
                           ),
                         ),
-                        child: Text(
-                          "${widget.eventData.eventPrice?.toStringAsFixed(2) ?? '?'} ${widget.eventData.eventCurrency ?? ''}",
-                          style: selectedStyle.copyWith(fontSize: 18),
-                        ),
-                      ),
-
-                  ],
-                ),
+                    ],
+                  ),
               ),
+
 
               // Divider
               Container(

@@ -30,10 +30,10 @@ class EventAudienceStep extends StatefulWidget {
   });
 
   @override
-  State<EventAudienceStep> createState() => _EventAudienceStepState();
+  State<EventAudienceStep> createState() => EventAudienceStepState();
 }
 
-class _EventAudienceStepState extends State<EventAudienceStep> {
+class EventAudienceStepState extends State<EventAudienceStep> {
   String? selectedCurrency;
   final GlobalKey<_CustomTextFieldState> _customFieldKey = GlobalKey<_CustomTextFieldState>();
 
@@ -44,6 +44,11 @@ class _EventAudienceStepState extends State<EventAudienceStep> {
     double? price,
     String? currency,
   }) {
+    final isNowPaid = isPaid ?? widget.isPaid;
+
+    if (isNowPaid && (currency ?? selectedCurrency) == null) {
+      selectedCurrency = "lei";
+    }
     widget.onChanged(
       audience: audience ?? widget.selectedTags,
       isPublic: isPublic ?? widget.isPublic,
@@ -63,6 +68,11 @@ class _EventAudienceStepState extends State<EventAudienceStep> {
     super.initState();
     selectedCurrency = widget.currency;
   }
+
+  Future<bool> saveIfPendingAudienceInput() async {
+    return await _customFieldKey.currentState?.saveIfPendingInput() ?? false;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -388,6 +398,34 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
     _controller.addListener(_handleChange);
   }
+
+  Future<bool> saveIfPendingInput() async {
+    FocusScope.of(context).unfocus();
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    final val = _controller.text.trim();
+    if (val.isEmpty) return false;
+
+    if (_showCustomInput()) {
+      final updated = List<String>.from(widget.selectedTags)
+        ..removeWhere((e) => e.startsWith("Custom:"))
+        ..add("Custom:$val");
+
+      widget.onChanged(audience: updated);
+      return true;
+    }
+
+    if (_showPaidInput()) {
+      final parsed = double.tryParse(val);
+      if (parsed == null || parsed <= 0) return false;
+
+      widget.onChanged(price: parsed);
+      return true;
+    }
+
+    return false;
+  }
+
 
   void _handleChange() {
     final val = _controller.text;

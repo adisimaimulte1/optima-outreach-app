@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/close_button.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/navigation_button.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
@@ -27,6 +27,11 @@ class AddEventForm extends StatefulWidget {
 class _AddEventFormState extends State<AddEventForm> {
   final PageController _pageController = PageController();
 
+  final GlobalKey<EventMembersStepState> _membersKey = GlobalKey<EventMembersStepState>();
+  final GlobalKey<EventGoalsStepState> _goalsKey = GlobalKey<EventGoalsStepState>();
+  final GlobalKey<EventAudienceStepState> _audienceKey = GlobalKey<EventAudienceStepState>();
+
+
   int _currentStep = 0;
   final int _totalSteps = 7;
 
@@ -43,6 +48,7 @@ class _AddEventFormState extends State<AddEventForm> {
   // step 3
   String? _locationAddress;
   LatLng? _locationLatLng;
+  LatLng? _initialLatLng;
 
   // step 4
   List<String> _eventMembers = [];
@@ -74,7 +80,9 @@ class _AddEventFormState extends State<AddEventForm> {
       _selectedTime = data.selectedTime;
       _locationAddress = data.locationAddress;
       _locationLatLng = data.locationLatLng;
-      _eventMembers = List.from(data.eventMembers);
+      _eventMembers = List<String>.from(
+          data.eventMembers.map((m) => m['email'].toString())
+      );
       _eventGoals = List.from(data.eventGoals);
       _audienceTags = List.from(data.audienceTags);
       _isPublic = data.isPublic;
@@ -83,7 +91,44 @@ class _AddEventFormState extends State<AddEventForm> {
       _eventCurrency = data.eventCurrency;
       _jamieEnabled = data.jamieEnabled;
     }
+
+    _resolveInitialCenter();
   }
+
+  void _resolveInitialCenter() async {
+    LatLng fallback = const LatLng(45.7928, 24.1521);
+
+    if (_initialLatLng != null) {
+      setState(() => _initialLatLng = _initialLatLng);
+      return;
+    }
+
+    LatLng? fastLocation;
+    if (locationAccess) {
+      try {
+        final lastKnown = await Geolocator.getLastKnownPosition();
+        if (lastKnown != null) {
+          fastLocation = LatLng(lastKnown.latitude, lastKnown.longitude);
+          setState(() => _initialLatLng = fastLocation);
+        }
+      } catch (_) {}
+
+      // Regardless of success, start async accurate fetch
+      Geolocator.getCurrentPosition().then((position) {
+        final accurate = LatLng(position.latitude, position.longitude);
+        if (mounted && (_initialLatLng == null || accurate != _initialLatLng)) {
+          setState(() {
+            _initialLatLng = accurate;
+          });
+        }
+      }).catchError((_) {}); // swallow errors
+    }
+
+    if (_initialLatLng == null) {
+      setState(() => _initialLatLng = fastLocation ?? fallback);
+    }
+  }
+
 
 
 
@@ -100,7 +145,27 @@ class _AddEventFormState extends State<AddEventForm> {
     Icons.smart_toy,      // AI + Visibility
   ];
 
-  void _nextStep() {
+  Future<void> _nextStep() async {
+    if (_currentStep == 3) {
+      FocusScope.of(context).unfocus();
+      final added = await _membersKey.currentState?.addIfPendingInput() ?? false;
+      if (added) {
+        await Future.delayed(const Duration(milliseconds: 400));
+      }
+    } else if (_currentStep == 4) {
+      FocusScope.of(context).unfocus();
+      bool? added = await _goalsKey.currentState?.saveIfPendingGoal();
+      if (added!) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    } else if (_currentStep == 5) {
+      FocusScope.of(context).unfocus();
+      final added = await _audienceKey.currentState?.saveIfPendingAudienceInput() ?? false;
+      if (added) await Future.delayed(const Duration(milliseconds: 400));
+    }
+
+
+
     FocusScope.of(context).unfocus();
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
@@ -116,14 +181,20 @@ class _AddEventFormState extends State<AddEventForm> {
           ..selectedTime = _selectedTime
           ..locationAddress = _locationAddress
           ..locationLatLng = _locationLatLng
-          ..eventMembers = _eventMembers
+          ..eventMembers = _eventMembers.map((email) => {
+            'email': email,
+            'status': 'pending',
+            'invitedAt': DateTime.now().toIso8601String(),
+          }).toList()
+
           ..eventGoals = _eventGoals
           ..audienceTags = _audienceTags
           ..isPublic = _isPublic
           ..isPaid = _isPaid
           ..eventPrice = _isPaid ? _eventPrice : null
           ..eventCurrency = _isPaid ? _eventCurrency : null
-          ..jamieEnabled = _jamieEnabled;
+          ..jamieEnabled = _jamieEnabled
+          ..createdBy = email;
 
         CloudStorageService().saveEvent(widget.initialData!);
         Navigator.of(context).pop(widget.initialData);
@@ -138,7 +209,12 @@ class _AddEventFormState extends State<AddEventForm> {
         selectedTime: _selectedTime,
         locationAddress: _locationAddress,
         locationLatLng: _locationLatLng,
-        eventMembers: _eventMembers,
+        eventMembers: _eventMembers.map((email) => {
+          'email': email,
+          'status': 'pending',
+          'invitedAt': DateTime.now().toIso8601String(),
+        }).toList(),
+        eventManagers: [email],
         eventGoals: _eventGoals,
         audienceTags: _audienceTags,
         isPublic: _isPublic,
@@ -147,6 +223,7 @@ class _AddEventFormState extends State<AddEventForm> {
         eventCurrency: _isPaid ? _eventCurrency: null,
         jamieEnabled: _jamieEnabled,
         status: 'UPCOMING',
+        createdBy: email,
       );
 
 
@@ -440,9 +517,11 @@ class _AddEventFormState extends State<AddEventForm> {
         );
       case 2:
         return EventLocationStep(
+          initialCenter: _initialLatLng,
           onLocationPicked: (address, lat, lng) {
             setState(() {
               _locationAddress = address;
+              _initialLatLng = LatLng(lat, lng);
               _locationLatLng = LatLng(lat, lng);
             });
           },
@@ -451,11 +530,13 @@ class _AddEventFormState extends State<AddEventForm> {
         );
       case 3:
         return EventMembersStep(
+          key: _membersKey,
           initialMembers: _eventMembers,
           onChanged: (list) => setState(() => _eventMembers = list),
         );
       case 4:
         return EventGoalsStep(
+          key: _goalsKey,
           goals: _eventGoals.join('\n'),
           onGoalsAdded: (goals) => setState(() {
             _eventGoals = goals
@@ -467,6 +548,7 @@ class _AddEventFormState extends State<AddEventForm> {
         );
       case 5:
         return EventAudienceStep(
+          key: _audienceKey,
           selectedTags: _audienceTags,
           isPublic: _isPublic,
           isPaid: _isPaid,

@@ -7,6 +7,7 @@ import 'package:optima/screens/inApp/widgets/events/add_event_form.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/filter_button.dart';
 import 'package:optima/screens/inApp/widgets/events/event_card.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -25,6 +26,16 @@ class _EventsScreenState extends State<EventsScreen> {
   void initState() {
     super.initState();
 
+    final allEmails = events
+        .expand((e) => e.eventMembers.map((m) => m['email']))
+        .whereType<String>()
+        .toSet();
+
+    for (final email in allEmails) {
+      LocalCache().recacheMemberPhoto(email);
+    }
+
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (showAddEventOnLaunch) {
         _showAddEventForm(context);
@@ -32,6 +43,7 @@ class _EventsScreenState extends State<EventsScreen> {
       }
     });
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/cache/local_cache.dart';
@@ -80,17 +79,17 @@ class CloudStorageService {
     }, SetOptions(merge: true));
   }
 
+
+
   Future<void> saveEvent(EventData event) async {
     if (_userId == null) return;
 
-    final userEventsRef = _firestore
-        .collection('users')
-        .doc(_userId)
+    final eventsRef = _firestore
         .collection('events');
 
     final docRef = event.id != null
-        ? userEventsRef.doc(event.id)
-        : await userEventsRef.add(event.toMap());
+        ? eventsRef.doc(event.id)
+        : await eventsRef.add(event.toMap());
 
     if (event.id == null) {
       event.id = docRef.id;
@@ -101,22 +100,35 @@ class CloudStorageService {
     await LocalCache().cacheSingleEvent(event);
   }
 
-
-
-
-
   Future<void> deleteEvent(EventData event) async {
     if (_userId == null || event.id == null) return;
 
     final docRef = _firestore
-        .collection('users')
-        .doc(_userId)
         .collection('events')
         .doc(event.id);
 
     await docRef.delete();
     await LocalCache().deleteCachedEvent(event.id!);
   }
+
+  Future<void> removeMemberFromEvent({
+    required EventData event,
+    required String email,
+  }) async {
+    if (_userId == null || event.id == null) return;
+
+    final updatedMembers = event.eventMembers.where((m) {
+      final mEmail = (m['email'] as String?)?.toLowerCase();
+      return mEmail != email.toLowerCase();
+    }).toList();
+
+    event.eventMembers = updatedMembers;
+
+    final docRef = _firestore.collection('events').doc(event.id);
+    await docRef.set(event.toMap());
+    await LocalCache().cacheSingleEvent(event);
+  }
+
 
 
 
@@ -143,7 +155,7 @@ class CloudStorageService {
 
     final userRef = _firestore.collection('users').doc(uid);
 
-    final subcollections = ['sessions', 'events'];
+    final subcollections = ['sessions'];
     for (final sub in subcollections) {
       final subRef = userRef.collection(sub);
       final snapshot = await subRef.get();

@@ -19,10 +19,10 @@ class EventMembersStep extends StatefulWidget {
   });
 
   @override
-  State<EventMembersStep> createState() => _EventMembersStepState();
+  State<EventMembersStep> createState() => EventMembersStepState();
 }
 
-class _EventMembersStepState extends State<EventMembersStep> {
+class EventMembersStepState extends State<EventMembersStep> {
   final TextEditingController _field = TextEditingController();
 
   List<Member> _members = [];
@@ -37,6 +37,16 @@ class _EventMembersStepState extends State<EventMembersStep> {
     super.initState();
     _initializeMembers();
   }
+
+  Future<bool> addIfPendingInput() async {
+    final input = _field.text.trim();
+    if (input.isEmpty || _isAdding) return false;
+    final before = _members.length;
+    await _addMember(input);
+    final after = _members.length;
+    return after > before;
+  }
+
 
   Future<void> _initializeMembers() async {
     List<Member> members = widget.initialMembers

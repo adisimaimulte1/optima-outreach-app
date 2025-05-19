@@ -11,12 +11,14 @@ class EventLocationStep extends StatefulWidget {
 
   final String? initialAddress;
   final LatLng? initialLatLng;
+  final LatLng? initialCenter;
 
   const EventLocationStep({
     super.key,
     required this.onLocationPicked,
     this.initialAddress,
     this.initialLatLng,
+    this.initialCenter,
   });
 
   @override
@@ -27,15 +29,12 @@ class _EventLocationStepState extends State<EventLocationStep> {
   final MapController _mapController = MapController();
   LatLng? _selectedLatLng;
   String? _selectedAddress;
-  LatLng? _initialCenter;
 
   @override
   void initState() {
     super.initState();
     _selectedLatLng = widget.initialLatLng;
     _selectedAddress = widget.initialAddress;
-
-    _resolveInitialCenterFast();
   }
 
   @override
@@ -47,48 +46,7 @@ class _EventLocationStepState extends State<EventLocationStep> {
       setState(() {
         _selectedLatLng = widget.initialLatLng;
         _selectedAddress = widget.initialAddress;
-        _initialCenter = null;
-        _resolveInitialCenterFast();
       });
-    }
-  }
-
-
-  void _resolveInitialCenterFast() async {
-    LatLng fallback = const LatLng(45.7928, 24.1521); // Sibiu
-
-    // Use selectedLatLng if already available
-    if (_selectedLatLng != null) {
-      setState(() => _initialCenter = _selectedLatLng);
-      return;
-    }
-
-    // Try last known location
-    LatLng? fastLocation;
-    if (locationAccess) {
-      try {
-        final lastKnown = await Geolocator.getLastKnownPosition();
-        if (lastKnown != null) {
-          fastLocation = LatLng(lastKnown.latitude, lastKnown.longitude);
-          setState(() => _initialCenter = fastLocation);
-        }
-      } catch (_) {}
-
-      // Regardless of success, start async accurate fetch
-      Geolocator.getCurrentPosition().then((position) {
-        final accurate = LatLng(position.latitude, position.longitude);
-        if (mounted && (_initialCenter == null || accurate != _initialCenter)) {
-          setState(() {
-            _initialCenter = accurate;
-          });
-          _mapController.move(accurate, 13);
-        }
-      }).catchError((_) {}); // swallow errors
-    }
-
-    // Guarantee fallback if nothing worked
-    if (_initialCenter == null) {
-      setState(() => _initialCenter = fastLocation ?? fallback);
     }
   }
 
@@ -139,7 +97,7 @@ class _EventLocationStepState extends State<EventLocationStep> {
   }
 
   Widget _buildMapWithCenterPin() {
-    if (_initialCenter == null) {
+    if (widget.initialCenter == null) {
       return const Expanded(
         child: Center(child: CircularProgressIndicator()),
       );
@@ -152,11 +110,11 @@ class _EventLocationStepState extends State<EventLocationStep> {
           children: [
             // ✅ force full rebuild with UniqueKey
             KeyedSubtree(
-              key: ValueKey(_initialCenter), // changes when location changes
+              key: ValueKey(widget.initialCenter), // changes when location changes
               child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
-                  center: _selectedLatLng ?? _initialCenter!,
+                  center: _selectedLatLng ?? widget.initialCenter!,
                   zoom: 13,
                   interactiveFlags: InteractiveFlag.all,
                 ),

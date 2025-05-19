@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:optima/globals.dart';
 
 
@@ -11,10 +12,12 @@ class Member {
   final String displayName;
   final String? photo;
   final String? resolvedPhoto;
+  final bool isPending;
 
   const Member({
     required this.id,
     required this.displayName,
+    this.isPending = false,
     this.photo,
     this.resolvedPhoto,
   });
@@ -77,6 +80,7 @@ class AnimatedAvatarSlot extends StatelessWidget {
         size: size,
         color: color,
         onLong: onLong,
+        dimmed: member.isPending,
       ),
     );
   }
@@ -89,12 +93,16 @@ class AvatarSlot extends StatefulWidget {
   final double size;
   final Color color;
   final VoidCallback onLong;
+  final bool dimmed;
+  final bool isCreator;
 
   const AvatarSlot({
     required this.member,
     required this.size,
     required this.color,
     required this.onLong,
+    this.dimmed = false,
+    this.isCreator = false,
     super.key,
   });
 
@@ -103,15 +111,16 @@ class AvatarSlot extends StatefulWidget {
 }
 
 class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
-  late AnimationController _pressController;
-  late AnimationController _popController;
-  late Animation<double> _scale;
-  late Animation<double> _shake;
-  late Animation<double> _popScale;
-  late Animation<double> _popOpacity;
+  late final AnimationController _dimController;
+  late final Animation<double> _dimOpacity;
 
-  Widget? _cachedContent;
-  String? _lastResolvedPhoto;
+  late final AnimationController _pressController;
+  late final Animation<double> _scale;
+  late final Animation<double> _shake;
+
+  late final AnimationController _popController;
+  late final Animation<double> _popScale;
+  late final Animation<double> _popOpacity;
 
   Timer? _deleteTimer;
   bool _shouldDelete = false;
@@ -120,14 +129,24 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
+    _dimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _dimOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _dimController, curve: Curves.easeInOut),
+    );
+
+    if (widget.dimmed) _dimController.value = 1.0;
+
     _pressController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _scale = Tween<double>(begin: 1.0, end: 0.7).animate(
+    _scale = Tween(begin: 1.0, end: 0.7).animate(
       CurvedAnimation(parent: _pressController, curve: Curves.easeOut),
     );
-    _shake = Tween<double>(begin: 0.0, end: 0.5).animate(
+    _shake = Tween(begin: 0.0, end: 0.5).animate(
       CurvedAnimation(parent: _pressController, curve: Curves.linear),
     );
 
@@ -135,15 +154,23 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _popScale = Tween<double>(begin: 1.0, end: 0.0).animate(CurvedAnimation(
-      parent: _popController,
-      curve: Curves.easeInBack,
-    ));
-    _popOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(_popController);
+    _popScale = Tween(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _popController, curve: Curves.easeInBack),
+    );
+    _popOpacity = Tween(begin: 1.0, end: 0.0).animate(_popController);
+  }
+
+  @override
+  void didUpdateWidget(covariant AvatarSlot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.dimmed != oldWidget.dimmed) {
+      widget.dimmed ? _dimController.forward() : _dimController.reverse();
+    }
   }
 
   @override
   void dispose() {
+    _dimController.dispose();
     _pressController.dispose();
     _popController.dispose();
     _deleteTimer?.cancel();
@@ -151,14 +178,13 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
   }
 
   void _startHold() {
+    if (widget.isCreator) return;
+
     _shouldDelete = false;
     _pressController.repeat(reverse: true);
-
     _deleteTimer = Timer(const Duration(milliseconds: 400), () {
       _shouldDelete = true;
-      _popController.forward().whenComplete(() {
-        widget.onLong();
-      });
+      _popController.forward().whenComplete(widget.onLong);
     });
   }
 
@@ -177,107 +203,118 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
       child: AnimatedBuilder(
         animation: Listenable.merge([_pressController, _popController]),
         builder: (_, child) {
-          final shakeRotation = sin(_pressController.value * pi * 6) * _shake.value;
+          final shake = sin(_pressController.value * pi * 6) * _shake.value;
           final scale = _shouldDelete ? _popScale.value : _scale.value;
           final opacity = _shouldDelete ? _popOpacity.value : 1.0;
 
           return Opacity(
             opacity: opacity,
             child: Transform.rotate(
-              angle: shakeRotation,
-              child: Transform.scale(
-                scale: scale,
-                child: child,
-              ),
+              angle: shake,
+              child: Transform.scale(scale: scale, child: child),
             ),
           );
         },
-        child: Container(
+        child: _buildAvatarContent(dashed),
+      ),
+    );
+  }
+
+  Widget _buildAvatarContent(bool dashed) {
+    final photo = widget.member?.resolvedPhoto ?? '';
+    final displayName = widget.member?.displayName ?? '';
+    final content = _getCachedContent(photo, displayName);
+
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
           width: widget.size,
           height: widget.size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: dashed ? Colors.transparent : textSecondaryHighlightedColor,
-            border: Border.all(
-              color: widget.color,
-              width: dashed ? 2 : 3,
+            border: Border.all(color: widget.color, width: dashed ? 2 : 3),
+          ),
+          child: ClipOval(child: content),
+        ),
+        FadeTransition(
+          opacity: _dimOpacity,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black54,
             ),
           ),
-          alignment: Alignment.center,
-          child: _content(dashed),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _content(bool dashed) {
-    if (dashed) return Icon(Icons.add, size: 28, color: widget.color);
 
-    final member = widget.member!;
-    final displayName = member.displayName;
-    final photo = member.resolvedPhoto;
 
-    if (_lastResolvedPhoto == photo && _cachedContent != null) {
+
+
+  Widget? _cachedContent;
+  String? _lastPhoto;
+
+  Widget _getCachedContent(String photo, String displayName) {
+    if (_lastPhoto == photo && _cachedContent != null) {
       return _cachedContent!;
     }
 
-    // Update the cache key
-    _lastResolvedPhoto = photo;
+    _lastPhoto = photo;
+    _cachedContent = photo.isNotEmpty
+        ? _buildImage(photo, displayName)
+        : _buildInitials(displayName);
+    return _cachedContent!;
+  }
 
-    Widget content;
-    if (photo != null && photo.isNotEmpty) {
-      try {
-        if (photo.startsWith('http')) {
-          content = ClipOval(
-            child: Image.network(
-              photo,
-              width: widget.size,
-              height: widget.size,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildInitials(displayName),
-            ),
-          );
-        } else {
-          final base64Str = photo.split(',').last;
-          final bytes = base64Decode(base64Str);
-          content = ClipOval(
-            child: Image.memory(
-              bytes,
-              width: widget.size,
-              height: widget.size,
-              fit: BoxFit.cover,
-            ),
-          );
-        }
-      } catch (_) {
-        content = _buildInitials(displayName);
+  Widget _buildImage(String photo, String fallback) {
+    try {
+      if (photo.startsWith('http')) {
+        return Image.network(
+          photo,
+          fit: BoxFit.cover,
+          width: widget.size,
+          height: widget.size,
+          errorBuilder: (_, __, ___) => _buildInitials(fallback),
+        );
       }
-    } else {
-      content = _buildInitials(displayName);
-    }
 
-    _cachedContent = content;
-    return content;
+      final bytes = base64Decode(photo.split(',').last);
+      return Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: widget.size,
+        height: widget.size,
+      );
+    } catch (_) {
+      return _buildInitials(fallback);
+    }
   }
 
   Widget _buildInitials(String name) {
-    final initials = name
+    final parts = name
         .trim()
         .split(RegExp(r'\s+'))
-        .take(2)
-        .map((e) => e[0].toUpperCase())
-        .join();
+        .where((part) => part.isNotEmpty)
+        .toList();
 
-    return Container(
-      width: widget.size,
-      height: widget.size,
-      alignment: Alignment.center,
+    final initials = parts.isEmpty
+        ? '+'
+        : parts.take(2).map((e) => e[0].toUpperCase()).join();
+
+    return Center(
       child: Text(
         initials,
         style: TextStyle(
-          color: widget.color,
-          fontWeight: FontWeight.w800,
           fontSize: 36,
+          fontWeight: FontWeight.bold,
+          color: widget.color,
         ),
       ),
     );
@@ -289,16 +326,54 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
 class ContributorAvatar extends StatelessWidget {
   final Member member;
   final double size;
+  final bool showCrown;
 
-  const ContributorAvatar({super.key, required this.member, this.size = 56});
+  const ContributorAvatar({
+    super.key,
+    required this.member,
+    this.size = 56,
+    this.showCrown = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AvatarSlot(
-      member: member,
-      size: size,
-      color: textHighlightedColor,
-      onLong: () {}, // no-op for long-press
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        AvatarSlot(
+          key: ValueKey(member.id),
+          member: member,
+          size: size,
+          color: showCrown ? textSecondaryHighlightedColor : textHighlightedColor,
+          dimmed: member.isPending,
+          isCreator: showCrown,
+          onLong: () {}, // no-op
+        ),
+        if (showCrown)
+          Positioned(
+            top: -10,
+            left: -8,
+            child: Transform.rotate(
+              angle: -0.5, // slight tilt in radians (~-20 degrees)
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  LucideIcons.crown,
+                  size: 30,
+                  color: textHighlightedColor,
+                  shadows: [
+                    Shadow(color: Colors.black54, offset: Offset(0, 2), blurRadius: 3),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

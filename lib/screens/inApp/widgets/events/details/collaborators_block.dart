@@ -4,8 +4,14 @@ import 'package:optima/screens/inApp/widgets/events/details/member_avatar.dart';
 
 class CollaboratorsBlock extends StatelessWidget {
   final List<Member> members;
+  final String creatorId;
 
-  const CollaboratorsBlock({super.key, required this.members});
+  const CollaboratorsBlock({
+    super.key,
+    required this.members,
+    required this.creatorId,
+  });
+
 
   @override
   Widget build(BuildContext context) {
@@ -54,21 +60,25 @@ class CollaboratorsBlock extends StatelessWidget {
                     itemCount: members.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 10),
                     itemBuilder: (context, index) {
+                      final member = members[index];
                       return ContributorAvatar(
-                        member: members[index],
+                        member: member,
                         size: 55,
+                        showCrown: member.id == creatorId,
                       );
                     },
                   ),
                 )
                     : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: members
-                      .map((member) => Padding(
+                  children: members.map((member) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: ContributorAvatar(member: member, size: 55),
-                  ))
-                      .toList(),
+                    child: ContributorAvatar(
+                      member: member,
+                      size: 55,
+                      showCrown: member.id == creatorId,
+                    ),
+                  )).toList()
                 )
                     : Center(
                   child: Text(

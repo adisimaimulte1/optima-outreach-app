@@ -9,6 +9,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
+import 'package:optima/services/storage/cloud_storage_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -213,11 +214,7 @@ class ProfileAvatarState extends State<ProfileAvatar> with AutomaticKeepAliveCli
       final bytes = await file.readAsBytes();
       final base64Image = base64Encode(bytes);
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set({'photoUrl': base64Image}, SetOptions(merge: true));
-
+      await CloudStorageService().saveUserProfileIndividual('photo', base64Image);
       photoUrl = base64Image;
     } catch (e) {
       debugPrint("❌ Failed to upload profile image: $e");

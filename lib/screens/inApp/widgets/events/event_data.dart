@@ -9,7 +9,8 @@ class EventData {
   TimeOfDay? selectedTime;
   String? locationAddress;
   LatLng? locationLatLng;
-  List<String> eventMembers;
+  List<String> eventManagers;
+  List<Map<String, dynamic>> eventMembers;
   List<String> eventGoals;
   List<String> audienceTags;
   bool isPublic;
@@ -20,6 +21,7 @@ class EventData {
 
   String status;
   String? id;
+  String createdBy;
 
   EventData({
     required this.eventName,
@@ -29,6 +31,7 @@ class EventData {
     required this.selectedTime,
     required this.locationAddress,
     required this.locationLatLng,
+    required this.eventManagers,
     required this.eventMembers,
     required this.eventGoals,
     required this.audienceTags,
@@ -37,10 +40,9 @@ class EventData {
     required this.eventPrice,
     required this.eventCurrency,
     required this.jamieEnabled,
-
     required this.status,
+    required this.createdBy,
   });
-
 
   Map<String, dynamic> toMap() {
     return {
@@ -54,7 +56,18 @@ class EventData {
         'lat': locationLatLng?.latitude,
         'lng': locationLatLng?.longitude,
       },
-      'eventMembers': eventMembers,
+      'eventMembers': eventMembers.map((e) {
+        if (e is String) {
+          return {'email': e, 'status': 'accepted', 'invitedAt': DateTime.now().toIso8601String()};
+        }
+        return {
+          'email': e['email'],
+          'status': e['status'],
+          'invitedAt': e['invitedAt'] is DateTime
+              ? (e['invitedAt'] as DateTime).toIso8601String()
+              : e['invitedAt'] ?? DateTime.now().toIso8601String(),
+        };
+      }).toList(),
       'eventGoals': eventGoals,
       'audienceTags': audienceTags,
       'isPublic': isPublic,
@@ -63,18 +76,27 @@ class EventData {
       'eventCurrency': eventCurrency,
       'jamieEnabled': jamieEnabled,
       'status': status,
+      'eventManagers': eventManagers,
+      'createdBy': createdBy,
       'createdAt': DateTime.now().toIso8601String(),
     };
   }
 
   factory EventData.fromMap(Map<String, dynamic> map) {
     final timeParts = (map['selectedTime'] as String?)?.split(':') ?? ['0', '0'];
+
+    final List<Map<String, dynamic>> members = (map['eventMembers'] ?? []).map<Map<String, dynamic>>((e) {
+      if (e is Map<String, dynamic>) return e;
+      if (e is Map) return Map<String, dynamic>.from(e);
+      return {'email': e.toString(), 'status': 'accepted', 'invitedAt': null};
+    }).toList();
+
     return EventData(
       eventName: map['eventName'],
       organizationType: map['organizationType'],
       customOrg: map['customOrg'],
       selectedDate: map['selectedDate'] != null
-          ? DateTime.parse(map['selectedDate'])
+          ? DateTime.tryParse(map['selectedDate']) ?? DateTime.now()
           : null,
       selectedTime: TimeOfDay(
         hour: int.tryParse(timeParts[0]) ?? 0,
@@ -87,7 +109,8 @@ class EventData {
         map['locationLatLng']['lng'],
       )
           : null,
-      eventMembers: List<String>.from(map['eventMembers'] ?? []),
+      eventManagers: List<String>.from(map['eventManagers'] ?? []),
+      eventMembers: members,
       eventGoals: List<String>.from(map['eventGoals'] ?? []),
       audienceTags: List<String>.from(map['audienceTags'] ?? []),
       isPublic: map['isPublic'] ?? true,
@@ -96,6 +119,7 @@ class EventData {
       eventCurrency: map['eventCurrency'],
       jamieEnabled: map['jamieEnabled'] ?? false,
       status: map['status'] ?? "UPCOMING",
+      createdBy: map['createdBy'] ?? "",
     );
   }
 }

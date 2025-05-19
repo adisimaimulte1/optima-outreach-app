@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/credits/credit_service.dart';
@@ -163,6 +164,69 @@ class LocalCache {
     await prefs.setString('member_photo_$memberId', base64);
   }
 
+  Future<void> recacheMemberPhoto(String email) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('public_data').where('email', isEqualTo: email).limit(1).get();
+      if (doc.docs.isEmpty) return;
+
+      final photo = doc.docs.first['photo'] ?? '';
+      if (photo.isEmpty) return;
+
+      await cacheMemberPhoto(email, photo);
+    } catch (e) {}
+  }
+
+
+  Future<void> cacheMemberStatus(String email, String eventId, String status) async {
+    final index = events.indexWhere((event) => event.id == eventId);
+    if (index == -1) return;
+
+    final event = events[index];
+
+    final updatedMembers = event.eventMembers.map((member) {
+      if ((member['email'] as String?)?.toLowerCase() == email.toLowerCase()) {
+        return {
+          ...member,
+          'status': status,
+        };
+      }
+      return member;
+    }).toList();
+
+    events[index].eventMembers = updatedMembers;
+  }
+
+  Future<void> recacheMemberStatus(String email, String eventID, {String? fallbackStatus = 'pending'}) async {
+    try {
+      final eventDoc = await FirebaseFirestore.instance
+          .collection('events')
+          .doc(eventID)
+          .get();
+
+      if (!eventDoc.exists) {
+        await cacheMemberStatus(email, eventID, fallbackStatus ?? 'pending');
+        return;
+      }
+
+      final members = List<Map<String, dynamic>>.from(
+        eventDoc.data()?['eventMembers'] ?? [],
+      );
+
+      final matched = members.firstWhere(
+            (m) => (m['email'] as String?)?.toLowerCase() == email.toLowerCase(),
+        orElse: () => {'status': fallbackStatus},
+      );
+
+      final status = (matched['status'] ?? fallbackStatus).toString().toLowerCase();
+
+      debugPrint("status: $status email: $email");
+      await cacheMemberStatus(email, eventID, status);
+    } catch (_) {
+      await cacheMemberStatus(email, eventID, fallbackStatus ?? 'pending');
+    }
+  }
+
+
   Future<String?> getCachedMemberPhoto(String memberId) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('member_photo_$memberId');
@@ -182,21 +246,40 @@ class LocalCache {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final userEmail = user.email?.toLowerCase();
+    if (userEmail == null) return;
+
     final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
         .collection('events')
         .orderBy('selectedDate')
         .get();
 
-    final e = snapshot.docs.map((doc) {
+    final List<EventData> relevantEvents = [];
+
+    for (final doc in snapshot.docs) {
       final data = doc.data();
       final event = EventData.fromMap(data)..id = doc.id;
-      return event;
-    }).toList();
 
-    await cacheUserEventsFromApp(e);
-    events = e;
+      final isManager = event.eventManagers.contains(userEmail);
+      final isMember = event.eventMembers.any(
+            (member) => (member['email'] as String?)?.toLowerCase() == userEmail,
+      );
+
+      if (!isManager && !isMember) continue;
+
+      for (final member in event.eventMembers) {
+        final email = member['email'];
+
+        if (email != null && email.toString().isNotEmpty) {
+          await LocalCache().recacheMemberPhoto(email);
+        }
+      }
+
+      relevantEvents.add(event);
+    }
+
+    await cacheUserEventsFromApp(relevantEvents);
+    events = relevantEvents;
   }
 
   Future<void> cacheSingleEvent(EventData event) async {
