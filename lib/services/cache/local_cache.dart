@@ -100,12 +100,11 @@ class LocalCache {
 
   Future<void> initializeAndCacheUserData() async {
     final authUser = FirebaseAuth.instance.currentUser;
+    await cacheUserEventsFromFirestore();
 
     if (authUser == null) return;
     if (await isCacheComplete()) {
       await loadAndCacheUserData();
-      await _cacheUserEventsFromFirestore();
-
       return;
     }
 
@@ -130,7 +129,6 @@ class LocalCache {
     }
 
     await loadAndCacheUserData();
-    await _cacheUserEventsFromFirestore();
   }
 
 
@@ -177,6 +175,7 @@ class LocalCache {
   }
 
 
+
   Future<void> cacheMemberStatus(String email, String eventId, String status) async {
     final index = events.indexWhere((event) => event.id == eventId);
     if (index == -1) return;
@@ -184,47 +183,55 @@ class LocalCache {
     final event = events[index];
 
     final updatedMembers = event.eventMembers.map((member) {
-      if ((member['email'] as String?)?.toLowerCase() == email.toLowerCase()) {
-        return {
-          ...member,
-          'status': status,
-        };
+      final match = (member['email'] as String?)?.toLowerCase() == email.toLowerCase();
+      return match
+          ? {
+        ...member,
+        'status': status,
       }
-      return member;
+          : member;
     }).toList();
 
     events[index].eventMembers = updatedMembers;
+
+    // Update the cache too
+    await cacheSingleEvent(events[index]);
   }
 
-  Future<void> recacheMemberStatus(String email, String eventID, {String? fallbackStatus = 'pending'}) async {
+  Future<void> recacheMemberStatus(String email, String eventID, {String fallbackStatus = 'pending'}) async {
     try {
-      final eventDoc = await FirebaseFirestore.instance
-          .collection('events')
-          .doc(eventID)
+      // Step 1: Get the user's UID from public_data
+      final query = await FirebaseFirestore.instance
+          .collection('public_data')
+          .where('email', isEqualTo: email)
+          .limit(1)
           .get();
 
-      if (!eventDoc.exists) {
-        await cacheMemberStatus(email, eventID, fallbackStatus ?? 'pending');
+      if (query.docs.isEmpty) {
+        await cacheMemberStatus(email, eventID, fallbackStatus);
         return;
       }
 
-      final members = List<Map<String, dynamic>>.from(
-        eventDoc.data()?['eventMembers'] ?? [],
-      );
+      final uid = query.docs.first.id;
 
-      final matched = members.firstWhere(
-            (m) => (m['email'] as String?)?.toLowerCase() == email.toLowerCase(),
-        orElse: () => {'status': fallbackStatus},
-      );
+      // Step 2: Get member status from subcollection
+      final memberDoc = await FirebaseFirestore.instance
+          .collection('events')
+          .doc(eventID)
+          .collection('members')
+          .doc(uid)
+          .get();
 
-      final status = (matched['status'] ?? fallbackStatus).toString().toLowerCase();
+      final status = memberDoc.exists
+          ? (memberDoc.data()?['status'] ?? fallbackStatus).toString().toLowerCase()
+          : fallbackStatus;
 
-      debugPrint("status: $status email: $email");
       await cacheMemberStatus(email, eventID, status);
     } catch (_) {
-      await cacheMemberStatus(email, eventID, fallbackStatus ?? 'pending');
+      await cacheMemberStatus(email, eventID, fallbackStatus);
     }
   }
+
 
 
   Future<String?> getCachedMemberPhoto(String memberId) async {
@@ -242,7 +249,7 @@ class LocalCache {
     await prefs.setStringList('cached_user_events', jsonList);
   }
 
-  Future<void> _cacheUserEventsFromFirestore() async {
+  Future<void> cacheUserEventsFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -257,19 +264,24 @@ class LocalCache {
     final List<EventData> relevantEvents = [];
 
     for (final doc in snapshot.docs) {
-      final data = doc.data();
-      final event = EventData.fromMap(data)..id = doc.id;
+      final membersSnap = await doc.reference.collection('members').get();
+      final memberList = membersSnap.docs.map((doc) => doc.data()).toList(); // ✅ Extract member maps
+
+      final event = EventData.fromMap(doc.data(), memberDocs: membersSnap.docs)..id = doc.id;
+
+      event.eventMembers = memberList; // Manually attach members for caching
 
       final isManager = event.eventManagers.contains(userEmail);
-      final isMember = event.eventMembers.any(
+      final memberEntry = memberList.firstWhere(
             (member) => (member['email'] as String?)?.toLowerCase() == userEmail,
+        orElse: () => {},
       );
+      final hasAccepted = memberEntry['status'] == 'accepted';
 
-      if (!isManager && !isMember) continue;
+      if (!isManager && !hasAccepted) continue;
 
-      for (final member in event.eventMembers) {
+      for (final member in memberList) {
         final email = member['email'];
-
         if (email != null && email.toString().isNotEmpty) {
           await LocalCache().recacheMemberPhoto(email);
         }
@@ -286,6 +298,16 @@ class LocalCache {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getStringList('cached_user_events') ?? [];
 
+    // fetch members for this event
+    final membersSnap = await FirebaseFirestore.instance
+        .collection('events')
+        .doc(event.id)
+        .collection('members')
+        .get();
+
+    final memberList = membersSnap.docs.map((doc) => doc.data()).toList();
+    event.eventMembers = memberList; // attach members for cache
+
     final updated = existing.map((e) {
       final decoded = jsonDecode(e);
       return decoded['id'] == event.id
@@ -298,7 +320,6 @@ class LocalCache {
       return decoded['id'] == event.id;
     });
 
-    // If it wasn't found (new), add it
     if (!contains) {
       updated.insert(0, jsonEncode(event.toMap()));
     }
@@ -310,12 +331,15 @@ class LocalCache {
 
   Future<List<EventData>> getCachedUserEvents() async {
     final prefs = await SharedPreferences.getInstance();
+
+
     final List<String>? jsonList = prefs.getStringList('cached_user_events');
     if (jsonList == null) return [];
 
+
     return jsonList.map((jsonStr) {
       final Map<String, dynamic> map = jsonDecode(jsonStr);
-      return EventData.fromMap(map);
+      return EventData.fromMap(map, memberDocs: []);
     }).toList();
   }
 

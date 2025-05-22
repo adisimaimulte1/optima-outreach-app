@@ -132,8 +132,8 @@ AppLifecycleState? currentAppState;
 Color lightColorPrimary = const Color(0xFFFFC62D);
 Color lightColorSecondary = const Color(0xFFFFE8A7);
 
-Color darkColorPrimary = const Color(0xFF5D2C70);
-Color darkColorSecondary = const Color(0xFF973BBA);
+Color darkColorPrimary = const Color(0xFF973BBA);
+Color darkColorSecondary = const Color(0xFFDD88FF);
 
 Color inAppBackgroundColor = const Color(0xFF1C2837);
 Color inAppForegroundColor = const Color(0xFF24324A);
@@ -162,8 +162,8 @@ void setIsDarkModeNotifier(bool isDarkSystem) {
   else if (selectedTheme == ThemeMode.dark) { isDarkModeNotifier.value = true; }
   else { isDarkModeNotifier.value = false; }
 
-  textHighlightedColor = isDarkModeNotifier.value ? darkColorSecondary : lightColorPrimary;
-  textSecondaryHighlightedColor = isDarkModeNotifier.value ? darkColorPrimary: lightColorSecondary;
+  textHighlightedColor = isDarkModeNotifier.value ? darkColorPrimary : lightColorPrimary;
+  textSecondaryHighlightedColor = isDarkModeNotifier.value ? darkColorSecondary : lightColorSecondary;
 }
 
 Widget responsiveText(

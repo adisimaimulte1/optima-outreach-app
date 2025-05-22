@@ -84,8 +84,7 @@ class CloudStorageService {
   Future<void> saveEvent(EventData event) async {
     if (_userId == null) return;
 
-    final eventsRef = _firestore
-        .collection('events');
+    final eventsRef = _firestore.collection('events');
 
     final docRef = event.id != null
         ? eventsRef.doc(event.id)
@@ -95,6 +94,35 @@ class CloudStorageService {
       event.id = docRef.id;
     } else {
       await docRef.set(event.toMap());
+    }
+
+    final members = event.eventMembers;
+    for (final member in members) {
+      final email = member['email'];
+      if (email == null) continue;
+
+      final query = await _firestore
+          .collection('public_data')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        final uid = query.docs.first.id;
+
+        final memberDoc = await docRef.collection('members').doc(uid).get();
+        final existingStatus = (memberDoc.data()?['status'] ?? '').toString().toLowerCase();
+
+        final updatedStatus = existingStatus == 'accepted'
+            ? 'accepted'
+            : (member['status'] ?? 'pending');
+
+        await docRef.collection('members').doc(uid).set({
+          'email': email,
+          'status': updatedStatus,
+          'invitedAt': member['invitedAt'] ?? DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true));
+      }
     }
 
     await LocalCache().cacheSingleEvent(event);
@@ -117,17 +145,27 @@ class CloudStorageService {
   }) async {
     if (_userId == null || event.id == null) return;
 
-    final updatedMembers = event.eventMembers.where((m) {
-      final mEmail = (m['email'] as String?)?.toLowerCase();
-      return mEmail != email.toLowerCase();
-    }).toList();
+    final memberQuery = await _firestore
+        .collection('events')
+        .doc(event.id)
+        .collection('members')
+        .where('email', isEqualTo: email.toLowerCase())
+        .limit(1)
+        .get();
 
-    event.eventMembers = updatedMembers;
+    if (memberQuery.docs.isEmpty) return;
 
-    final docRef = _firestore.collection('events').doc(event.id);
-    await docRef.set(event.toMap());
+    final memberDoc = memberQuery.docs.first;
+    await memberDoc.reference.delete();
+
+
+    event.eventMembers = event.eventMembers
+        .where((m) => (m['email'] as String?)?.toLowerCase() != email.toLowerCase())
+        .toList();
+
     await LocalCache().cacheSingleEvent(event);
   }
+
 
 
 

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -7,6 +8,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:optima/globals.dart';
@@ -50,13 +52,27 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
     setIsDarkModeNotifier(SchedulerBinding.instance.window.platformBrightness == Brightness.dark);
 
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) { _setSystemUIOverlay(); });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setSystemUIOverlay();
+      _startNotificationListener();
+    });
   }
 
   @override
   void dispose() {
+    LocalNotificationService().stopListening();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+
+
+  void _startNotificationListener() {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId != null) {
+      LocalNotificationService().startListening(userId);
+    }
   }
 
 

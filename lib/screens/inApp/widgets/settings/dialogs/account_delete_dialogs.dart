@@ -5,6 +5,7 @@ import 'package:optima/globals.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
+import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class AccountDeleteDialogs {
@@ -238,8 +239,10 @@ class AccountDeleteDialogs {
         subCreditNotifier.cancel();
         selectedPlan.cancel();
 
-        await CloudStorageService().deleteAll();
+        LocalNotificationService().stopListening();
         LocalCache().deleteAll();
+
+        await CloudStorageService().deleteAll();
         await user.delete();
 
       } else if (password != null && password.isNotEmpty) {
@@ -251,8 +254,10 @@ class AccountDeleteDialogs {
         subCreditNotifier.cancel();
         selectedPlan.cancel();
 
-        await CloudStorageService().deleteAll();
+        LocalNotificationService().stopListening();
         LocalCache().deleteAll();
+
+        await CloudStorageService().deleteAll();
         await user.delete();
 
       } else {

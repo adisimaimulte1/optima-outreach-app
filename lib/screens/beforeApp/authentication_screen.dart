@@ -8,6 +8,7 @@ import 'package:optima/screens/beforeApp/widgets/background_particles.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/credits/plan_notifier.dart';
 import 'package:optima/services/credits/sub_credit_notifier.dart';
+import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
@@ -298,7 +299,8 @@ class _AuthScreenState extends State<AuthScreen> {
     await auth.currentUser?.reload();
     final finalUser = auth.currentUser;
     if (finalUser != null && finalUser.emailVerified) {
-      _navigateToHome(false);
+      await _navigateToHome(false);
+      await _navigateToHome(false);
       return;
     }
 
@@ -314,12 +316,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
 
 
-  void _navigateToHome(bool googleSignIn) {
+  Future<void> _navigateToHome(bool googleSignIn) async {
     selectedScreenNotifier.value = ScreenType.dashboard;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    LocalStorageService().setIsGoogleUser(googleSignIn);
-    LocalCache().initializeAndCacheUserData();
+    await LocalStorageService().setIsGoogleUser(googleSignIn);
+    await LocalCache().initializeAndCacheUserData();
+    LocalNotificationService().startListening(FirebaseAuth.instance.currentUser!.uid);
 
     SessionService().registerSession();
 
@@ -380,7 +383,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
 
       if (!mounted) return;
-      _navigateToHome(true);
+      await _navigateToHome(true);
     } catch (e) {
       setState(() {
         _errorMessage = 'Google Sign-in failed. Please try again.';

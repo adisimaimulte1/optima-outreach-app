@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:optima/globals.dart';
@@ -148,7 +149,7 @@ class _EventsScreenState extends State<EventsScreen> {
           child: Text(
             "no ${_friendlyFilterLabel(selectedFilter)}",
             style: TextStyle(
-              color: Colors.white30,
+              color: Colors.white24,
               fontSize: 20,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
@@ -169,10 +170,18 @@ class _EventsScreenState extends State<EventsScreen> {
           return EventCard(
             key: ValueKey(event.id ?? event.eventName),
             eventData: event,
-            onDelete: (eventToDelete) {
-              setState(() {
-                CloudStorageService().deleteEvent(eventToDelete);
-                events.removeWhere((e) => e.id == eventToDelete.id);
+            onDelete: (eventToDelete, hasPermission) {
+              setState(() async {
+                if (hasPermission) {
+                  CloudStorageService().deleteEvent(eventToDelete);
+                  events.removeWhere((e) => e.id == eventToDelete.id);
+                } else {
+                  await CloudStorageService().removeMemberFromEvent(
+                    event: eventToDelete,
+                    email: FirebaseAuth.instance.currentUser!.email!,
+                  );
+                  events.removeWhere((e) => e.id == eventToDelete.id);
+                }
               });
             },
             onEdit: (eventToEdit) async {
@@ -209,10 +218,18 @@ class _EventsScreenState extends State<EventsScreen> {
             borderRadius: BorderRadius.circular(24),
             child: EventCard(
               eventData: event,
-              onDelete: (eventToDelete) {
+              onDelete: (eventToDelete, hasPermission) {
                 setState(() {
-                  CloudStorageService().deleteEvent(eventToDelete);
-                  events.removeWhere((e) => e.id == eventToDelete.id);
+                  if (hasPermission) {
+                    CloudStorageService().deleteEvent(eventToDelete);
+                    events.removeWhere((e) => e.id == eventToDelete.id);
+                  } else {
+                    CloudStorageService().removeMemberFromEvent(
+                      event: eventToDelete,
+                      email: FirebaseAuth.instance.currentUser!.email!,
+                    );
+                    events.removeWhere((e) => e.id == eventToDelete.id);
+                  }
                 });
               },
               onEdit: (eventToEdit) async {
@@ -251,10 +268,18 @@ class _EventsScreenState extends State<EventsScreen> {
             index: index,
             child: EventCard(
               eventData: event,
-              onDelete: (eventToDelete) {
+              onDelete: (eventToDelete, hasPermission) {
                 setState(() {
-                  CloudStorageService().deleteEvent(eventToDelete);
-                  events.removeWhere((e) => e.id == eventToDelete.id);
+                  if (hasPermission) {
+                    CloudStorageService().deleteEvent(eventToDelete);
+                    events.removeWhere((e) => e.id == eventToDelete.id);
+                  } else {
+                    CloudStorageService().removeMemberFromEvent(
+                      event: eventToDelete,
+                      email: FirebaseAuth.instance.currentUser!.email!,
+                    );
+                    events.removeWhere((e) => e.id == eventToDelete.id);
+                  }
                 });
               },
               onEdit: (eventToEdit) async {
@@ -300,16 +325,14 @@ class _EventsScreenState extends State<EventsScreen> {
             backgroundColor: Colors.transparent,
             body: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).pop(), // Tap outside = pop
+              onTap: () => Navigator.of(context).pop(),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // This is the only tappable background
                   const SizedBox.expand(),
 
-                  // Prevent taps from leaking through the form
                   GestureDetector(
-                    onTap: () {}, // absorb taps on form
+                    onTap: () {},
                     child: ScaleTransition(
                       scale: Tween<double>(begin: 0.95, end: 1.0).animate(
                         CurvedAnimation(parent: animation1, curve: Curves.easeOutBack),

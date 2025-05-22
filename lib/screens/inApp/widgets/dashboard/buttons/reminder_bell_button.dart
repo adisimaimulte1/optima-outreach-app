@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/services/notifications/local_notification_service.dart';
 
 class ReminderBellButton extends StatefulWidget {
-  final int feedbackCount;
   final double width;
   final double height;
   final VoidCallback? onTap;
 
   const ReminderBellButton({
     super.key,
-    required this.feedbackCount,
     required this.width,
     required this.height,
     this.onTap,
@@ -21,11 +20,22 @@ class ReminderBellButton extends StatefulWidget {
 
 class _ReminderBellButtonState extends State<ReminderBellButton> {
   double _scale = 1.0;
+  int feedbackCount = LocalNotificationService().unreadCount.value;
 
   @override
   void initState() {
     super.initState();
     screenScaleNotifier.addListener(_handleScaleChange);
+    LocalNotificationService().unreadCount.addListener(_updateUnreadCount);
+  }
+
+
+  void _updateUnreadCount() {
+    if (mounted) {
+      setState(() {
+        feedbackCount = LocalNotificationService().unreadCount.value;
+      });
+    }
   }
 
   void _handleScaleChange() {
@@ -39,6 +49,7 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
   @override
   void dispose() {
     screenScaleNotifier.removeListener(_handleScaleChange);
+    LocalNotificationService().unreadCount.removeListener(_updateUnreadCount);
     super.dispose();
   }
 
@@ -48,7 +59,7 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
     });
   }
 
-  bool get _hasReminder => widget.feedbackCount > 0;
+  bool get _hasReminder => feedbackCount > 0;
 
   Color get _backgroundColor =>
       _hasReminder ? textHighlightedColor : inAppForegroundColor;
@@ -79,9 +90,22 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
             clipBehavior: Clip.none,
             children: [
               _buildBellButton(),
-              if (_hasReminder) _buildBadge(),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  transitionBuilder: (child, animation) {
+                    return ScaleTransition(scale: animation, child: child);
+                  },
+                  child: _hasReminder
+                      ? _buildBadge()
+                      : const SizedBox.shrink(key: ValueKey('empty')),
+                ),
+              ),
             ],
           ),
+
         ),
       ),
     );
@@ -114,24 +138,21 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
   }
 
   Widget _buildBadge() {
-    return Positioned(
-      top: 8,
-      right: 8,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: _badgeBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-        child: Center(
-          child: Text(
-            widget.feedbackCount.toString(),
-            style: TextStyle(
-              color: _badgeTextColor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
+    return Container(
+      key: const ValueKey('badge'),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: _badgeBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+      child: Center(
+        child: Text(
+          feedbackCount.toString(),
+          style: TextStyle(
+            color: _badgeTextColor,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),

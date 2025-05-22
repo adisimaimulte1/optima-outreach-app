@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/details/collaborators_block.dart';
@@ -21,6 +22,8 @@ class _EventDetailsState extends State<EventDetails> {
   late String selectedStatus;
 
   List<Member> _resolvedMembers = [];
+  bool hasPermission = true;
+  Color color = textHighlightedColor;
 
   @override
   void initState() {
@@ -114,6 +117,9 @@ class _EventDetailsState extends State<EventDetails> {
 
   @override
   Widget build(BuildContext context) {
+    hasPermission = widget.eventData.hasPermission(FirebaseAuth.instance.currentUser!.email!);
+    color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 700),
       height: 650,
@@ -140,7 +146,9 @@ class _EventDetailsState extends State<EventDetails> {
           _buildStatusSelector(context),
           const SizedBox(height: 16),
           _buildTitleBlock(context),
-          LocationBlock(address: widget.eventData.locationAddress!),
+          LocationBlock(
+              address: widget.eventData.locationAddress!,
+              color: color),
           CollaboratorsBlock(members: _resolvedMembers, creatorId: widget.eventData.createdBy),
           _buildGoalsBlock(),
           _buildVisibilityAudienceBlock(),
@@ -165,24 +173,26 @@ class _EventDetailsState extends State<EventDetails> {
 
         final Color backgroundColor = isSelected
             ? (isCompleted
-            ? textHighlightedColor
+            ? color
             : isUpcoming
-            ? textHighlightedColor.withOpacity(0.2)
+            ? color.withOpacity(0.2)
             : Colors.transparent)
             : Colors.transparent;
 
         final Color borderColor = isSelected
-            ? textHighlightedColor
+            ? color
             : Colors.white.withOpacity(0.2);
 
         final Color textColor = isSelected
-            ? (isCompleted ? inAppForegroundColor : textHighlightedColor)
+            ? (isCompleted ? inAppForegroundColor : color)
             : Colors.white.withOpacity(isCancelled ? 0.4 : 0.5);
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 3),
           child: GestureDetector(
-            onTap: () async {
+            onTap: !hasPermission
+                ? null
+                : () async {
               if (selectedStatus == status) return;
 
               setState(() => selectedStatus = status);
@@ -263,7 +273,7 @@ class _EventDetailsState extends State<EventDetails> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.calendar_today, color: textHighlightedColor, size: 20),
+            Icon(Icons.calendar_today, color: color, size: 20),
             const SizedBox(width: 6),
             Text(
               formatDate(widget.eventData.selectedDate!),
@@ -274,7 +284,7 @@ class _EventDetailsState extends State<EventDetails> {
               ),
             ),
             const SizedBox(width: 24),
-            Icon(Icons.access_time, color: textHighlightedColor, size: 20),
+            Icon(Icons.access_time, color: color, size: 20),
             const SizedBox(width: 6),
             Text(
               formatTime(widget.eventData.selectedTime!),
@@ -324,7 +334,7 @@ class _EventDetailsState extends State<EventDetails> {
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: textHighlightedColor, width: 3),
+                    border: Border.all(color: color, width: 3),
                   ),
                   child: Text(
                     goal,
@@ -349,7 +359,7 @@ class _EventDetailsState extends State<EventDetails> {
     final tags = widget.eventData.audienceTags;
 
     final TextStyle selectedStyle = TextStyle(
-      color: textHighlightedColor,
+      color: color,
       fontWeight: FontWeight.w700,
       fontSize: 15,
     );
@@ -423,7 +433,7 @@ class _EventDetailsState extends State<EventDetails> {
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: textHighlightedColor,
+                              color: color,
                               width: 3,
                             ),
                           ),
@@ -474,10 +484,10 @@ class _EventDetailsState extends State<EventDetails> {
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: textHighlightedColor,
+                                color: color,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: textHighlightedColor,
+                                  color: color,
                                   width: 2,
                                 ),
                               ),
@@ -553,14 +563,18 @@ class _EventDetailsState extends State<EventDetails> {
                         ),
                         const SizedBox(width: 6),
                         Switch(
-                          value: credits > 0 ? widget.eventData.jamieEnabled : false,
+                          value: hasPermission
+                          ? (credits > 0 ? widget.eventData.jamieEnabled : false)
+                          : widget.eventData.jamieEnabled,
                           onChanged: (value) {
                             setState(() {
+                              if (!hasPermission) {return;}
+
                               widget.eventData.jamieEnabled = value;
                               CloudStorageService().saveEvent(widget.eventData);
                             });
                           },
-                          activeColor: textHighlightedColor,
+                          activeColor: color,
                           activeTrackColor: isDarkModeNotifier.value
                               ? Colors.purple.shade50
                               : Colors.yellow.shade50,

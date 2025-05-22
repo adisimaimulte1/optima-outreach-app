@@ -276,8 +276,6 @@ class AvatarRadar extends StatelessWidget {
 
   const AvatarRadar({super.key, required this.members, required this.onDelete});
 
-  static const int _target = 5;
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -290,7 +288,7 @@ class AvatarRadar extends StatelessWidget {
           const double yOffset = 0;
 
           const int topCount = 5;
-          const int sideCount = 4; // 👈 left/right sides
+          const int sideCount = 4;
 
           final edgeSpacing = base * 2 - spacing;
           final width = edgeSpacing * (topCount - 1);

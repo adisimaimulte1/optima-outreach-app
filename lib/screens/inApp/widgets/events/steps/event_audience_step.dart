@@ -97,7 +97,7 @@ class EventAudienceStepState extends State<EventAudienceStep> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const _Title("Who's this for?"),
+                                const HighlightedTitle("Who's this for?"),
                                 const SizedBox(height: 21),
                                 AudienceOptions(
                                   selectedTags: widget.selectedTags,
@@ -119,7 +119,7 @@ class EventAudienceStepState extends State<EventAudienceStep> {
                           padding: const EdgeInsets.only(left: 12),
                           child: Column(
                             children: [
-                              const _Title("Details"),
+                              const HighlightedTitle("Details"),
                               const SizedBox(height: 16),
                               VisibilityEntry(
                                 isPublic: widget.isPublic,
@@ -161,9 +161,9 @@ class EventAudienceStepState extends State<EventAudienceStep> {
 
 
 
-class _Title extends StatelessWidget {
+class HighlightedTitle extends StatelessWidget {
   final String text;
-  const _Title(this.text);
+  const HighlightedTitle(this.text);
 
   @override
   Widget build(BuildContext context) {

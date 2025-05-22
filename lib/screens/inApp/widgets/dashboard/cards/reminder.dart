@@ -7,7 +7,7 @@ class ReminderStatusCard extends StatefulWidget {
 
   const ReminderStatusCard({
     super.key,
-    required this.hasReminder,
+    this.hasReminder = false,
     required this.initialText,
   });
 

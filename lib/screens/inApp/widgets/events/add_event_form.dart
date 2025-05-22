@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -12,6 +13,7 @@ import 'package:optima/screens/inApp/widgets/events/steps/event_location_step.da
 import 'package:optima/screens/inApp/widgets/events/steps/event_members_step.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_name_step.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_time_step.dart';
+import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class AddEventForm extends StatefulWidget {
@@ -167,68 +169,17 @@ class _AddEventFormState extends State<AddEventForm> {
 
 
     FocusScope.of(context).unfocus();
+
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
-
       if (widget.initialData != null) {
-        widget.initialData!
-          ..eventName = _eventName
-          ..organizationType = _organizationType
-          ..customOrg = _customOrg
-          ..selectedDate = _selectedDate
-          ..selectedTime = _selectedTime
-          ..locationAddress = _locationAddress
-          ..locationLatLng = _locationLatLng
-          ..eventMembers = _eventMembers.map((email) => {
-            'email': email,
-            'status': 'pending',
-            'invitedAt': DateTime.now().toIso8601String(),
-          }).toList()
-
-          ..eventGoals = _eventGoals
-          ..audienceTags = _audienceTags
-          ..isPublic = _isPublic
-          ..isPaid = _isPaid
-          ..eventPrice = _isPaid ? _eventPrice : null
-          ..eventCurrency = _isPaid ? _eventCurrency : null
-          ..jamieEnabled = _jamieEnabled
-          ..createdBy = email;
-
-        CloudStorageService().saveEvent(widget.initialData!);
-        Navigator.of(context).pop(widget.initialData);
+        _updateExistingEvent(widget.initialData!);
         return;
       }
 
-      final eventData = EventData(
-        eventName: _eventName,
-        organizationType: _organizationType,
-        customOrg: _customOrg,
-        selectedDate: _selectedDate,
-        selectedTime: _selectedTime,
-        locationAddress: _locationAddress,
-        locationLatLng: _locationLatLng,
-        eventMembers: _eventMembers.map((email) => {
-          'email': email,
-          'status': 'pending',
-          'invitedAt': DateTime.now().toIso8601String(),
-        }).toList(),
-        eventManagers: [email],
-        eventGoals: _eventGoals,
-        audienceTags: _audienceTags,
-        isPublic: _isPublic,
-        isPaid: _isPaid,
-        eventPrice: _isPaid ? _eventPrice : null,
-        eventCurrency: _isPaid ? _eventCurrency: null,
-        jamieEnabled: _jamieEnabled,
-        status: 'UPCOMING',
-        createdBy: email,
-      );
-
-
-      CloudStorageService().saveEvent(eventData);
-      Navigator.of(context).pop(eventData);
+      await _createNewEvent();
     }
   }
 
@@ -239,6 +190,136 @@ class _AddEventFormState extends State<AddEventForm> {
       _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
   }
+
+
+
+
+  Future<void> _updateExistingEvent(EventData data) async {
+    data
+      ..eventName = _eventName
+      ..organizationType = _organizationType
+      ..customOrg = _customOrg
+      ..selectedDate = _selectedDate
+      ..selectedTime = _selectedTime
+      ..locationAddress = _locationAddress
+      ..locationLatLng = _locationLatLng
+      ..eventMembers = _eventMembers.map((email) => {
+        'email': email,
+        'status': 'pending',
+        'invitedAt': DateTime.now().toIso8601String(),
+      }).toList()
+      ..eventGoals = _eventGoals
+      ..audienceTags = _audienceTags
+      ..isPublic = _isPublic
+      ..isPaid = _isPaid
+      ..eventPrice = _isPaid ? _eventPrice : null
+      ..eventCurrency = _isPaid ? _eventCurrency : null
+      ..jamieEnabled = _jamieEnabled
+      ..createdBy = email;
+
+    Navigator.of(context).pop(data);
+
+    await CloudStorageService().saveEvent(data);
+
+
+    final Set<String> newEmails = _eventMembers.map((e) => e.toLowerCase()).toSet();
+    final membersSnap = await FirebaseFirestore.instance
+        .collection('events')
+        .doc(data.id)
+        .collection('members')
+        .get();
+
+    for (final doc in membersSnap.docs) {
+      final memberEmail = (doc.data()['email'] as String?)?.toLowerCase();
+
+      // if not in new list, delete
+      if (memberEmail != null && !newEmails.contains(memberEmail)) {
+        await doc.reference.delete();
+      }
+    }
+
+    // send invites to current members
+    for (final email in _eventMembers) {
+      final query = await FirebaseFirestore.instance
+          .collection('public_data')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) continue;
+
+      final uid = query.docs.first.id;
+
+      // check if this user is already accepted
+      final memberDoc = await FirebaseFirestore.instance
+          .collection('events')
+          .doc(data.id)
+          .collection('members')
+          .doc(uid)
+          .get();
+
+      final status = (memberDoc.data()?['status'] ?? '').toString().toLowerCase();
+      final alreadyAccepted = status == 'accepted';
+
+      if (!alreadyAccepted) {
+        await LocalNotificationService().addNotification(
+          userId: uid,
+          message: 'You were invited to join "$_eventName".',
+          eventId: data.id!,
+          sender: data.createdBy,
+        );
+      }
+    }
+
+  }
+
+  Future<void> _createNewEvent() async {
+    final eventData = EventData(
+      eventName: _eventName,
+      organizationType: _organizationType,
+      customOrg: _customOrg,
+      selectedDate: _selectedDate,
+      selectedTime: _selectedTime,
+      locationAddress: _locationAddress,
+      locationLatLng: _locationLatLng,
+      eventMembers: _eventMembers.map((email) => {
+        'email': email,
+        'status': 'pending',
+        'invitedAt': DateTime.now().toIso8601String(),
+      }).toList(),
+      eventManagers: [email],
+      eventGoals: _eventGoals,
+      audienceTags: _audienceTags,
+      isPublic: _isPublic,
+      isPaid: _isPaid,
+      eventPrice: _isPaid ? _eventPrice : null,
+      eventCurrency: _isPaid ? _eventCurrency : null,
+      jamieEnabled: _jamieEnabled,
+      status: 'UPCOMING',
+      createdBy: email,
+    );
+
+    Navigator.of(context).pop(eventData);
+    await CloudStorageService().saveEvent(eventData);
+
+    for (final email in _eventMembers) {
+      final query = await FirebaseFirestore.instance
+          .collection('public_data')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        LocalNotificationService().addNotification(
+          userId: query.docs.first.id,
+          message: 'You were invited to join "${_eventName}".',
+          eventId: eventData.id!,
+          sender: eventData.createdBy,
+        );
+      }
+    }
+  }
+
 
 
 
@@ -366,12 +447,8 @@ class _AddEventFormState extends State<AddEventForm> {
           backgroundGradient: canProceed
               ? LinearGradient(
             colors: [
-              isDarkModeNotifier.value
-                  ? textSecondaryHighlightedColor
-                  : textHighlightedColor,
-              isDarkModeNotifier.value
-                  ? textHighlightedColor
-                  : textSecondaryHighlightedColor,
+              textHighlightedColor,
+              textSecondaryHighlightedColor,
             ],
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,

@@ -25,6 +25,7 @@ import 'package:optima/screens/inApp/widgets/settings/tiles.dart';
 
 import 'package:optima/globals.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/notifications/local_notification_service.dart';
 
 import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
@@ -605,6 +606,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 .doc(FirebaseAuth.instance.currentUser!.uid)
                 .update({'fcmToken': ''});
 
+            creditNotifier.cancel();
+            subCreditNotifier.cancel();
+            selectedPlan.cancel();
+
+            LocalNotificationService().stopListening();
             await LocalCache().logout();
             await SessionService().deleteCurrentSession();
 

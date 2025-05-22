@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -56,18 +57,6 @@ class EventData {
         'lat': locationLatLng?.latitude,
         'lng': locationLatLng?.longitude,
       },
-      'eventMembers': eventMembers.map((e) {
-        if (e is String) {
-          return {'email': e, 'status': 'accepted', 'invitedAt': DateTime.now().toIso8601String()};
-        }
-        return {
-          'email': e['email'],
-          'status': e['status'],
-          'invitedAt': e['invitedAt'] is DateTime
-              ? (e['invitedAt'] as DateTime).toIso8601String()
-              : e['invitedAt'] ?? DateTime.now().toIso8601String(),
-        };
-      }).toList(),
       'eventGoals': eventGoals,
       'audienceTags': audienceTags,
       'isPublic': isPublic,
@@ -82,13 +71,19 @@ class EventData {
     };
   }
 
-  factory EventData.fromMap(Map<String, dynamic> map) {
+  factory EventData.fromMap(
+      Map<String, dynamic> map, {
+        required List<QueryDocumentSnapshot<Map<String, dynamic>>> memberDocs,
+      }){
     final timeParts = (map['selectedTime'] as String?)?.split(':') ?? ['0', '0'];
 
-    final List<Map<String, dynamic>> members = (map['eventMembers'] ?? []).map<Map<String, dynamic>>((e) {
-      if (e is Map<String, dynamic>) return e;
-      if (e is Map) return Map<String, dynamic>.from(e);
-      return {'email': e.toString(), 'status': 'accepted', 'invitedAt': null};
+    final List<Map<String, dynamic>> members = memberDocs.map((doc) {
+      final data = doc.data();
+      return {
+        'email': data['email'],
+        'status': data['status'],
+        'invitedAt': data['invitedAt'],
+      };
     }).toList();
 
     return EventData(
@@ -121,5 +116,9 @@ class EventData {
       status: map['status'] ?? "UPCOMING",
       createdBy: map['createdBy'] ?? "",
     );
+  }
+
+  bool hasPermission(String email) {
+    return email == createdBy;
   }
 }

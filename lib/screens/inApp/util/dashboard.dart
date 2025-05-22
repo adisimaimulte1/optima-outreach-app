@@ -14,6 +14,7 @@ import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/services/location/location_processor.dart';
+import 'package:optima/services/notifications/notification_popup.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -32,10 +33,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _handleFirstLaunch() async {
     if (isFirstDashboardLaunch) {
-      // Check and request permissions
       await LocalStorageService().checkAndRequestPermissionsOnce();
 
-      // Get FCM token and update Firestore
       if (notifications) {
         final token = await FirebaseMessaging.instance.getToken();
         if (token != null) {
@@ -46,11 +45,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
 
-      // Random Jamie reminder
-      final chance = Random().nextInt(10);
+      final chance = Random().nextInt(5);
       if (jamieReminders && chance == 3) {
         assistantState.value = JamieState.thinking;
-        await Future.delayed(Duration(milliseconds: 500 + Random().nextInt(500)));
+        await Future.delayed(Duration(milliseconds: 300 + Random().nextInt(30)));
         await AiRecordings.playRandomIntro();
       }
 
@@ -115,7 +113,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const double cardHeight = 150.0;
     const double spacing = 10.0;
 
-    const bool hasReminder = false;
     const String reminderText = "You're all caught up!";
 
     return Row(
@@ -124,7 +121,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(width: 20),
         _buildUpcomingEventCard(cardHeight),
         const SizedBox(width: spacing),
-        _buildButtonsAndReminderColumn(buttonSize, spacing, cardHeight, hasReminder, reminderText),
+        _buildButtonsAndReminderColumn(buttonSize, spacing, cardHeight, reminderText),
         const SizedBox(width: 20),
       ],
     );
@@ -150,7 +147,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       double buttonSize,
       double spacing,
       double totalHeight,
-      bool hasReminder,
       String reminderText,
       ) {
     return Expanded(
@@ -176,9 +172,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SizedBox(width: spacing),
                 Expanded(
                   child: ReminderBellButton(
-                    feedbackCount: hasReminder ? 1 : 0,
                     width: buttonSize,
                     height: buttonSize,
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => NotificationPopup(
+                          userId: FirebaseAuth.instance.currentUser!.uid,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -188,7 +191,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SizedBox(
             height: totalHeight - buttonSize - spacing,
             child: ReminderStatusCard(
-              hasReminder: hasReminder,
               initialText: reminderText,
             ),
           ),

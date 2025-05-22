@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
@@ -9,7 +10,7 @@ class EventCard extends StatefulWidget {
   final void Function(EventData oldEvent, EventData newEvent)? onReplace;
   final void Function(EventData event)? onStatusChange;
   final void Function(EventData event)? onEdit;
-  final void Function(EventData event)? onDelete;
+  final void Function(EventData event, bool isMember)? onDelete;
 
 
   const EventCard({
@@ -36,6 +37,9 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
 
   double _dragOffset = 0;
   final double _threshold = 0.86;
+
+  bool hasPermission = true;
+  Color color = textSecondaryHighlightedColor;
 
   @override
   void initState() {
@@ -65,13 +69,13 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
     if (progress > _threshold) {
       if (_dragOffset > 0) {
         final isUpcoming = widget.eventData.status == "UPCOMING";
-        if (isUpcoming) {
+        if (isUpcoming && hasPermission) {
           widget.onEdit?.call(widget.eventData);
         }
       } else {
         final shouldDelete = await _showEventDeleteDialog(context);
         if (shouldDelete) {
-          widget.onDelete?.call(widget.eventData);
+            widget.onDelete?.call(widget.eventData, hasPermission);
         }
       }
     }
@@ -93,6 +97,9 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    hasPermission = widget.eventData.hasPermission(FirebaseAuth.instance.currentUser!.email!);
+    color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: LayoutBuilder(
@@ -123,9 +130,8 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
             SizedBox(
               width: constraints.maxWidth,
               child: _buildSwipeAction(
-                widget.eventData.status == "UPCOMING" ? Icons.edit : Icons.edit_off,
-                widget.eventData.status == "UPCOMING"
-                    ? textHighlightedColor : textHighlightedColor.withOpacity(0.6),
+                widget.eventData.status == "UPCOMING" && hasPermission ? Icons.edit : Icons.edit_off,
+                color,
                 Alignment.centerLeft,
                 iconColor: inAppBackgroundColor,
                 iconSize: 40,
@@ -234,12 +240,12 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
     final isCancelled = status == "CANCELLED";
     final isUpcoming = status == "UPCOMING";
 
-    final Color baseColor = textHighlightedColor;
+    final Color baseColor = color;
     final Color borderColor = baseColor;
     final Color backgroundColor = isCompleted
         ? baseColor
         : isUpcoming
-        ? textHighlightedColor.withOpacity(0.2)
+        ? color.withOpacity(0.2)
         : Colors.transparent;
     final Color textColor = !isCompleted
         ? baseColor
@@ -270,7 +276,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
           children: [
             Row(
               children: [
-                Icon(Icons.calendar_today, color: textHighlightedColor, size: 20),
+                Icon(Icons.calendar_today, color: color, size: 20),
                 const SizedBox(width: 6),
                 Text(
                   formatDate(event.selectedDate!),
@@ -282,7 +288,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
               offset: const Offset(-15, 0),
               child: Row(
                 children: [
-                  Icon(Icons.access_time, color: textHighlightedColor, size: 20),
+                  Icon(Icons.access_time, color: color, size: 20),
                   const SizedBox(width: 4),
                   Text(
                     formatTime(event.selectedTime!),
@@ -312,14 +318,16 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
             Icon(Icons.delete_outline, size: 48, color: Colors.red),
             const SizedBox(height: 12),
             Text(
-              "Delete Event",
+              hasPermission ? "Delete Event" : "Exit event",
               style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 20),
               textAlign: TextAlign.center,
             ),
           ],
         ),
         content: Text(
-          "This will remove the event permanently. This action cannot be undone.",
+          hasPermission
+              ? "This will remove the event permanently. This action cannot be undone."
+              : "This will remove you from the event. You can get invited again.",
           style: TextStyle(color: textColor, fontSize: 15.5, height: 1.5),
           textAlign: TextAlign.center,
         ),

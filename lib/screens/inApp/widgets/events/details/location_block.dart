@@ -4,8 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 class LocationBlock extends StatefulWidget {
   final String address;
+  final Color color;
 
-  const LocationBlock({super.key, required this.address});
+  const LocationBlock({super.key, required this.address, required this.color});
 
   @override
   State<LocationBlock> createState() => LocationBlockState();
@@ -14,15 +15,15 @@ class LocationBlock extends StatefulWidget {
 class LocationBlockState extends State<LocationBlock> {
   double _scale = 1.0;
 
-  void _openGoogleEarth() async {
+  void _openGoogleMaps() async {
     final query = Uri.encodeComponent(widget.address);
-    final googleEarthUrl = Uri.parse('https://earth.google.com/web/search/$query');
+    final googleMapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
 
-    if (await canLaunchUrl(googleEarthUrl)) {
-      await launchUrl(googleEarthUrl, mode: LaunchMode.externalApplication);
+    if (await canLaunchUrl(googleMapsUrl)) {
+      await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open Google Earth')),
+        const SnackBar(content: Text('Could not open Google Maps')),
       );
     }
   }
@@ -33,7 +34,7 @@ class LocationBlockState extends State<LocationBlock> {
       padding: const EdgeInsets.only(top: 20),
       child: Center(
         child: GestureDetector(
-          onTap: _openGoogleEarth,
+          onTap: _openGoogleMaps,
           onTapDown: (_) => setState(() => _scale = 0.9),
           onTapUp: (_) => setState(() => _scale = 1.0),
           onTapCancel: () => setState(() => _scale = 1.0),
@@ -61,7 +62,7 @@ class LocationBlockState extends State<LocationBlock> {
                       alignment: Alignment.center,
                       child: Icon(
                         Icons.location_on,
-                        color: textHighlightedColor,
+                        color: widget.color,
                         size: 40,
                       ),
                     ),
