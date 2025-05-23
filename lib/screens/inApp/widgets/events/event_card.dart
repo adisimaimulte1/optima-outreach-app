@@ -342,7 +342,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
           ),
           TextButtonWithoutIcon(
-            label: "Delete",
+            label: hasPermission ? "Delete" : "Exit",
             onPressed: () => Navigator.pop(context, true),
             backgroundColor: Colors.red,
             foregroundColor: inAppForegroundColor,

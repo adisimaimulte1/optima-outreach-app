@@ -1,140 +1,178 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/events/details/status_label.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/screens/inApp/widgets/events/event_details.dart';
 
 class UpcomingEventCard extends StatefulWidget {
-  final String initialTitle;
-  final String initialDay;
-  final String initialDate;
-  final String initialTime;
-
-  const UpcomingEventCard({
-    super.key,
-    required this.initialTitle,
-    required this.initialDay,
-    required this.initialDate,
-    required this.initialTime,
-  });
+  const UpcomingEventCard({super.key});
 
   @override
   State<UpcomingEventCard> createState() => UpcomingEventCardState();
 }
 
 class UpcomingEventCardState extends State<UpcomingEventCard> {
-  late String _title;
-  late String _day;
-  late String _date;
-  late String _time;
+  String _title = "no upcoming events";
+  String _date = "--.--";
+  String _time = "--:--";
+  bool hasPermission = false;
+  EventData? _upcomingEvent;
+
+  double _scale = 1.0;
 
   @override
   void initState() {
     super.initState();
-    _title = widget.initialTitle;
-    _day = widget.initialDay;
-    _date = widget.initialDate;
-    _time = widget.initialTime;
+    _loadNextEvent();
+    screenScaleNotifier.addListener(_handleScaleChange);
   }
 
-  void update({
-    required String title,
-    required String day,
-    required String date,
-    required String time,
-  }) {
+  @override
+  void dispose() {
+    screenScaleNotifier.removeListener(_handleScaleChange);
+    super.dispose();
+  }
+
+  void _handleScaleChange() {
+    if (screenScaleNotifier.value < 1.00 && _scale != 1.0) {
+      setState(() {
+        _scale = 1.0;
+      });
+    }
+  }
+
+  void _loadNextEvent() {
+    final now = DateTime.now();
+
+    final nextEvent = events
+        .where((e) => e.selectedDate != null && e.selectedDate!.isAfter(now))
+        .toList()
+      ..sort((a, b) => a.selectedDate!.compareTo(b.selectedDate!));
+
+    if (nextEvent.isNotEmpty) {
+      final EventData event = nextEvent.first;
+      final date = event.selectedDate!;
+      final time = event.selectedTime ?? const TimeOfDay(hour: 0, minute: 0);
+      hasPermission = event.hasPermission(FirebaseAuth.instance.currentUser!.email!);
+
+      final combined = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+
+      setState(() {
+        _title = event.eventName;
+        _date = DateFormat('d MMM').format(combined);
+        _time = formatTime(time);
+        _upcomingEvent = event;
+      });
+    }
+  }
+
+  void _handleTap() {
+    if (_upcomingEvent == null) return;
+    selectedScreenNotifier.value = ScreenType.events;
+    showCardOnLaunch = MapEntry(true, _upcomingEvent);
+  }
+
+  void _setPressed(bool isPressed) {
     setState(() {
-      _title = title;
-      _day = day;
-      _date = date;
-      _time = time;
+      _scale = isPressed ? 0.85 : 1.0;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-      decoration: BoxDecoration(
-        color: inAppForegroundColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: textDimColor,
-          width: 1.2,
-        ),
-      ),
-      width: MediaQuery.of(context).size.width * 0.60,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "UPCOMING EVENT",
-            style: TextStyle(
-              color: textColor.withOpacity(0.6),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 1.1,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Column(
-                children: [
-                  Text(
-                    _day,
-                    style: TextStyle(
-                      color: textHighlightedColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    _date,
-                    style: TextStyle(
-                      color: textHighlightedColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+    final color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+
+    return Listener(
+      onPointerDown: (_) => _setPressed(true),
+      onPointerUp: (_) {
+        _setPressed(false);
+        if (screenScaleNotifier.value >= 0.99) {
+          _handleTap();
+        }
+      },
+      onPointerCancel: (_) => _setPressed(false),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 1.0, end: _scale),
+        duration: const Duration(milliseconds: 100),
+        builder: (context, scale, child) {
+          return Transform.scale(
+            scale: scale,
+            child: Container(
+              decoration: BoxDecoration(
+                color: inAppForegroundColor,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: borderColor),
               ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _title,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Icons.access_time_rounded, size: 16, color: textColor.withOpacity(0.6)),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              _time,
-                              style: TextStyle(
-                                color: textColor.withOpacity(0.6),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              )
-            ],
-          )
+              padding: const EdgeInsets.all(22),
+              child: _buildCardContent(color),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCardContent(Color color) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          StatusLabel(
+            label: "UPCOMING EVENT",
+            isUpcoming: true,
+            color: color,
+          ),
+          const SizedBox(height: 10),
+          _buildDateTimeRow(color),
+          const SizedBox(height: 10),
+          _buildTitle(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDateTimeRow(Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(Icons.calendar_today, color: color, size: 20),
+        const SizedBox(width: 4),
+        Text(
+          _date,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Icon(Icons.access_time, color: color, size: 18),
+        const SizedBox(width: 4),
+        Text(
+          _time,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTitle() {
+    return Text(
+      _title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: textColor,
+        fontSize: _title == "no upcoming events" ? 16 : 22,
+        fontWeight: FontWeight.w800,
+        height: 1.3,
       ),
     );
   }

@@ -14,6 +14,7 @@ import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/services/location/location_processor.dart';
+import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/notifications/notification_popup.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 
@@ -25,6 +26,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+
   @override
   void initState() {
     super.initState();
@@ -113,15 +115,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const double cardHeight = 150.0;
     const double spacing = 10.0;
 
-    const String reminderText = "You're all caught up!";
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(width: 20),
         _buildUpcomingEventCard(cardHeight),
         const SizedBox(width: spacing),
-        _buildButtonsAndReminderColumn(buttonSize, spacing, cardHeight, reminderText),
+        _buildButtonsAndReminderColumn(buttonSize, spacing, cardHeight),
         const SizedBox(width: 20),
       ],
     );
@@ -132,13 +132,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       flex: 6,
       child: SizedBox(
         height: height,
-        child: UpcomingEventCard(
-          key: upcomingCardKey,
-          initialTitle: "Client Meeting",
-          initialDay: "Tue,",
-          initialDate: "Apr 16",
-          initialTime: "10:00 AM",
-        ),
+        child: UpcomingEventCard(),
       ),
     );
   }
@@ -147,7 +141,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       double buttonSize,
       double spacing,
       double totalHeight,
-      String reminderText,
       ) {
     return Expanded(
       flex: 4,
@@ -190,10 +183,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SizedBox(height: spacing),
           SizedBox(
             height: totalHeight - buttonSize - spacing,
-            child: ReminderStatusCard(
-              initialText: reminderText,
-            ),
+            child: ReminderStatusCard(),
           ),
+
         ],
       ),
     );

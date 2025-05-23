@@ -8,6 +8,7 @@ import 'package:optima/screens/inApp/widgets/events/add_event_form.dart';
 import 'package:optima/screens/inApp/widgets/events/buttons/filter_button.dart';
 import 'package:optima/screens/inApp/widgets/events/event_card.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/screens/inApp/widgets/events/event_details.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 
@@ -41,6 +42,10 @@ class _EventsScreenState extends State<EventsScreen> {
       if (showAddEventOnLaunch) {
         _showAddEventForm(context);
         showAddEventOnLaunch = false;
+      } else if (showCardOnLaunch.key && showCardOnLaunch.value != null) {
+        selectedFilter = 'UPCOMING';
+        showEventDetailsDialog(context, showCardOnLaunch.value!);
+        showCardOnLaunch = const MapEntry(false, null);
       }
     });
   }
@@ -385,6 +390,36 @@ class _EventsScreenState extends State<EventsScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (_, anim, __, child) {
+        return FadeTransition(opacity: anim, child: child);
+      },
+    );
+  }
+
+  void showEventDetailsDialog(BuildContext context, EventData event) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "EventDetails",
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 150),
+      pageBuilder: (dialogContext, _, __) {
+        return GestureDetector(
+          onTap: () => Navigator.of(dialogContext).pop(),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Center(
+              child: GestureDetector(
+                onTap: () {},
+                child: EventDetails(
+                  eventData: event,
+                  onStatusChange: (_) => setState(() {}),
+                ),
+              ),
             ),
           ),
         );

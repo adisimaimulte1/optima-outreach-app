@@ -6,20 +6,12 @@ import 'package:http/http.dart' as http;
 import 'package:optima/ai/ai_assistant.dart';
 import 'package:optima/ai/ai_status_dots.dart';
 import 'package:optima/screens/inApp/menu.dart';
-
-import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
-import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/ads/ad_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
 import 'package:optima/services/credits/plan_notifier.dart';
 import 'package:optima/services/credits/sub_credit_notifier.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
-
-
-final GlobalKey<ReminderStatusCardState> reminderCardKey = GlobalKey<ReminderStatusCardState>();
-final GlobalKey<UpcomingEventCardState> upcomingCardKey = GlobalKey<UpcomingEventCardState>();
-
 
 
 
@@ -109,6 +101,7 @@ final adService = AdService();
 
 
 bool showAddEventOnLaunch = false;
+MapEntry<bool, EventData?> showCardOnLaunch = MapEntry(false, null);
 
 
 

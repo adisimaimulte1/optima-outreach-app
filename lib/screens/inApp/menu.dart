@@ -8,7 +8,6 @@ import 'package:optima/screens/inApp/widgets/menu/selection_beam.dart';
 import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/update.dart';
 
 
 class Menu extends StatefulWidget {
@@ -340,7 +339,6 @@ class _MenuState extends State<Menu> {
                         onEnd: () {
                           if (_pendingScreenChange != null) {
                             selectedScreenNotifier.value = _pendingScreenChange!;
-                            updateUI(); // Only if you're using it
                             _pendingScreenChange = null;
                           }
                         },
