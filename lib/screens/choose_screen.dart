@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:optima/globals.dart';
@@ -68,7 +69,7 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
 
 
   Future<UserState> _getUserState() async {
-    if (user != null) {
+    if (FirebaseAuth.instance.currentUser != null) {
       try {
         await user!.reload();
         if (user!.emailVerified) {
@@ -137,9 +138,13 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
       future: _getUserState(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return isInitialLaunch && FirebaseAuth.instance.currentUser == null ?
+            Scaffold(
+              backgroundColor: isDarkModeNotifier.value ? textHighlightedColor : const Color(0xFFFFCD32),
+            ) :
+            const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
         }
 
         final state = snapshot.data!;

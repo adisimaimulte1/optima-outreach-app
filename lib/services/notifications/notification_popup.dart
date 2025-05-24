@@ -238,10 +238,22 @@ class NotificationPopup extends StatelessWidget {
     return TextButtonWithoutIcon(
       label: "Enter",
       onPressed: () async {
-        Navigator.pop(context);
-        Navigator.pop(context);
+        final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+        // show loading dialog using root navigator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          barrierColor: Colors.black.withOpacity(0.5),
+          useRootNavigator: true,
+          builder: (_) => const Center(child: CircularProgressIndicator()),
+        );
 
         await _handleAccept(eventId, notificationId, userEmail);
+
+        rootNavigator.pop(); // pop loading
+        rootNavigator.pop(); // pop confirmation dialog
+        rootNavigator.pop(); // pop notifications popup
 
         selectedScreenNotifier.value = ScreenType.events;
       },
@@ -251,6 +263,8 @@ class NotificationPopup extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
     );
   }
+
+
 
 
 

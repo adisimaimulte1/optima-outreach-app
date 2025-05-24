@@ -43,9 +43,12 @@ class _EventsScreenState extends State<EventsScreen> {
         _showAddEventForm(context);
         showAddEventOnLaunch = false;
       } else if (showCardOnLaunch.key && showCardOnLaunch.value != null) {
-        selectedFilter = 'UPCOMING';
         showEventDetailsDialog(context, showCardOnLaunch.value!);
         showCardOnLaunch = const MapEntry(false, null);
+
+        setState(() {
+          selectedFilter = 'UPCOMING';
+        });
       }
     });
   }

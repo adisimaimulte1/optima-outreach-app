@@ -406,9 +406,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDarkModeNotifier.value ? Colors.black : lightColorPrimary;
-    final fgColor = isDarkModeNotifier.value ? Colors.white : inAppBackgroundColor;
-    final inputBg = isDarkModeNotifier.value ? Colors.grey[900] : lightColorSecondary;
+    final bgColor = textHighlightedColor;
+    final fgColor = inAppBackgroundColor;
+    final inputBg = textSecondaryHighlightedColor;
 
     return Scaffold(
       extendBody: true,
@@ -481,8 +481,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         context,
                         _errorMessage!,
                         maxWidthFraction: 0.9,
-                        style: const TextStyle(
-                            color: Colors.red,
+                        style: TextStyle(
+                            color: inAppBackgroundColor.withOpacity(0.8),
                             fontWeight: FontWeight.bold
                         ),
                         align: TextAlign.center,
@@ -682,7 +682,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              backgroundColor: isDarkModeNotifier.value ? Colors.white : inAppBackgroundColor,
+              backgroundColor: inAppBackgroundColor,
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               elevation: 6,

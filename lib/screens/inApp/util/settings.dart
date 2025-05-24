@@ -626,9 +626,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             );
           },
         icon: const Icon(Icons.logout),
-        label: const Text("Log Out"),
+        label: const Text(
+            "Log Out",
+            style: TextStyle(fontWeight: FontWeight.bold)
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: _easterEggMode ? darkColorPrimary : Colors.red,
+          backgroundColor: _easterEggMode ? textHighlightedColor : Colors.red,
           foregroundColor: textColor,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           textStyle: const TextStyle(fontSize: 16),

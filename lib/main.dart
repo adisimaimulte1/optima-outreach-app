@@ -1,38 +1,29 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:optima/screens/beforeApp/widgets/app_bootstrapper.dart';
 
 import 'package:optima/screens/choose_screen.dart';
-import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:optima/globals.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-Future<void> main() async {
+
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp();
-  await MobileAds.instance.initialize();
-  MobileAds.instance.updateRequestConfiguration(
-    RequestConfiguration(),
-  );
-
-  await LocalStorageService().init();
-  await LocalCache().initializeAndCacheUserData();
-
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  await LocalStorageService().init();
 
-  setupGlobalListeners();
-
-  runApp(const Optima());
+  runApp(const App()); // NEW ROOT APP
 }
+
+
 
 
 
@@ -65,17 +56,12 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
     super.dispose();
   }
 
-
-
   void _startNotificationListener() {
     final userId = FirebaseAuth.instance.currentUser?.uid;
-
     if (userId != null) {
       LocalNotificationService().startListening(userId);
     }
   }
-
-
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -94,7 +80,6 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   Future<void> _checkNotificationPermission() async {
     final settings = await FirebaseMessaging.instance.getNotificationSettings();
     final allowed = settings.authorizationStatus == AuthorizationStatus.authorized;
-
     if (notifications != allowed) {
       notifications = allowed;
       notificationsPermissionNotifier.value = allowed;
@@ -105,7 +90,6 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   Future<void> _checkLocationPermission() async {
     final status = await Permission.location.status;
     final allowed = status.isGranted;
-
     if (locationAccess != allowed) {
       locationAccess = allowed;
       locationPermissionNotifier.value = allowed;
@@ -116,16 +100,12 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   Future<void> _checkMicrophonePermission() async {
     final status = await Permission.microphone.status;
     final allowed = status.isGranted;
-
     if (jamieEnabled != allowed) {
       jamieEnabled = allowed;
       jamieEnabledNotifier.value = allowed;
       await CloudStorageService().saveUserSetting("jamieEnabled", allowed);
     }
   }
-
-
-
 
   @override
   void didChangePlatformBrightness() {
@@ -153,51 +133,8 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
     );
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: isDarkModeNotifier,
-      builder: (context, mode, _) {
-        return MaterialApp(
-          title: 'Optima',
-          debugShowCheckedModeBanner: false,
-          themeMode: isDarkModeNotifier.value ? ThemeMode.dark : ThemeMode.light,
-          theme: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: inAppBackgroundColor,
-            progressIndicatorTheme: ProgressIndicatorThemeData(
-              color: textHighlightedColor,
-            ),
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: textHighlightedColor,
-              selectionColor: textHighlightedColor.withOpacity(0.4),
-              selectionHandleColor: textHighlightedColor,
-            ),
-            pageTransitionsTheme: PageTransitionsTheme(builders: {
-              TargetPlatform.android: ZoomPageTransitionsBuilder(),
-              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            }),
-          ),
-          darkTheme: ThemeData.dark().copyWith(
-            scaffoldBackgroundColor: inAppBackgroundColor,
-            progressIndicatorTheme: ProgressIndicatorThemeData(
-              color: textHighlightedColor,
-            ),
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: textHighlightedColor,
-              selectionColor: textHighlightedColor.withOpacity(0.4),
-              selectionHandleColor: textHighlightedColor,
-            ),
-            pageTransitionsTheme: PageTransitionsTheme(builders: {
-              TargetPlatform.android: ZoomPageTransitionsBuilder(),
-              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            }),
-          ),
-          home: ChooseScreen(),
-        );
-      },
-    );
+    return const ChooseScreen();
   }
 }

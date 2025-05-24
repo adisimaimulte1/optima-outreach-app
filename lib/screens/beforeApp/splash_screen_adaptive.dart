@@ -42,7 +42,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
     _controller.duration = composition.duration;
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 5), () async {
+    Future.delayed(const Duration(milliseconds: 4700), () async {
       _controller.stop();
       _navigateWithFade(const AuthScreen(), 1200);
     });
@@ -64,7 +64,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
   @override
   Widget build(BuildContext context) {
     final animationPath = _getAnimationPath();
-    final footerColor = isDarkModeNotifier.value ? Colors.black : const Color(0xFFFFCD32);
+    final footerColor = isDarkModeNotifier.value ? textHighlightedColor : const Color(0xFFFFCD32);
 
     final scalar = 0.5;
     final screenHeight = MediaQuery.of(context).size.height;
