@@ -33,7 +33,7 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
   _DotStyle _toStyle = const _DotStyle(color: Colors.grey, opacity: 0.3, size: 15);
 
   Future<void> warmUpAssistant(String userId) async {
-    await aiVoice.runAssistant(userId: userId);
+    await aiVoice.runAssistant(context, userId: userId);
   }
 
   @override
@@ -53,7 +53,7 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
     _dot2Opacity = _buildDotOpacity(0.33, 0.66);
     _dot3Opacity = _buildDotOpacity(0.66, 1.0);
 
-    aiVoice.startLoop();
+    aiVoice.startLoop(context);
   }
 
   @override

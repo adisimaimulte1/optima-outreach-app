@@ -31,6 +31,7 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
   @override
   void initState() {
     super.initState();
+    popupStackCount.value = 0;
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }

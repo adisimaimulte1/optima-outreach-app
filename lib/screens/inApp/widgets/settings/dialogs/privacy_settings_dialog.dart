@@ -4,6 +4,7 @@ import 'package:optima/globals.dart';
 
 class PrivacySettingsDialog {
   static void show(BuildContext context) {
+    popupStackCount.value++;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -71,7 +72,7 @@ class PrivacySettingsDialog {
           ),
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 
   static Widget _privacyItem({

@@ -5,6 +5,7 @@ import 'package:optima/globals.dart';
 
 class CreditDialog {
   static void show(BuildContext context) {
+    popupStackCount.value++;
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.5),
@@ -138,6 +139,6 @@ class CreditDialog {
           );
         },
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 }

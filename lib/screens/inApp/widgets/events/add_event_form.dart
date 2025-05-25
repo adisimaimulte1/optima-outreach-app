@@ -72,6 +72,7 @@ class _AddEventFormState extends State<AddEventForm> {
   @override
   void initState() {
     super.initState();
+    popupStackCount.value++;
 
     if (widget.initialData != null) {
       final data = widget.initialData!;
@@ -325,60 +326,59 @@ class _AddEventFormState extends State<AddEventForm> {
 
   @override
   Widget build(BuildContext context) {
-    final viewInsets = MediaQuery.of(context).viewInsets;
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: selectedThemeNotifier,
+      builder: (_, __, ___) {
+        final viewInsets = MediaQuery.of(context).viewInsets;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: viewInsets.bottom),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 700),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF24324A), Color(0xFF2F445E)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              blurRadius: 24,
-              offset: const Offset(0, 6),
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(bottom: viewInsets.bottom),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 700),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF24324A), Color(0xFF2F445E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 24,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 16),
-
-            // Wrapping the PageView with Flexible to ensure it takes only available space
-            Flexible(
-              child: SingleChildScrollView(
-                child: SizedBox(
-                  height: 380, // Fixed height for steps
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: List.generate(
-                      _totalSteps,
-                          (index) => _step(index),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: SizedBox(
+                      height: 380,
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: List.generate(_totalSteps, (index) => _step(index)),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                _buildNavigationControls(),
+                _buildProgressBarWithMorphingIcon(),
+              ],
             ),
-
-            const SizedBox(height: 24),
-            _buildNavigationControls(),
-            _buildProgressBarWithMorphingIcon(),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -687,4 +687,10 @@ class _AddEventFormState extends State<AddEventForm> {
     return true;
   }
 
+
+  @override
+  void dispose() {
+    popupStackCount.value--;
+    super.dispose();
+  }
 }

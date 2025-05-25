@@ -23,6 +23,7 @@ class SessionManagementDialog {
   static Future<void> show(BuildContext context) async {
     final sessions = await SessionService().getSessions();
 
+    popupStackCount.value++;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -155,6 +156,6 @@ class SessionManagementDialog {
           ),
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 }

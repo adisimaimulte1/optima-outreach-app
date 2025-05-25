@@ -28,6 +28,7 @@ class _EventDetailsState extends State<EventDetails> {
   @override
   void initState() {
     super.initState();
+    popupStackCount.value++;
     selectedStatus = widget.eventData.status;
     _loadResolvedMembers();
   }
@@ -594,5 +595,12 @@ class _EventDetailsState extends State<EventDetails> {
         ),
       ),
     );
+  }
+
+
+  @override
+  void dispose() {
+    popupStackCount.value--;
+    super.dispose();
   }
 }

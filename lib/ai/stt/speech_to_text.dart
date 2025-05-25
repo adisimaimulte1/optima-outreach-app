@@ -24,7 +24,6 @@ class SpeechToTextService {
 
     // Wait for AI to finish speaking before starting STT
     while (aiVoice.aiSpeaking) {
-      debugPrint("🛑 Delaying STT because Jamie is still speaking...");
       await Future.delayed(const Duration(milliseconds: 100));
     }
 
@@ -101,12 +100,9 @@ class SpeechToTextService {
           currentTranscript = text;
           onTranscript(text);
 
-          if (text.contains("hey jamie") && !completer.isCompleted) {
+          if (text.contains("hey jamie")) {
             stopListening();
-            final index = text.indexOf("hey jamie");
-            final cleaned = text.substring(index).trim();
-            debugPrint("✅ Wake word detected: $cleaned");
-            completer.complete(cleaned);
+            completer.complete(text);
             _speech.cancel();
           }
         },
@@ -116,9 +112,7 @@ class SpeechToTextService {
     }
 
     _speech.statusListener = (status) async {
-      if (cancelled) return;
-
-      if (status == 'listening') debugPrint("🎤 Wake listener status: $status");
+      if (cancelled || completer.isCompleted) return;
       if (status == 'notListening' && !completer.isCompleted) {
         if (appPaused) _speech.cancel();
         while (appPaused) {

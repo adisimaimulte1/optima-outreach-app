@@ -51,6 +51,7 @@ final GlobalKey showCreditsTileKey = GlobalKey();
 final GlobalKey showSessionsTileKey = GlobalKey();
 
 final ValueNotifier<UniqueKey> appReloadKey = ValueNotifier(UniqueKey());
+final ValueNotifier<int> popupStackCount = ValueNotifier(0);
 
 
 
@@ -100,6 +101,7 @@ final ValueNotifier<double> screenScaleNotifier = ValueNotifier(1.0);
 
 ValueNotifier<bool> jamieEnabledNotifier = ValueNotifier(true);
 ValueNotifier<bool> wakeWordEnabledNotifier = ValueNotifier(true);
+ValueNotifier<bool> jamieRemindersNotifier = ValueNotifier(true);
 ValueNotifier<bool> notificationsPermissionNotifier = ValueNotifier(notifications);
 ValueNotifier<bool> locationPermissionNotifier = ValueNotifier(locationAccess);
 

@@ -12,6 +12,7 @@ import 'package:optima/screens/inApp/widgets/events/event_details.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 
+
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
 
@@ -20,6 +21,9 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
+  final PageStorageBucket _bucket = PageStorageBucket();
+  final PageStorageKey<String> _filterKey = const PageStorageKey('eventFilter');
+
   String selectedFilter = 'All';
   bool _disableScroll = false;
 
@@ -56,11 +60,16 @@ class _EventsScreenState extends State<EventsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredEvents = selectedFilter == 'All'
+    final currentFilter = PageStorage.of(context).readState(context, identifier: _filterKey) as String? ?? selectedFilter;
+    final filteredEvents = currentFilter == 'All'
         ? events
-        : events.where((e) => e.status == selectedFilter).toList();
+        : events.where((e) => e.status == currentFilter).toList();
+    selectedFilter = currentFilter;
 
-    return AbsScreen(
+
+    return PageStorage(
+        bucket: _bucket,
+        child: AbsScreen(
       sourceType: EventsScreen,
       builder: (context, isMinimized, scale) {
         if ((_disableScroll && scale >= 0.99) || (!_disableScroll && scale < 0.99)) {
@@ -80,6 +89,7 @@ class _EventsScreenState extends State<EventsScreen> {
         );
       },
 
+    ),
     );
   }
 
@@ -125,9 +135,14 @@ class _EventsScreenState extends State<EventsScreen> {
 
   Widget _buildFilterMenu() {
     return FilterButton(
-      selectedValue: selectedFilter,
+      selectedValue: PageStorage.of(context).readState(context, identifier: _filterKey) as String? ?? selectedFilter,
       options: const ['All', 'UPCOMING', 'COMPLETED', 'CANCELLED'],
-      onSelected: (value) => setState(() => selectedFilter = value),
+      onSelected: (value) {
+        setState(() {
+          selectedFilter = value;
+          PageStorage.of(context).writeState(context, value, identifier: _filterKey);
+        });
+      },
     );
   }
 

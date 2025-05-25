@@ -4,9 +4,10 @@ import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 
 class HelpDialog {
   static void show(BuildContext context) {
+    popupStackCount.value++;
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (context) => AlertDialog(
         backgroundColor: inAppForegroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
@@ -31,7 +32,7 @@ class HelpDialog {
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     _HelpItem(
                       question: "How do I create an event?",
                       answer: "Tap the '+' button on the dashboard, then follow the guided form.",
@@ -81,7 +82,7 @@ class HelpDialog {
           ),
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 }
 

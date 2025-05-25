@@ -168,12 +168,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: buttonSize,
                     height: buttonSize,
                     onTap: () {
+                      popupStackCount.value++;
                       showDialog(
                         context: context,
                         builder: (_) => NotificationPopup(
                           userId: FirebaseAuth.instance.currentUser!.uid,
                         ),
-                      );
+                      ).whenComplete(() => popupStackCount.value--);
                     },
                   ),
                 ),

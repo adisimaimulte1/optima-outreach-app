@@ -38,23 +38,46 @@ class IntentRegistry {
         targets: ["dark", "light", "system"]
     ),
 
+
     Intent(
         id: "change_setting/disable_jamie",
-        triggers: ["turn", "disable", "shut", "stop"],
-        targets: ["Jamie", "assistant", "AI", "yourself", "down", "off"]
+        triggers: ["turn yourself", "turn off", "disable", "shut", "stop"],
+        targets: ["Jamie", "assistant", "AI", "yourself off", "yourself", "down", "talking"]
     ),
 
     Intent(
         id: "change_setting/toggle_notifications",
-        triggers: ["turn on", "turn off", "enable", "disable"],
-        targets: ["notifications", "alerts"]
+        triggers: ["turn on", "turn off", "enable", "disable", "turn", "stop"],
+        targets: ["notifications", "notifications off"]
     ),
 
     Intent(
         id: "change_setting/toggle_location",
-        triggers: ["turn on", "turn off", "enable", "disable"],
-        targets: ["location", "tracking"]
+        triggers: ["turn on", "turn off", "enable", "disable", "stop"],
+        targets: ["location on", "location off", "location", "tracking"]
     ),
+
+    Intent(
+      id: "change_setting/toggle_wakeword",
+      triggers: ["turn on", "turn off", "enable", "disable", "turn", "stop", "start"],
+      targets: [
+        "wake word", "wake word off", "wake word on",
+        "hey jamie",
+        "activation phrase", "activation phrase off", "activation phrase on",
+        "voice activation", "voice activation off", "voice activation on"
+      ],
+    ),
+
+    Intent(
+      id: "change_setting/toggle_reminders",
+      triggers: ["turn on", "turn off", "turn", "enable", "disable", "stop", "start"],
+      targets: [
+        "reminders", "reminders off", "reminders on"],
+    ),
+
+
+
+
 
 
 

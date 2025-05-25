@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -55,7 +54,7 @@ class AIVoiceAssistant {
 
 
 
-  void startLoop() {
+  void startLoop(BuildContext context) {
     if (!_hasAttachedListener) {
       _hasAttachedListener = true;
       debugPrint("🔔 Jamie assistant started.");
@@ -66,7 +65,7 @@ class AIVoiceAssistant {
         if (jamieEnabledNotifier.value) {
           final userId = FirebaseAuth.instance.currentUser?.uid;
           if (userId != null) {
-            runAssistant(userId: userId);
+            runAssistant(context, userId: userId);
           }
         } else {
           stopLoop();
@@ -77,7 +76,7 @@ class AIVoiceAssistant {
       if (jamieEnabledNotifier.value) {
         final userId = FirebaseAuth.instance.currentUser?.uid;
         if (userId != null) {
-          runAssistant(userId: userId);
+          runAssistant(context, userId: userId);
         }
       }
     }
@@ -104,7 +103,7 @@ class AIVoiceAssistant {
 
 
 
-  Future<void> runAssistant({required String userId}) async {
+  Future<void> runAssistant(BuildContext context, {required String userId}) async {
     if (_loopRunning) {
       debugPrint("⚠️ Assistant already running. Skipping second start.");
       return;
@@ -129,7 +128,7 @@ class AIVoiceAssistant {
 
       try {
         if (!_cooldownActive && !wakeWordDetected) { await _detectWakeWord(); }
-        if (wakeWordDetected && !aiSpeaking && !isListening) { await _captureAndRespond(userId); }
+        if (wakeWordDetected && !aiSpeaking && !isListening) { await _captureAndRespond(context, userId); }
 
       } catch (e) {
         handleError(e);
@@ -186,7 +185,7 @@ class AIVoiceAssistant {
     }
   }
 
-  Future<void> _captureAndRespond(String userId) async {
+  Future<void> _captureAndRespond(BuildContext context, String userId) async {
     debugPrint("Capturing and responding...");
 
     if (!jamieEnabledNotifier.value) {
@@ -223,10 +222,10 @@ class AIVoiceAssistant {
     try {
       await _speech.startListening(
             (text) => transcribedText.value = text,
-            () async => await _handleTranscript(userId, () => processed = true, () => processed),
+            () async => await _handleTranscript(context, userId, () => processed = true, () => processed),
       );
 
-      while (!_listeningCompleter!.isCompleted && !cancelled) {
+      while (!_listeningCompleter!.isCompleted && !cancelled && assistantState.value != JamieState.idle) {
         if (appPaused && _speech.isListening) {
           debugPrint("⏸ Pausing listening due to background");
           await _speech.stopListening();
@@ -237,7 +236,7 @@ class AIVoiceAssistant {
           transcribedText.value = '';
           await _speech.resumeListeningAfterPlayback(
             onResult: (text) => transcribedText.value = text,
-            onDone: () async => await _handleTranscript(userId, () => processed = true, () => processed),
+            onDone: () async => await _handleTranscript(context, userId, () => processed = true, () => processed),
           );
         }
 
@@ -255,7 +254,7 @@ class AIVoiceAssistant {
     }
   }
 
-  Future<void> _handleTranscript(String userId, VoidCallback markProcessed, bool Function() isProcessed) async {
+  Future<void> _handleTranscript(BuildContext context, String userId, VoidCallback markProcessed, bool Function() isProcessed) async {
     if (isProcessed()) return;
     markProcessed();
 
@@ -277,13 +276,13 @@ class AIVoiceAssistant {
     }
 
     assistantState.value = JamieState.thinking;
-    await _respondToUser(cleaned, userId);
+    await _respondToUser(context, cleaned, userId);
   }
 
 
 
 
-  Future<void> _respondToUser(String message, String userId) async {
+  Future<void> _respondToUser(BuildContext context, String message, String userId) async {
     aiSpeaking = true;
 
     // Detect local action intent
@@ -300,8 +299,10 @@ class AIVoiceAssistant {
       await Future.delayed(Duration(milliseconds: delayMs));
 
 
-      execute(intentId, message);
-      
+
+      await execute(context, intentId, message);
+
+
 
       assistantState.value = JamieState.speaking;
       await playResponseFile(bytes.buffer.asUint8List());
@@ -343,12 +344,17 @@ class AIVoiceAssistant {
     aiSpeaking = false;
     isListening = false;
 
-    wakeWordDetected = true;
-
-    if (jamieEnabled) { assistantState.value = JamieState.listening; }
-    else { assistantState.value = JamieState.idle; }
-
-    startCooldown();
+    if (jamieEnabled) {
+      assistantState.value = JamieState.listening;
+      wakeWordDetected = true;
+      startCooldown();
+    }
+    else {
+      assistantState.value = JamieState.idle;
+      _cooldownActive = false;
+      _cooldownTimer?.cancel();
+      wakeWordDetected = false;
+    }
   }
 
 
@@ -463,25 +469,21 @@ class AIVoiceAssistant {
 
 
 
-  Future<void> execute(String intentId, String message) async {
-    
-    // screen navigation commands
+  Future<void> execute(BuildContext context, String intentId, String message) async {
     if (intentId.startsWith("navigate/")) {
-      AiNavigator.navigateToScreen(intentId);
+      AiNavigator.navigateToScreen(context, intentId);
     }
 
-    // setting commands
-    if (intentId.startsWith("change_setting/")) {
+    else if (intentId.startsWith("change_setting/")) {
       _performLocalIntentAction(intentId, message);
     }
-    
-    // widget navigation commands
-    if (intentId.startsWith("tap_widget/")) {
-        AiNavigator.navigateToWidget(intentId: intentId);
+
+    else if (intentId.startsWith("tap_widget/")) {
+      AiNavigator.navigateToWidget(context: context, intentId: intentId);
     }
-    
   }
-  
+
+
   void _performLocalIntentAction(String intentId, String message) {
     switch (intentId) {
       case "change_setting/toggle_theme":
@@ -501,7 +503,8 @@ class AIVoiceAssistant {
         break;
 
       case "change_setting/toggle_notifications":
-        if (message.contains("turn off") || message.contains("disable")) {
+        if (message.contains("turn off") || message.contains("disable")
+              || message.contains("notifications off") || message.contains("stop")) {
           notificationsPermissionNotifier.value = false;
           LocalStorageService().setNotificationsEnabled(false);
         } else {
@@ -511,7 +514,8 @@ class AIVoiceAssistant {
         break;
 
       case "change_setting/toggle_location":
-        if (message.contains("turn off") || message.contains("disable")) {
+        if (message.contains("turn off") || message.contains("disable")
+              || message.contains("location off") || message.contains("stop")) {
           locationPermissionNotifier.value = false;
           LocalStorageService().setLocationAccess(false);
         } else {
@@ -524,6 +528,28 @@ class AIVoiceAssistant {
         _toggleJamieEnabled(false);
         break;
 
+      case "change_setting/toggle_wakeword":
+        if (message.contains("turn off") || message.contains("disable") || message.contains("stop")
+              || message.contains("activation phrase off") || message.contains("voice activation off")) {
+          wakeWordEnabledNotifier.value = false;
+          CloudStorageService().saveUserSetting('wakeWordEnabled', false);
+        } else {
+          wakeWordEnabledNotifier.value = true;
+          CloudStorageService().saveUserSetting('wakeWordEnabled', true);
+        }
+        break;
+
+      case "change_setting/toggle_reminders":
+        if (message.contains("turn off") || message.contains("disable") || message.contains("stop")
+            || message.contains("reminders off")) {
+          jamieReminders = false;
+          jamieRemindersNotifier.value = false;
+          CloudStorageService().saveUserSetting('remindersEnabled', false);
+        } else {
+          jamieReminders = true;
+          jamieRemindersNotifier.value = true;
+          CloudStorageService().saveUserSetting('remindersEnabled', true);
+        }
       default:
         debugPrint("⚠️ No handler for intent: $intentId");
         break;

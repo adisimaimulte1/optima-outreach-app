@@ -18,7 +18,7 @@ class Tiles {
     GlobalKey? key,
     required bool easterEggMode,
     required EasterEggIconResolver getNextEasterEggIcon,
-    double leadingFraction = 1.0, // 👈 NEW: controls how much of the icon is visible
+    double leadingFraction = 1.0,
   }) {
     return GestureDetector(
       key: key,
@@ -115,13 +115,13 @@ class Tiles {
   }
 
   static Widget themeDropdownTile({
-    required ThemeMode selectedTheme,
     required ThemeSetter onChanged,
     required bool easterEggMode,
     required EasterEggIconResolver getNextEasterEggIcon,
   }) {
-    return Builder(
-      builder: (context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: selectedThemeNotifier,
+      builder: (context, selectedTheme, _) {
         return SizedBox(
           height: 44,
           child: ListTile(
@@ -134,13 +134,14 @@ class Tiles {
             ),
             title: Text("App Theme", style: TextStyle(color: textColor, fontSize: 15)),
             trailing: CustomThemeDropdown(
-              selectedTheme: selectedTheme,
-              onChanged: onChanged,
+                  selectedTheme: selectedTheme,
+                  onChanged: onChanged,
             ),
           ),
         );
       },
     );
   }
+
 }
 

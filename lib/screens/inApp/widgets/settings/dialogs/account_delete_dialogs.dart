@@ -10,6 +10,8 @@ import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class AccountDeleteDialogs {
   static Future<void> showDeleteConfirmationDialog(BuildContext context) async {
+    popupStackCount.value++;
+    
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -65,6 +67,8 @@ class AccountDeleteDialogs {
       ),
     );
 
+    popupStackCount.value--;
+
     if (confirmed == true) {
       if (isGoogleUser) {
         await promptGoogleConfirmation(context);
@@ -78,6 +82,8 @@ class AccountDeleteDialogs {
     final passwordController = TextEditingController();
     String? password;
 
+    popupStackCount.value++;
+    
     await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
@@ -155,9 +161,12 @@ class AccountDeleteDialogs {
         ],
       ),
     );
+
+    popupStackCount.value--;
   }
 
   static Future<void> promptGoogleConfirmation(BuildContext context) async {
+    popupStackCount.value++;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -214,7 +223,7 @@ class AccountDeleteDialogs {
           ),
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 
   static Future<void> deleteAccount(String? password, BuildContext context) async {

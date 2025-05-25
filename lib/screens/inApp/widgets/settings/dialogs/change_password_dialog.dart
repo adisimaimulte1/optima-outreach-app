@@ -15,6 +15,7 @@ class ChangePasswordDialog {
   }
 
   static void showGoogleSignInPopUp(BuildContext context) {
+    popupStackCount.value++;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -44,7 +45,7 @@ class ChangePasswordDialog {
           ),
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 
   static void showChangePasswordDialog(BuildContext context, User? user) {
@@ -52,6 +53,7 @@ class ChangePasswordDialog {
     final newController = TextEditingController();
 
 
+    popupStackCount.value++;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -112,7 +114,7 @@ class ChangePasswordDialog {
           )
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 
   static void _showSnackBar(BuildContext context, String message, Color backgroundColor) {

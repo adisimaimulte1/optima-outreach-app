@@ -120,13 +120,15 @@ class DateTimeStep extends StatelessWidget {
   }
 
   Future<void> _pickDate(BuildContext context) async {
+    popupStackCount.value++;
+
     final picked = await showDatePicker(
       context: context,
       initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: _customPickerTheme,
-    );
+    ).whenComplete(() => popupStackCount.value--);
 
     if (picked != null) {
       onDateChanged(picked);
@@ -173,11 +175,13 @@ class DateTimeStep extends StatelessWidget {
     final now = DateTime.now();
     final initialTime = selectedTime ?? TimeOfDay.now();
 
+    popupStackCount.value++;
+
     final picked = await showTimePicker(
       context: context,
       initialTime: initialTime,
       builder: _customPickerTheme,
-    );
+    ).whenComplete(() => popupStackCount.value--);
 
     if (picked != null) {
       if (selectedDate!.year == now.year &&

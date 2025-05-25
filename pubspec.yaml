@@ -117,11 +117,14 @@ flutter:
     - assets/audio/actions/change_setting/toggle_theme/
     - assets/audio/actions/change_setting/toggle_location/
     - assets/audio/actions/change_setting/toggle_notifications/
+    - assets/audio/actions/change_setting/toggle_wakeword/
+    - assets/audio/actions/change_setting/toggle_reminders/
 
     - assets/audio/actions/tap_widget/events/add_event/
     - assets/audio/actions/tap_widget/settings/show_credits/
     - assets/audio/actions/tap_widget/settings/show_sessions/
     - assets/audio/actions/tap_widget/dashboard/show_notifications/
+
 
     - assets/audio/credits/no_credits/
 

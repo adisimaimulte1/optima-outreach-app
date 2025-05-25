@@ -48,11 +48,15 @@ class _FilterButtonState extends State<FilterButton> {
   }
 
   void _showMenu() async {
-    final RenderBox box = context.findRenderObject() as RenderBox;
+    final popupContext = context;
+    final navigator = Navigator.of(popupContext); // ✅ Safe Navigator capture
+    final RenderBox box = popupContext.findRenderObject() as RenderBox;
     final Offset offset = box.localToGlobal(Offset.zero);
 
+    popupStackCount.value++;
+
     final result = await showMenu<String>(
-      context: context,
+      context: popupContext,
       position: RelativeRect.fromLTRB(
         offset.dx,
         offset.dy + box.size.height + 6,
@@ -65,66 +69,74 @@ class _FilterButtonState extends State<FilterButton> {
         PopupMenuItem<String>(
           enabled: false,
           padding: EdgeInsets.zero,
-          child: Container(
-            decoration: BoxDecoration(
-              color: inAppForegroundColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: textDimColor,
-                width: 1.2,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: widget.options.map((value) {
-                final isSelected = value == widget.selectedValue;
-                return InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  onTap: () {
-                    Navigator.pop(context, value);
-                    widget.onSelected(value);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF2C3C54) : Colors.transparent,
+          child: ValueListenableBuilder<ThemeMode>(
+            valueListenable: selectedThemeNotifier,
+            builder: (_, __, ___) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: inAppForegroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: textDimColor, width: 1.2),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: widget.options.map((value) {
+                    final isSelected = value == widget.selectedValue;
+                    return InkWell(
                       borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        IconTheme.merge(
-                          data: const IconThemeData(opacity: 1.0),
-                          child: Icon(
-                            _statusIcon(value),
-                            size: 22,
-                            color: isSelected ? textHighlightedColor : Colors.white70,
-                          ),
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      onTap: () {
+                        navigator.pop(value); // ✅ Use captured Navigator
+                        Future.microtask(() {
+                          if (mounted) {
+                            widget.onSelected(value);
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF2C3C54) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          value[0] + value.substring(1).toLowerCase(),
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 18,
-                          ),
+                        child: Row(
+                          children: [
+                            IconTheme.merge(
+                              data: const IconThemeData(opacity: 1.0),
+                              child: Icon(
+                                _statusIcon(value),
+                                size: 22,
+                                color: isSelected ? textHighlightedColor : Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              value[0] + value.substring(1).toLowerCase(),
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
           ),
         ),
       ],
-    );
+    ).whenComplete(() => popupStackCount.value--);
 
-    if (result != null) widget.onSelected(result);
+    if (result != null && mounted) {
+      widget.onSelected(result);
+    }
   }
 
   IconData _statusIcon(String status) {
@@ -151,28 +163,33 @@ class _FilterButtonState extends State<FilterButton> {
         }
       },
       onPointerCancel: (_) => _setPressed(false),
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 1.0, end: _scale),
-        duration: const Duration(milliseconds: 100),
-        builder: (context, scale, child) {
-          return Transform.scale(
-            scale: scale,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: inAppBackgroundColor,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: textDimColor,
-                  width: 1.2,
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: selectedThemeNotifier,
+        builder: (context, _, __) {
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 1.0, end: _scale),
+            duration: const Duration(milliseconds: 100),
+            builder: (context, scale, child) {
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: inAppBackgroundColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: textDimColor,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Icon(
+                    LucideIcons.filter,
+                    color: textColor,
+                  ),
                 ),
-              ),
-              child: Icon(
-                LucideIcons.filter,
-                color: textColor,
-              ),
-            ),
+              );
+            },
           );
         },
       ),

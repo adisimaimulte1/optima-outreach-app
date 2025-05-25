@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,6 +7,7 @@ import 'package:optima/screens/inApp/widgets/settings/dialogs/credit_dialog.dart
 
 class WatchAdDialog {
   static Future<void> show(BuildContext context) async {
+    popupStackCount.value++;
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.5),
@@ -70,7 +70,7 @@ class WatchAdDialog {
           ),
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 
   static Future<void> showRewardedAdWithUid(BuildContext context, String uid) async {

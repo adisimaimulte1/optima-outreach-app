@@ -131,6 +131,10 @@ class MenuState extends State<Menu> {
     final isMinimized = screenScaleNotifier.value == 0.4;
 
     if (isMinimized && _activeBeams.isEmpty) {
+      if (selectedScreenNotifier.value != ScreenType.settings) {
+        ScrollPersistence.offset = 0.0;
+      }
+
       _handleIncomingSource();
     } else if (isFull && _activeBeams.isNotEmpty) {
       setState(() {

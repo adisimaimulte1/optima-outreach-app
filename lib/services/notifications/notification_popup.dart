@@ -4,12 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_audience_step.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
-import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class NotificationPopup extends StatelessWidget {
   final String userId;
@@ -157,6 +155,8 @@ class NotificationPopup extends StatelessWidget {
         required String eventId,
         required String userEmail,
       }) {
+    popupStackCount.value++;
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.5),
@@ -174,7 +174,7 @@ class NotificationPopup extends StatelessWidget {
           _buildEnterButton(context, notificationId, eventId, userEmail),
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 
   Widget _buildDialogTitle() {

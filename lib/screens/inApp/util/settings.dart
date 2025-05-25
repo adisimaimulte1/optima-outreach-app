@@ -34,6 +34,10 @@ import 'package:optima/services/notifications/push_notification_service.dart';
 import 'package:optima/services/sessions/session_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+class ScrollPersistence {
+  static double offset = 0.0;
+}
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   @override
@@ -42,6 +46,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final GlobalKey<ProfileAvatarState> _profileAvatarKey = GlobalKey<ProfileAvatarState>();
+  late final ScrollController _scrollController;
+
 
   int _versionTapCount = 0;
   int _iconIndex = 0;
@@ -63,6 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _profileAvatarKey.currentState?.dispose();
+    _scrollController.dispose();
 
     notificationsPermissionNotifier.removeListener(_updatePermissions);
     locationPermissionNotifier.removeListener(_updatePermissions);
@@ -74,6 +81,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+
+    _scrollController = ScrollController(
+      initialScrollOffset: ScrollPersistence.offset,
+    );
+
+    _scrollController.addListener(() {
+      ScrollPersistence.offset = _scrollController.offset;
+    });
 
     notificationsPermissionNotifier.addListener(_updatePermissions);
     locationPermissionNotifier.addListener(_updatePermissions);
@@ -152,6 +167,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             backgroundColor: Colors.transparent,
             body: SafeArea(
               child: SingleChildScrollView(
+                  controller: _scrollController,
                   physics: _disableScroll
                       ? const NeverScrollableScrollPhysics()
                       : const BouncingScrollPhysics(),
@@ -207,19 +223,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ]),
         _buildSection("Appearance", [
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: selectedThemeNotifier,
-            builder: (_, themeMode, __) {
-              return Tiles.themeDropdownTile(
-                selectedTheme: themeMode,
-                onChanged: (mode) async {
-                  await LocalStorageService().setThemeMode(mode);
-                  setState(() => selectedTheme = mode);
-                },
-                easterEggMode: _easterEggMode,
-                getNextEasterEggIcon: _getNextEasterEggIcon,
-              );
+          Tiles.themeDropdownTile(
+            onChanged: (mode) async {
+              await LocalStorageService().setThemeMode(mode);
+              selectedThemeNotifier.value = mode;
             },
+            easterEggMode: _easterEggMode,
+            getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
         ]),
         _buildSection("Jamie Assistant", [
@@ -294,30 +304,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
-          Tiles.switchTile(
-            icon: Icons.hearing,
-            title: "Wake Word Detection",
-            value: wakeWordEnabled,
-            onChanged: (val) {
-              setState(() {
-                wakeWordEnabled = val;
-                wakeWordEnabledNotifier.value = val;
-              });
-              CloudStorageService().saveUserSetting('wakeWordEnabled', val);
+          ValueListenableBuilder<bool>(
+            valueListenable: wakeWordEnabledNotifier,
+            builder: (_, value, __) {
+              return Tiles.switchTile(
+                icon: Icons.hearing,
+                title: "Wake Word Detection",
+                value: value,
+                onChanged: (val) {
+                  wakeWordEnabled = val;
+                  wakeWordEnabledNotifier.value = val;
+                  CloudStorageService().saveUserSetting('wakeWordEnabled', val);
+                },
+                easterEggMode: _easterEggMode,
+                getNextEasterEggIcon: _getNextEasterEggIcon,
+              );
             },
-            easterEggMode: _easterEggMode,
-            getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
-          Tiles.switchTile(
-            icon: Icons.alarm,
-            title: "Jamie Reminders",
-            value: jamieReminders,
-            onChanged: (val) {
-              setState(() => jamieReminders = val);
-              CloudStorageService().saveUserSetting('jamieReminders', val);
-              },
-            easterEggMode: _easterEggMode,
-            getNextEasterEggIcon: _getNextEasterEggIcon,
+          ValueListenableBuilder<bool>(
+            valueListenable: jamieRemindersNotifier,
+            builder: (_, value, __) {
+              return Tiles.switchTile(
+                icon: Icons.alarm,
+                title: "Jamie Reminders",
+                value: value,
+                onChanged: (val) {
+                  jamieReminders = val;
+                  jamieRemindersNotifier.value = val;
+                  CloudStorageService().saveUserSetting('jamieReminders', val);
+                },
+                easterEggMode: _easterEggMode,
+                getNextEasterEggIcon: _getNextEasterEggIcon,
+              );
+            },
           ),
         ]),
         _buildSection("Notifications", [

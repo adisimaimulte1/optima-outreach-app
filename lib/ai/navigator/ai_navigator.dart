@@ -7,11 +7,16 @@ abstract class Triggerable {
 }
 
 class AiNavigator {
-  static Future<void> navigateToScreen(String intentId) async {
+  static Future<void> navigateToScreen(BuildContext context, String intentId) async {
     final target = screenFromIntent(intentId);
     if (selectedScreenNotifier.value == target || target == null) {
       if (selectedScreenNotifier.value == target && screenScaleNotifier.value < 0.99) {
-          if (screenScaleNotifier.value == 0.4) {
+        while (popupStackCount.value > 0) {
+          Navigator.of(context).pop();
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+
+        if (screenScaleNotifier.value == 0.4) {
             pinchAnimationTime = 600;
             screenScaleNotifier.value = 1.0;
             await Future.delayed(const Duration(milliseconds: 500));
@@ -21,6 +26,11 @@ class AiNavigator {
         }
 
       return;
+    }
+
+    while (popupStackCount.value > 0) {
+      Navigator.of(context).pop();
+      await Future.delayed(const Duration(milliseconds: 200));
     }
 
     await Future.delayed(const Duration(milliseconds: 400));
@@ -59,6 +69,7 @@ class AiNavigator {
   }
 
   static Future<void> navigateToWidget({
+    required BuildContext context,
     required String intentId,
     bool shouldScroll = false,
     ScrollController? scrollController,
@@ -78,7 +89,7 @@ class AiNavigator {
       return;
     }
 
-    await navigateToScreen(intentId);
+    await navigateToScreen(context, intentId);
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (shouldScroll && scrollController != null) {

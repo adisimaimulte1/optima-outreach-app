@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class SupportDialog {
   static void show(BuildContext context) {
+    popupStackCount.value++;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -65,6 +66,6 @@ class SupportDialog {
           ),
         ],
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 }

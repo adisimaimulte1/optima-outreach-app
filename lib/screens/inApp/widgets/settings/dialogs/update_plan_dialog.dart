@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class UpgradePlanDialog {
   static void show(BuildContext context, ValueNotifier<String> selectedPlan) {
+    popupStackCount.value++;
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.5),
@@ -93,7 +94,7 @@ class UpgradePlanDialog {
           );
         },
       ),
-    );
+    ).whenComplete(() => popupStackCount.value--);
   }
 
   static Widget _buildPlanCard(
