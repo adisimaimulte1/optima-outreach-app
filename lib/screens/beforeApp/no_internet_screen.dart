@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/screens/beforeApp/widgets/app_bootstrapper.dart';
+import 'package:optima/screens/app_bootstrapper.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 

@@ -6,10 +6,15 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:optima/ai/ai_recordings.dart';
+import 'package:optima/ai/navigator/ai_navigator.dart';
+import 'package:optima/ai/processor/intent_processor.dart';
 import 'package:optima/services/credits/credit_service.dart';
+import 'package:optima/services/storage/cloud_storage_service.dart';
+import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:optima/ai/stt/speech_to_text.dart';
@@ -53,6 +58,7 @@ class AIVoiceAssistant {
   void startLoop() {
     if (!_hasAttachedListener) {
       _hasAttachedListener = true;
+      debugPrint("🔔 Jamie assistant started.");
 
       jamieEnabledNotifier.addListener(() {
         debugPrint("🎛 Jamie setting changed: ${jamieEnabledNotifier.value}");
@@ -67,8 +73,16 @@ class AIVoiceAssistant {
           debugPrint("🛑 Jamie disabled via settings.");
         }
       });
+
+      if (jamieEnabledNotifier.value) {
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        if (userId != null) {
+          runAssistant(userId: userId);
+        }
+      }
     }
   }
+
 
   void stopLoop({settingsStop = false}) {
     _loopRunning = false;
@@ -108,7 +122,7 @@ class AIVoiceAssistant {
 
 
     while (_loopRunning) {
-      if (aiSpeaking || isListening || credits < 1) {
+      if (aiSpeaking || isListening) {
         await Future.delayed(const Duration(milliseconds: 10));
         continue;
       }
@@ -156,17 +170,16 @@ class AIVoiceAssistant {
       wakeWordDetected = true;
       assistantState.value = JamieState.thinking;
 
-      // 🕒 Simulated thinking delay (random between 1200–1800ms)
-      final delayMs = 700 + Random().nextInt(600);
+      final delayMs = 400 + Random().nextInt(100);
       await Future.delayed(Duration(milliseconds: delayMs));
 
       assistantState.value = JamieState.speaking;
 
-      final wakeResponseText = await AiRecordings.playWakeResponse(); // ✅ plays friendly audio
+      final wakeResponseText = await AiRecordings.playWakeResponse();
       debugPrint("🎤 Wake response: $wakeResponseText");
 
       assistantState.value = JamieState.listening;
-      startCooldown(); // ✅ Begin 50s cooldown for continuous listening
+      startCooldown();
     } else {
       wakeWordDetected = false;
       assistantState.value = JamieState.idle;
@@ -267,32 +280,79 @@ class AIVoiceAssistant {
     await _respondToUser(cleaned, userId);
   }
 
+
+
+
   Future<void> _respondToUser(String message, String userId) async {
     aiSpeaking = true;
-    final response = await sendTextToBackend(message, userId);
 
+    // Detect local action intent
+    final intentId = IntentProcessor.detectIntent(message);
+    if (intentId != null) {
+      debugPrint("✅ Detected local Jamie intent: $intentId");
+
+      final bytes = await rootBundle.load(
+          await AiRecordings.getActionResponse(intentId, _getIntentAudioCount(intentId))
+      );
+
+
+      final delayMs = 400 + Random().nextInt(100);
+      await Future.delayed(Duration(milliseconds: delayMs));
+
+
+      execute(intentId, message);
+      
+
+      assistantState.value = JamieState.speaking;
+      await playResponseFile(bytes.buffer.asUint8List());
+      _finishInteraction();
+
+      return;
+    } else {
+      debugPrint("🚫 No local intent detected");
+    }
+
+    // Fallback to GPT response if no local intent
+    if (credits < 1) {
+      debugPrint("🚫 No credits left for GPT response");
+
+      final bytes = await rootBundle.load(await AiRecordings.getNoCreditsResponse());
+
+      final delayMs = 400 + Random().nextInt(100);
+      await Future.delayed(Duration(milliseconds: delayMs));
+
+      await playResponseFile(bytes.buffer.asUint8List());
+      _finishInteraction();
+      return;
+    }
+
+    final response = await sendTextToBackend(message, userId);
     while (appPaused) {
       await Future.delayed(const Duration(milliseconds: 30));
     }
 
     assistantState.value = JamieState.speaking;
     await playResponseFile(response);
+    _finishInteraction();
 
+    credits = (await CreditService.getCredits())!;
+    if (credits < 1) lastCredit = true;
+  }
+
+  void _finishInteraction() {
     aiSpeaking = false;
     isListening = false;
 
-    credits = (await CreditService.getCredits())!;
+    wakeWordDetected = true;
 
-    if (!jamieEnabledNotifier.value || credits < 1) {
-      if (credits < 1) lastCredit = true;
-      wakeWordDetected = false;
-      assistantState.value = JamieState.idle;
-    } else {
-      wakeWordDetected = true;
-      assistantState.value = JamieState.listening;
-      startCooldown();
-    }
+    if (jamieEnabled) { assistantState.value = JamieState.listening; }
+    else { assistantState.value = JamieState.idle; }
+
+    startCooldown();
   }
+
+
+
 
   Future<void> playResponseFile(List<int> bytes) async {
     final tempDir = await getTemporaryDirectory();
@@ -365,20 +425,6 @@ class AIVoiceAssistant {
     }
   }
 
-  Future<void> warmUpAssistant(String userId) async {
-    final tempSpeech = SpeechToTextService();
-    await tempSpeech.startListening((_) {}, () {});
-    await tempSpeech.stopListening();
-
-    try {
-      debugPrint("🌡️ Warming up Jamie...");
-      final dummyResponse = await sendTextToBackend("This is a warm-up request", userId);
-      debugPrint(dummyResponse.isNotEmpty ? "🔥 Jamie is warmed up." : "⚠️ Warm-up returned no audio.");
-    } catch (e) {
-      debugPrint("❌ Warm-up failed: $e");
-    }
-  }
-
 
 
   void startCooldown() {
@@ -412,4 +458,118 @@ class AIVoiceAssistant {
     isListening = false;
     _completeListening();
   }
+
+
+
+
+
+  Future<void> execute(String intentId, String message) async {
+    
+    // screen navigation commands
+    if (intentId.startsWith("navigate/")) {
+      AiNavigator.navigateToScreen(intentId);
+    }
+
+    // setting commands
+    if (intentId.startsWith("change_setting/")) {
+      _performLocalIntentAction(intentId, message);
+    }
+    
+    // widget navigation commands
+    if (intentId.startsWith("tap_widget/")) {
+        AiNavigator.navigateToWidget(intentId: intentId);
+    }
+    
+  }
+  
+  void _performLocalIntentAction(String intentId, String message) {
+    switch (intentId) {
+      case "change_setting/toggle_theme":
+        LocalStorageService().setThemeMode(
+          isDarkModeNotifier.value ? ThemeMode.light : ThemeMode.dark
+        );
+        break;
+
+      case "change_setting/change_theme":
+        if (message.contains("system")) {
+          LocalStorageService().setThemeMode(ThemeMode.system);
+        } else if (message.contains("light")) {
+          LocalStorageService().setThemeMode(ThemeMode.light);
+        } else if (message.contains("dark")) {
+          LocalStorageService().setThemeMode(ThemeMode.dark);
+        }
+        break;
+
+      case "change_setting/toggle_notifications":
+        if (message.contains("turn off") || message.contains("disable")) {
+          notificationsPermissionNotifier.value = false;
+          LocalStorageService().setNotificationsEnabled(false);
+        } else {
+          notificationsPermissionNotifier.value = true;
+          LocalStorageService().setNotificationsEnabled(true);
+        }
+        break;
+
+      case "change_setting/toggle_location":
+        if (message.contains("turn off") || message.contains("disable")) {
+          locationPermissionNotifier.value = false;
+          LocalStorageService().setLocationAccess(false);
+        } else {
+          locationPermissionNotifier.value = true;
+          LocalStorageService().setLocationAccess(true);
+        }
+        break;
+
+      case "change_setting/disable_jamie":
+        _toggleJamieEnabled(false);
+        break;
+
+      default:
+        debugPrint("⚠️ No handler for intent: $intentId");
+        break;
+    }
+  }
+
+  Future<void> _toggleJamieEnabled(bool enabled, {VoidCallback? onSetState}) async {
+    if (enabled) {
+      final status = await Permission.microphone.request();
+
+      if (status.isGranted) {
+        jamieEnabled = true;
+        jamieEnabledNotifier.value = true;
+        await CloudStorageService().saveUserSetting('jamieEnabled', true);
+        onSetState?.call(); // optional for UI state updates
+      } else {
+        jamieEnabled = false;
+        jamieEnabledNotifier.value = false;
+        onSetState?.call();
+      }
+    } else {
+      jamieEnabled = false;
+      jamieEnabledNotifier.value = false;
+      await CloudStorageService().saveUserSetting('jamieEnabled', false);
+      onSetState?.call();
+    }
+  }
+
+  int _getIntentAudioCount(String intentId) {
+    switch (intentId) {
+      case "navigate/dashboard":
+      case "navigate/settings":
+      case "navigate/events":
+        return 7;
+
+      case "change_setting/toggle_theme":
+      case "change_setting/change_theme":
+      case "change_setting/toggle_notifications":
+      case "change_setting/toggle_location":
+      case "change_setting/disable_jamie":
+        return 6;
+
+      default:
+        return 3; // fallback
+    }
+  }
+
+
 }

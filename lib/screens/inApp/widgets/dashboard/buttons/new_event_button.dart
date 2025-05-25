@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/ai_navigator.dart';
 import 'package:optima/globals.dart';
 
 class NewEventButton extends StatefulWidget {
@@ -14,10 +15,10 @@ class NewEventButton extends StatefulWidget {
   });
 
   @override
-  State<NewEventButton> createState() => _NewEventButtonState();
+  State<NewEventButton> createState() => NewEventButtonState();
 }
 
-class _NewEventButtonState extends State<NewEventButton> {
+class NewEventButtonState extends State<NewEventButton> implements Triggerable {
   double _scale = 1.0;
 
   @override
@@ -86,5 +87,17 @@ class _NewEventButtonState extends State<NewEventButton> {
         },
       ),
     );
+  }
+
+
+
+
+  @override
+  void triggerFromAI() {
+    if (screenScaleNotifier.value >= 0.99) {
+      widget.onTap();
+    } else {
+      debugPrint("🔒 Screen not ready, ignoring AI trigger");
+    }
   }
 }

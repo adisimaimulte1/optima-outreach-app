@@ -111,6 +111,7 @@ class _EventsScreenState extends State<EventsScreen> {
               _buildFilterMenu(),
               const SizedBox(width: 12),
               NewEventButton(
+                key: createEventButtonKey,
                 width: 48,
                 height: 48,
                 onTap: () { _showAddEventForm(context); },

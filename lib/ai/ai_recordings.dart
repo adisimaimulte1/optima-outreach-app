@@ -139,6 +139,27 @@ class AiRecordings {
   }
 
 
+  /// Plays a random Jamie action response (like navigate/dashboard, event/add)
+  static Future<String> getActionResponse(String actionPath, int total) async {
+    final folderPath = 'assets/audio/actions/$actionPath';
+
+    final fileList = List.generate(total, (i) => '${i + 1}.mp3');
+    final randomFile = fileList[_random.nextInt(fileList.length)];
+
+    return '$folderPath/$randomFile';
+  }
+
+  static Future<String> getNoCreditsResponse() async {
+    final folderPath = 'assets/audio/credits/no_credits';
+
+    final fileList = List.generate(5, (i) => '${i + 1}.mp3');
+    final randomFile = fileList[_random.nextInt(fileList.length)];
+
+    return '$folderPath/$randomFile';
+  }
+
+
+
   /// Stops any currently playing audio
   static Future<void> stop() async {
     await _player.stop();

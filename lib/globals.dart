@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:optima/ai/ai_assistant.dart';
 import 'package:optima/ai/ai_status_dots.dart';
 import 'package:optima/screens/inApp/menu.dart';
+import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
+import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_button.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/ads/ad_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
@@ -30,6 +32,7 @@ enum ScreenType {
   contact,
   chat,
   settings,
+  menu,
 }
 
 enum UserState {
@@ -39,9 +42,27 @@ enum UserState {
 }
 
 
+// keys
+final GlobalKey<MenuState> menuGlobalKey = GlobalKey<MenuState>();
+final GlobalKey<NewEventButtonState> createEventButtonKey = GlobalKey<NewEventButtonState>();
+final GlobalKey<ReminderBellButtonState> showNotificationsKey = GlobalKey<ReminderBellButtonState>();
+
+final GlobalKey showCreditsTileKey = GlobalKey();
+final GlobalKey showSessionsTileKey = GlobalKey();
+
+final ValueNotifier<UniqueKey> appReloadKey = ValueNotifier(UniqueKey());
+
+
+
+
+int pinchAnimationTime = 300;
+
+
+
 
 // local storage data
 ThemeMode selectedTheme = ThemeMode.system;
+ValueNotifier<ThemeMode> selectedThemeNotifier = ValueNotifier(selectedTheme);
 bool notifications = LocalStorageService().getNotificationsEnabled();
 bool locationAccess = LocalStorageService().getLocationAccess();
 bool isGoogleUser = false;
@@ -67,7 +88,7 @@ final GlobalKey<AIStatusDotsState> aiDotsKey = GlobalKey<AIStatusDotsState>();
 final Widget aiAssistant = AIStatusDots(key: aiDotsKey);
 
 final AIVoiceAssistant aiVoice = AIVoiceAssistant();
-final appMenu = Menu();
+final appMenu = Menu(key: menuGlobalKey);
 
 
 bool isFirstDashboardLaunch = true;

@@ -219,7 +219,7 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
 
 
       final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null && credits > 0) {
+      if (userId != null) {
         debugPrint("🟣 Jamie manually activated via dots");
         aiVoice.aiSpeaking = false;
         aiVoice.isListening = false;
@@ -229,8 +229,6 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
         aiVoice.startCooldown();
       }
     }
-
-    if (credits < 1){ showOutOfCreditsDialog(context); }
   }
 
   _DotStyle _getDotStyleFromState(JamieState state) {

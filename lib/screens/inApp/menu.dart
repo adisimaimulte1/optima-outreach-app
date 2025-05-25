@@ -14,10 +14,10 @@ class Menu extends StatefulWidget {
   const Menu({super.key});
 
   @override
-  State<Menu> createState() => _MenuState();
+  State<Menu> createState() => MenuState();
 }
 
-class _MenuState extends State<Menu> {
+class MenuState extends State<Menu> {
   Offset? selectedTarget;
 
   final List<Widget> _activeBeams = [];
@@ -53,14 +53,19 @@ class _MenuState extends State<Menu> {
   @override
   Widget build(BuildContext context) {
 
-
-    return ValueListenableBuilder<double>(
-      valueListenable: screenScaleNotifier,
-      builder: (context, scale, _) {
-        final double opacity = ((1.0 - scale) / (1.0 - 0.4)).clamp(0.0, 1.0);
-        return _buildMenu(context, opacity, scale);
-      },
-    );
+    return ValueListenableBuilder<UniqueKey>(
+        valueListenable: appReloadKey,
+        builder: (_, key, __) {
+          return KeyedSubtree(
+              key: key, // ← this forces subtree to rebuild
+              child: ValueListenableBuilder<double>(
+                valueListenable: screenScaleNotifier,
+                builder: (context, scale, _) {
+                  final double opacity = ((1.0 - scale) / (1.0 - 0.4)).clamp(0.0, 1.0);
+                  return _buildMenu(context, opacity, scale);
+                  },
+              ));
+        });
   }
 
   Widget _buildMenu(BuildContext context, double opacity, double scale) {
@@ -355,6 +360,77 @@ class _MenuState extends State<Menu> {
 
     });
   }
+
+
+
+
+  void simulateTap(ScreenType screenType) {
+    late Offset iconPosition;
+    final screenSize = MediaQuery.of(context).size;
+    final padding = MediaQuery.of(context).padding;
+    final usableHeight = screenSize.height - padding.top - padding.bottom;
+    final center = Offset(screenSize.width / 2, padding.top + usableHeight / 2);
+
+    // Determine the correct icon position
+    switch (screenType) {
+      case ScreenType.dashboard:
+        custom_menu.MenuController.instance.selectSource(DashboardScreen);
+        iconPosition = Offset(center.dx - 130, usableHeight * 0.23); break;
+      case ScreenType.events:
+        custom_menu.MenuController.instance.selectSource(EventsScreen);
+        iconPosition = Offset(center.dx, usableHeight * 0.23 - 60); break;
+      case ScreenType.users:
+        custom_menu.MenuController.instance.selectSource(DashboardScreen);
+        iconPosition = Offset(center.dx + 130, usableHeight * 0.23); break;
+      case ScreenType.contact:
+        custom_menu.MenuController.instance.selectSource(DashboardScreen);
+        iconPosition = Offset(center.dx - 130, usableHeight * 0.77); break;
+      case ScreenType.chat:
+        custom_menu.MenuController.instance.selectSource(DashboardScreen);
+        iconPosition = Offset(center.dx, usableHeight * 0.77 + 140); break;
+      case ScreenType.settings:
+        custom_menu.MenuController.instance.selectSource(SettingsScreen);
+        iconPosition = Offset(center.dx + 130, usableHeight * 0.77 + 80); break;
+      case ScreenType.menu:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+    }
+
+    // Start beam
+    final newBeamKey = GlobalKey<ParticleBeamEffectState>();
+    final newBeam = ParticleBeamEffect(
+      key: newBeamKey,
+      start: iconPosition,
+      end: center,
+      spawnRate: const Duration(milliseconds: 90), // slower for realism
+      maxParticles: 50,
+    );
+
+    for (final beam in _activeBeams) {
+      if (beam.key is GlobalKey) {
+        final currentState = (beam.key as GlobalKey).currentState;
+        if (currentState is ParticleBeamEffectState) {
+          currentState.stopSpawning();
+        }
+      }
+    }
+
+    setState(() {
+      selectedTarget = iconPosition;
+      selectedScreenNotifier.value = screenType;
+      _activeBeams.add(newBeam);
+      _pendingScreenChange = screenType;
+    });
+
+
+
+  }
+
+
+  void clearBeams() {
+    _activeBeams.clear();
+  }
+
 
 
 

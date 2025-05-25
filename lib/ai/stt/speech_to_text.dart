@@ -22,22 +22,28 @@ class SpeechToTextService {
     if (!_isInitialized) await init();
     if (!_isInitialized) return;
 
+    // Wait for AI to finish speaking before starting STT
+    while (aiVoice.aiSpeaking) {
+      debugPrint("🛑 Delaying STT because Jamie is still speaking...");
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
     _doneCalled = false;
 
-    _speech.statusListener = (status) {
-      debugPrint("🎤 Speech status: $status");
-      if (status == 'notListening' && !_doneCalled) {
-        _doneCalled = true;
-        onDone();
-      }
-    };
-
     _speech.listen(
-      onResult: (result) => onResult(result.recognizedWords),
+      onResult: (result) {
+        onResult(result.recognizedWords);
+        if (result.finalResult && !_doneCalled) {
+          _doneCalled = true;
+          onDone();
+        }
+      },
       listenMode: ListenMode.dictation,
       partialResults: true,
     );
   }
+
+
 
   Future<void> stopListening() async {
     if (_isInitialized) {

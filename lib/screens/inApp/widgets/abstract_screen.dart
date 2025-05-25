@@ -64,7 +64,7 @@ class _AbsScreenState extends State<AbsScreen> {
                   child: AnimatedScale(
                     scale: scale,
                     alignment: Alignment.center,
-                    duration: const Duration(milliseconds: 300),
+                    duration: Duration(milliseconds: pinchAnimationTime),
                     curve: Curves.easeOutCubic,
                     child: _buildScreenContent(scale, isMinimized),
                   )

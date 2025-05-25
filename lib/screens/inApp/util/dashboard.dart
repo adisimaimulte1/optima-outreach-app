@@ -14,7 +14,6 @@ import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/services/location/location_processor.dart';
-import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/notifications/notification_popup.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 
@@ -165,6 +164,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SizedBox(width: spacing),
                 Expanded(
                   child: ReminderBellButton(
+                    key: showNotificationsKey,
                     width: buttonSize,
                     height: buttonSize,
                     onTap: () {

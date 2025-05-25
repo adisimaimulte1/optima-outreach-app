@@ -84,26 +84,31 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
   }
 
   Widget _buildAuthenticatedScreen() {
-    return ValueListenableBuilder<ScreenType>(
-      valueListenable: selectedScreenNotifier,
-      builder: (context, selectedScreen, _) {
-        switch (selectedScreen) {
-          case ScreenType.dashboard:
-            return const DashboardScreen();
-          case ScreenType.settings:
-            return const SettingsScreen();
-          case ScreenType.chat:
-            debugPrint("Chat screen not implemented, defaulting to dashboard.");
-            return const DashboardScreen();
-          case ScreenType.events:
-            return const EventsScreen();
-          case ScreenType.users:
-            debugPrint("👥 Users screen not implemented, defaulting to dashboard.");
-            return const DashboardScreen();
-          case ScreenType.contact:
-            debugPrint("📞 Contact screen not implemented, defaulting to dashboard.");
-            return const DashboardScreen();
-        }
+    return ValueListenableBuilder<UniqueKey>(
+      valueListenable: appReloadKey,
+      builder: (_, key, __) {
+        return KeyedSubtree(
+          key: key,
+          child: ValueListenableBuilder<ScreenType>(
+            valueListenable: selectedScreenNotifier,
+            builder: (context, selectedScreen, _) {
+              switch (selectedScreen) {
+                case ScreenType.dashboard:
+                  return const DashboardScreen();
+                case ScreenType.settings:
+                  return const SettingsScreen();
+                case ScreenType.chat:
+                  return const DashboardScreen();
+                case ScreenType.events:
+                  return const EventsScreen();
+                case ScreenType.users:
+                case ScreenType.contact:
+                case ScreenType.menu:
+                  return const DashboardScreen();
+              }
+            },
+          ),
+        );
       },
     );
   }

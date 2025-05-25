@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/main.dart';
 import 'package:optima/screens/beforeApp/no_internet_screen.dart';
-import 'package:optima/screens/beforeApp/startup_wrapper.dart';
+import 'package:optima/screens/startup_wrapper.dart';
 import 'package:optima/services/cache/local_cache.dart';
 
 

@@ -3,7 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:optima/screens/beforeApp/widgets/app_bootstrapper.dart';
+import 'package:optima/screens/app_bootstrapper.dart';
 
 import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';

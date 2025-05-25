@@ -51,7 +51,11 @@ class LocalStorageService {
 
   Future<void> setThemeMode(ThemeMode mode, {bool update = true}) async {
     selectedTheme = mode;
+
+    appReloadKey.value = UniqueKey();
+    selectedThemeNotifier.value = mode;
     setIsDarkModeNotifier(SchedulerBinding.instance.window.platformBrightness == Brightness.dark);
+
     if (update) await _settingsBox.put('theme_mode', mode.index);
   }
 

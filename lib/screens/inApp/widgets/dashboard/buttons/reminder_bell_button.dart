@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/ai_navigator.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 
@@ -15,10 +16,10 @@ class ReminderBellButton extends StatefulWidget {
   });
 
   @override
-  State<ReminderBellButton> createState() => _ReminderBellButtonState();
+  State<ReminderBellButton> createState() => ReminderBellButtonState();
 }
 
-class _ReminderBellButtonState extends State<ReminderBellButton> {
+class ReminderBellButtonState extends State<ReminderBellButton> implements Triggerable{
   double _scale = 1.0;
   int feedbackCount = LocalNotificationService().unreadCount.value;
 
@@ -157,5 +158,14 @@ class _ReminderBellButtonState extends State<ReminderBellButton> {
         ),
       ),
     );
+  }
+
+  @override
+  void triggerFromAI() {
+    if (screenScaleNotifier.value >= 0.99) {
+      widget.onTap!();
+    } else {
+      debugPrint("🔒 Screen not ready, ignoring AI trigger");
+    }
   }
 }

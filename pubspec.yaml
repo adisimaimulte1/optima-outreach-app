@@ -107,6 +107,24 @@ flutter:
     - assets/audio/intro/
     - assets/audio/wake/
 
+    - assets/audio/actions/navigate/dashboard/
+    - assets/audio/actions/navigate/events/
+    - assets/audio/actions/navigate/settings/
+    - assets/audio/actions/navigate/menu/
+
+    - assets/audio/actions/change_setting/change_theme/
+    - assets/audio/actions/change_setting/disable_jamie/
+    - assets/audio/actions/change_setting/toggle_theme/
+    - assets/audio/actions/change_setting/toggle_location/
+    - assets/audio/actions/change_setting/toggle_notifications/
+
+    - assets/audio/actions/tap_widget/events/add_event/
+    - assets/audio/actions/tap_widget/settings/show_credits/
+    - assets/audio/actions/tap_widget/settings/show_sessions/
+    - assets/audio/actions/tap_widget/dashboard/show_notifications/
+
+    - assets/audio/credits/no_credits/
+
   fonts:
     - family: Tusker
       fonts:

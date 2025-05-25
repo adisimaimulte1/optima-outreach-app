@@ -141,34 +141,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return AbsScreen(
-      sourceType: SettingsScreen,
-      builder: (context, isMinimized, scale) {
-        if ((_disableScroll && scale >= 0.99) || (!_disableScroll && scale < 0.99)) {
-          _disableScroll = scale < 0.99;
-        }
+        sourceType: SettingsScreen,
+        builder: (context, isMinimized, scale) {
+          if ((_disableScroll && scale >= 0.99) ||
+              (!_disableScroll && scale < 0.99)) {
+            _disableScroll = scale < 0.99;
+          }
 
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: SingleChildScrollView(
-                physics: _disableScroll
-                    ? const NeverScrollableScrollPhysics()
-                    : const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 30),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 50),
-                    ProfileAvatar(key: _profileAvatarKey),
-                    _buildSettingsContent(),
-                    const SizedBox(height: 20),
-                    _buildLogoutButton(),
-                  ],
-                )
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: SingleChildScrollView(
+                  physics: _disableScroll
+                      ? const NeverScrollableScrollPhysics()
+                      : const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(
+                      left: 20, right: 20, bottom: 30),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 50),
+                      ProfileAvatar(key: _profileAvatarKey),
+                      _buildSettingsContent(),
+                      const SizedBox(height: 20),
+                      _buildLogoutButton(),
+                    ],
+                  )
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
   }
 
   Widget _buildSettingsContent() {
@@ -205,15 +207,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ]),
         _buildSection("Appearance", [
-          Tiles.themeDropdownTile(
-            selectedTheme: selectedTheme,
-            onChanged: (mode) async {
-              setState(() { selectedTheme = mode; });
-              await LocalStorageService().setThemeMode(mode);
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: selectedThemeNotifier,
+            builder: (_, themeMode, __) {
+              return Tiles.themeDropdownTile(
+                selectedTheme: themeMode,
+                onChanged: (mode) async {
+                  await LocalStorageService().setThemeMode(mode);
+                  setState(() => selectedTheme = mode);
+                },
+                easterEggMode: _easterEggMode,
+                getNextEasterEggIcon: _getNextEasterEggIcon,
+              );
             },
-            easterEggMode: _easterEggMode,
-            getNextEasterEggIcon: _getNextEasterEggIcon,
-          )
+          ),
         ]),
         _buildSection("Jamie Assistant", [
           Tiles.switchTile(
@@ -490,6 +497,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
+            key: showSessionsTileKey,
             context: context,
             icon: Icons.devices,
             title: "Session Management",
@@ -500,6 +508,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ]),
         _buildSection("Credits & Billing", [
           Tiles.tile(
+            key: showCreditsTileKey,
             context: context,
             icon: Icons.credit_score,
             title: "My Credits",

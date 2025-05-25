@@ -15,11 +15,13 @@ class Tiles {
     required String title,
     bool showArrow = true,
     VoidCallback? onTap,
+    GlobalKey? key,
     required bool easterEggMode,
     required EasterEggIconResolver getNextEasterEggIcon,
     double leadingFraction = 1.0, // 👈 NEW: controls how much of the icon is visible
   }) {
     return GestureDetector(
+      key: key,
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
