@@ -25,7 +25,6 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
   late Animation<double> _dot3Opacity;
 
   JamieState? _lastSeenState;
-
   JamieState _currentState = JamieState.idle;
   JamieState _fromState = JamieState.idle;
 
@@ -42,6 +41,7 @@ class AIStatusDotsState extends State<AIStatusDots> with TickerProviderStateMixi
   @override
   void initState() {
     super.initState();
+    aiAssistantState = this;
 
     _dotsController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))..repeat();
     _transitionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));

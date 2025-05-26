@@ -79,6 +79,7 @@ class LocalStorageService {
   Future<void> checkAndRequestPermissionsOnce() async {
     final alreadyAsked = await LocalStorageService().hasAskedPermissions();
     if (alreadyAsked) return;
+    assistantState.value = JamieState.thinking;
 
     // notifications
     final settings = await FirebaseMessaging.instance.requestPermission();
@@ -89,6 +90,8 @@ class LocalStorageService {
       await PushNotificationService.initialize(onHardDenied: () async {});
       await LocalStorageService().setNotificationsEnabled(true);
     } else { await LocalStorageService().setNotificationsEnabled(false); }
+
+    await Future.delayed(Duration(milliseconds: 300));
 
 
     // mic
@@ -106,6 +109,9 @@ class LocalStorageService {
     await LocalStorageService().setAskedPermissions();
   }
 
+
+
+
   Future<bool> hasAskedPermissions() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('asked_permissions') ?? false;
@@ -115,6 +121,18 @@ class LocalStorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('asked_permissions', true);
   }
+
+  Future<bool> hasSeenTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('hasSeenTutorial') ?? true;
+  }
+
+  Future<void> setSeenTutorial(bool seen) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenTutorial', seen);
+  }
+
+
 
 
 

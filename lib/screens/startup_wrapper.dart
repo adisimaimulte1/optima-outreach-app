@@ -8,6 +8,7 @@ import 'package:optima/main.dart';
 import 'package:optima/screens/beforeApp/no_internet_screen.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/services/storage/local_storage_service.dart';
 
 class StartupWrapper extends StatefulWidget {
   const StartupWrapper({super.key});
@@ -51,6 +52,7 @@ class _StartupWrapperState extends State<StartupWrapper> with SingleTickerProvid
     if (connectivity.first == ConnectivityResult.none) return const NoInternetScreen();
 
     await _animateTo(0.4, "Initializing Firebase...");
+    await LocalStorageService().init();
     await Firebase.initializeApp();
 
     await _animateTo(0.6, "Starting AdMob...");

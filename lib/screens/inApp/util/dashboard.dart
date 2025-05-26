@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/ai/ai_recordings.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/tutorial/tutorial_screen.dart';
 
 import 'package:optima/screens/inApp/widgets/dashboard/chart.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
@@ -33,8 +34,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _handleFirstLaunch() async {
+    debugPrint("isFirstDashboardLaunch: $isFirstDashboardLaunch");
+
     if (isFirstDashboardLaunch) {
       await LocalStorageService().checkAndRequestPermissionsOnce();
+
+      if (!(await LocalStorageService().hasSeenTutorial())) {
+        isFirstDashboardLaunch = false;
+
+        showGeneralDialog(
+          context: context,
+          barrierDismissible: false,
+          barrierColor: Colors.black.withOpacity(0.9),
+          transitionDuration: const Duration(milliseconds: 200),
+          pageBuilder: (context, _, __) => const TutorialOverlayScreen(),
+        );
+
+        await LocationProcessor.updateUserCountryCode();
+        return;
+      }
 
       if (notifications) {
         final token = await FirebaseMessaging.instance.getToken();
@@ -54,6 +72,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       await LocationProcessor.updateUserCountryCode();
+      assistantState.value = JamieState.idle;
       isFirstDashboardLaunch = false;
     }
   }

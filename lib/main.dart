@@ -66,7 +66,10 @@ class _OptimaState extends State<Optima> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     appPaused = state == AppLifecycleState.paused;
+
+    debugPrint("appPaused: $appPaused, state: $state");
     if (appPaused && aiVoice.aiSpeaking) {
+      aiVoice.pauseImmediately();
       aiVoice.pauseImmediately();
     }
     if (state == AppLifecycleState.resumed && updateSettingsAfterAppResume) {

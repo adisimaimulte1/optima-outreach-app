@@ -53,6 +53,8 @@ final GlobalKey showSessionsTileKey = GlobalKey();
 final ValueNotifier<UniqueKey> appReloadKey = ValueNotifier(UniqueKey());
 final ValueNotifier<int> popupStackCount = ValueNotifier(0);
 
+final ValueNotifier<bool> isTouchActive = ValueNotifier(true);
+
 
 
 
@@ -87,6 +89,8 @@ List<EventData> events = [];
 
 final GlobalKey<AIStatusDotsState> aiDotsKey = GlobalKey<AIStatusDotsState>();
 final Widget aiAssistant = AIStatusDots(key: aiDotsKey);
+late AIStatusDotsState aiAssistantState;
+
 
 final AIVoiceAssistant aiVoice = AIVoiceAssistant();
 final appMenu = Menu(key: menuGlobalKey);

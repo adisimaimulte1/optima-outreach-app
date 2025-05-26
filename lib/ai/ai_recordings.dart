@@ -158,6 +158,10 @@ class AiRecordings {
     return '$folderPath/$randomFile';
   }
 
+  static Future<String> getWalkThroughTutorial() async {
+    return 'assets/audio/walk_through/first_open_walk_through.mp3';
+  }
+
 
 
   /// Stops any currently playing audio

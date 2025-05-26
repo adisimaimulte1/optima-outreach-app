@@ -19,41 +19,68 @@ class App extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: isDarkModeNotifier,
       builder: (context, isDark, _) {
-        return MaterialApp(
-          title: 'Optima',
-          debugShowCheckedModeBanner: false,
-          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-          theme: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: inAppBackgroundColor,
-            progressIndicatorTheme: ProgressIndicatorThemeData(
-              color: textHighlightedColor,
-            ),
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: textHighlightedColor,
-              selectionColor: textHighlightedColor.withOpacity(0.4),
-              selectionHandleColor: textHighlightedColor,
-            ),
-            pageTransitionsTheme: const PageTransitionsTheme(builders: {
-              TargetPlatform.android: ZoomPageTransitionsBuilder(),
-              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            }),
+        final theme = ThemeData.light().copyWith(
+          scaffoldBackgroundColor: inAppBackgroundColor,
+          progressIndicatorTheme: ProgressIndicatorThemeData(color: textHighlightedColor),
+          textSelectionTheme: TextSelectionThemeData(
+            cursorColor: textHighlightedColor,
+            selectionColor: textHighlightedColor.withOpacity(0.4),
+            selectionHandleColor: textHighlightedColor,
           ),
-          darkTheme: ThemeData.dark().copyWith(
-            scaffoldBackgroundColor: inAppBackgroundColor,
-            progressIndicatorTheme: ProgressIndicatorThemeData(
-              color: textHighlightedColor,
-            ),
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: textHighlightedColor,
-              selectionColor: textHighlightedColor.withOpacity(0.4),
-              selectionHandleColor: textHighlightedColor,
-            ),
-            pageTransitionsTheme: const PageTransitionsTheme(builders: {
-              TargetPlatform.android: ZoomPageTransitionsBuilder(),
-              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            }),
+          pageTransitionsTheme: const PageTransitionsTheme(builders: {
+            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          }),
+        );
+
+        final darkTheme = ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: inAppBackgroundColor,
+          progressIndicatorTheme: ProgressIndicatorThemeData(color: textHighlightedColor),
+          textSelectionTheme: TextSelectionThemeData(
+            cursorColor: textHighlightedColor,
+            selectionColor: textHighlightedColor.withOpacity(0.4),
+            selectionHandleColor: textHighlightedColor,
           ),
-          home: const AppBootstrapper(), // All loading logic inside this
+          pageTransitionsTheme: const PageTransitionsTheme(builders: {
+            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          }),
+        );
+
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Stack(
+            children: [
+              MaterialApp(
+                title: 'Optima',
+                debugShowCheckedModeBanner: false,
+                themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+                theme: theme,
+                darkTheme: darkTheme,
+                home: const AppBootstrapper(),
+              ),
+              _TouchBlocker(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TouchBlocker extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isTouchActive,
+      builder: (context, active, _) {
+        return active
+            ? const SizedBox.shrink()
+            : Positioned.fill(
+          child: AbsorbPointer(
+            absorbing: true,
+            child: Container(color: Colors.transparent),
+          ),
         );
       },
     );

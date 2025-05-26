@@ -127,6 +127,7 @@ flutter:
 
 
     - assets/audio/credits/no_credits/
+    - assets/audio/walk_through/
 
   fonts:
     - family: Tusker

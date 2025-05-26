@@ -227,6 +227,16 @@ class AccountDeleteDialogs {
   }
 
   static Future<void> deleteAccount(String? password, BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.9),
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -243,37 +253,27 @@ class AccountDeleteDialogs {
         );
 
         await user.reauthenticateWithCredential(credential);
-
-        creditNotifier.cancel();
-        subCreditNotifier.cancel();
-        selectedPlan.cancel();
-
-        LocalNotificationService().stopListening();
-        LocalCache().deleteAll();
-
-        await CloudStorageService().deleteAll();
-        await user.delete();
-
       } else if (password != null && password.isNotEmpty) {
         final credential = EmailAuthProvider.credential(email: user.email!, password: password);
-
         await user.reauthenticateWithCredential(credential);
-
-        creditNotifier.cancel();
-        subCreditNotifier.cancel();
-        selectedPlan.cancel();
-
-        LocalNotificationService().stopListening();
-        LocalCache().deleteAll();
-
-        await CloudStorageService().deleteAll();
-        await user.delete();
-
       } else {
         throw FirebaseAuthException(message: "Password is required.", code: 'password-missing');
       }
 
-      await Future.delayed(Duration(milliseconds: 100));
+      // 🔁 Cleanup
+      creditNotifier.cancel();
+      subCreditNotifier.cancel();
+      selectedPlan.cancel();
+
+      LocalNotificationService().stopListening();
+      await LocalCache().deleteAll();
+      await CloudStorageService().deleteAll();
+
+      await user.delete();
+
+      // ✅ Remove loading and navigate
+      Navigator.of(context, rootNavigator: true).pop(); // close loading
+      await Future.delayed(const Duration(milliseconds: 100));
 
       Navigator.of(context).pushAndRemoveUntil(
         PageRouteBuilder(
@@ -284,7 +284,30 @@ class AccountDeleteDialogs {
             (route) => false,
       );
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          elevation: 6,
+          duration: const Duration(seconds: 2),
+          content: Center(
+            child: Text(
+              "Account deleted successfully.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: inAppForegroundColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ),
+      );
+
     } on FirebaseAuthException catch (e) {
+      Navigator.of(context, rootNavigator: true).pop(); // close loading
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
@@ -294,7 +317,7 @@ class AccountDeleteDialogs {
           duration: const Duration(seconds: 2),
           content: Center(
             child: Text(
-              "Error: \${e.message}",
+              "Error: ${e.message}",
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: inAppForegroundColor,
@@ -306,26 +329,6 @@ class AccountDeleteDialogs {
         ),
       );
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        elevation: 6,
-        duration: const Duration(seconds: 2),
-        content: Center(
-          child: Text(
-            "Account deleted successfully.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: inAppForegroundColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
-          ),
-        ),
-      ),
-    );
   }
+
 }

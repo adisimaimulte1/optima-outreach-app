@@ -320,6 +320,7 @@ class _AuthScreenState extends State<AuthScreen> {
     selectedScreenNotifier.value = ScreenType.dashboard;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
+    //await LocalStorageService().setSeenTutorial(false);
     await LocalStorageService().setIsGoogleUser(googleSignIn);
     await LocalCache().initializeAndCacheUserData();
     LocalNotificationService().startListening(FirebaseAuth.instance.currentUser!.uid);
@@ -378,6 +379,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final user = userCredential.user;
 
       if (isNew && user != null) {
+        await LocalStorageService().setSeenTutorial(false);
         await CloudStorageService().initDatabaseWithUser(user);
         _openWebsite("https://adisimaimulte1.github.io/optima-verification-site/?mode=verifyEmail&oobCode=love");
       }
@@ -649,7 +651,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildLoadingOverlay(Color bgColor, Color fgColor) {
     return Positioned.fill(
       child: Container(
-        color: textColor.withOpacity(0.6),
+        color: Colors.black.withOpacity(0.9),
         child: const Center(
           child: CircularProgressIndicator(),
         ),

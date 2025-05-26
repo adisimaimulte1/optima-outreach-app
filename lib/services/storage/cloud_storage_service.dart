@@ -29,7 +29,7 @@ class CloudStorageService {
       'fcmToken': '',
       'lastRewardedAd': '',
       'settings': {
-        'jamieEnabled': true,
+        'jamieEnabled': false,
         'wakeWordEnabled': true,
         'jamieReminders': true,
       },

@@ -45,6 +45,10 @@ class AIVoiceAssistant {
 
 
   Future<void> initPermissions() async {
+    if (jamieEnabledNotifier.value) {
+      return;
+    }
+
     final micStatus = await Permission.microphone.request();
     if (!micStatus.isGranted) {
       throw Exception("Microphone permission not granted");
@@ -300,8 +304,12 @@ class AIVoiceAssistant {
 
 
 
-      await execute(context, intentId, message);
+      while (appPaused) {
+        await Future.delayed(const Duration(milliseconds: 30));
+      }
 
+
+      await execute(context, intentId, message);
 
 
       assistantState.value = JamieState.speaking;
@@ -361,6 +369,7 @@ class AIVoiceAssistant {
 
 
   Future<void> playResponseFile(List<int> bytes) async {
+    aiSpeaking = true;
     final tempDir = await getTemporaryDirectory();
     final file = File("${tempDir.path}/jamie_response.mp3");
     await file.writeAsBytes(bytes);
@@ -389,6 +398,8 @@ class AIVoiceAssistant {
     } catch (e) {
       debugPrint("🔇 Playback failed or timed out: $e");
     }
+
+    aiSpeaking = false;
   }
 
 
