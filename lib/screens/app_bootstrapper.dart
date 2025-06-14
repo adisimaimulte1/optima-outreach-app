@@ -58,6 +58,16 @@ class App extends StatelessWidget {
                 theme: theme,
                 darkTheme: darkTheme,
                 home: const AppBootstrapper(),
+                builder: (context, child) {
+                  final mq = MediaQuery.of(context);
+                  return MediaQuery(
+                    data: mq.copyWith(
+                      textScaleFactor: 1.0,
+                      boldText: false,
+                    ),
+                    child: child!,
+                  );
+                },
               ),
               _TouchBlocker(),
             ],

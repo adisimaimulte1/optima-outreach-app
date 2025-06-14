@@ -381,7 +381,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (isNew && user != null) {
         await LocalStorageService().setSeenTutorial(false);
         await CloudStorageService().initDatabaseWithUser(user);
-        _openWebsite("https://adisimaimulte1.github.io/optima-verification-site/?mode=verifyEmail&oobCode=love");
+        _openWebsite("https://adisimaimulte1.github.io/optima-official-site/?mode=verifyEmail&oobCode=love");
       }
 
       if (!mounted) return;

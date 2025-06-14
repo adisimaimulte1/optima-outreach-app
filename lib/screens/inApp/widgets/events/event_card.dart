@@ -278,9 +278,19 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
               children: [
                 Icon(Icons.calendar_today, color: color, size: 20),
                 const SizedBox(width: 6),
-                Text(
-                  formatDate(event.selectedDate!),
-                  style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500),
+                ValueListenableBuilder<double>(
+                  valueListenable: screenScaleNotifier,
+                  builder: (_, scale, __) {
+                    final fontSize = 16 * scale.clamp(0.8, 1.0);
+                    return Text(
+                      formatDate(event.selectedDate!),
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -290,9 +300,19 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
                 children: [
                   Icon(Icons.access_time, color: color, size: 20),
                   const SizedBox(width: 4),
-                  Text(
-                    formatTime(event.selectedTime!),
-                    style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500),
+                  ValueListenableBuilder<double>(
+                    valueListenable: screenScaleNotifier,
+                    builder: (_, scale, __) {
+                      final fontSize = 16 * scale.clamp(0.8, 1.0);
+                      return Text(
+                        formatTime(event.selectedTime!),
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

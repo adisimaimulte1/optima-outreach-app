@@ -36,61 +36,66 @@ class UpgradePlanDialog {
             ),
             content: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildPlanCard(
-                    context,
-                    "free",
-                    currentPlan,
-                    "Free",
-                    "Forever",
-                    [
-                      "Limited Jamie access",
-                      "Earn credits via ads",
-                      "Basic AI tools",
-                    ],
-                    onTap: () async {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        final safeContext = Navigator.of(context, rootNavigator: true).context;
-                        Navigator.of(context, rootNavigator: true).pop();
-                        await Future.delayed(const Duration(milliseconds: 250));
-                        await WatchAdDialog.showRewardedAdWithUid(safeContext, user.uid);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPlanCard(
-                    context,
-                    "starter",
-                    currentPlan,
-                    "Starter",
-                    "\$1 One-Time",
-                    [
-                      "Instant 20 credits",
-                      "No subscription",
-                      "Great for quick access",
-                    ],
-                    link: "",
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPlanCard(
-                    context,
-                    "pro",
-                    currentPlan,
-                    "Pro",
-                    "\$30 / mo",
-                    [
-                      "20 credits every day",
-                      "Unlimited Jamie usage",
-                      "Priority features & support",
-                    ],
-                    link: "",
-                  ),
-                ],
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildPlanCard(
+                      context,
+                      "free",
+                      currentPlan,
+                      "Free",
+                      "Forever",
+                      [
+                        "Limited Jamie access",
+                        "Earn credits via ads",
+                        "Basic AI tools",
+                      ],
+                      onTap: () async {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          final safeContext = Navigator.of(context, rootNavigator: true).context;
+                          Navigator.of(context, rootNavigator: true).pop();
+                          await Future.delayed(const Duration(milliseconds: 250));
+                          await WatchAdDialog.showRewardedAdWithUid(safeContext, user.uid);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPlanCard(
+                      context,
+                      "starter",
+                      currentPlan,
+                      "Starter",
+                      "\$1 One-Time",
+                      [
+                        "Instant 20 credits",
+                        "No subscription",
+                        "Great for quick access",
+                      ],
+                      link: "",
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPlanCard(
+                      context,
+                      "pro",
+                      currentPlan,
+                      "Pro",
+                      "\$30 / mo",
+                      [
+                        "20 credits every day",
+                        "Unlimited Jamie usage",
+                        "Priority features & support",
+                      ],
+                      link: "",
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                ),
               ),
             ),
+
           );
         },
       ),

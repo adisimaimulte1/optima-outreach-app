@@ -49,6 +49,7 @@ class AiNavigator {
     // exit early to go to the menu
     if (target == ScreenType.menu) {
       pinchAnimationTime = 300;
+      isTouchActive.value = true;
       return;
     }
 
@@ -57,6 +58,7 @@ class AiNavigator {
       menuGlobalKey.currentState!.simulateTap(target);
     } else {
       debugPrint("❌ Menu key not attached. Cannot simulate navigation.");
+      isTouchActive.value = true;
       return;
     }
 

@@ -7,8 +7,11 @@ import 'package:optima/globals.dart';
 
 import 'package:optima/screens/beforeApp/splash_screen_adaptive.dart';
 import 'package:optima/screens/beforeApp/authentication_screen.dart';
+import 'package:optima/screens/inApp/util/aichat.dart';
+import 'package:optima/screens/inApp/util/contact.dart';
 import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/screens/inApp/util/events.dart';
+import 'package:optima/screens/inApp/util/users.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
 import 'package:optima/screens/inApp/widgets/menu/menu_overlay.dart';
 import 'package:optima/services/sessions/session_service.dart';
@@ -99,11 +102,13 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
                 case ScreenType.settings:
                   return const SettingsScreen();
                 case ScreenType.chat:
-                  return const DashboardScreen();
+                  return const ChatScreen();
                 case ScreenType.events:
                   return const EventsScreen();
                 case ScreenType.users:
+                  return const UsersScreen();
                 case ScreenType.contact:
+                  return const ContactScreen();
                 case ScreenType.menu:
                   return const DashboardScreen();
               }

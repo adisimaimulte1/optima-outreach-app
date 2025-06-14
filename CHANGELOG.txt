@@ -57,7 +57,7 @@ Change Log
 - started working on the UI
 
 
-0.1.0 (24/04/2024)
+0.0.17 (24/04/2024)
 ------------------
 - added the settings screen UI
 - added an easter egg in the settings screen (press three times on the app version)
@@ -68,3 +68,21 @@ Change Log
     * splash doesn't appear when it should
     * after login, UI is bugged
 - starting to work on the events screen UI
+
+
+0.1.0 (25/05/2024)
+------------------
+- added Jamie voice control through the app
+- updated the dark theme to be the same throughout the app
+- added a tutorial for new accounts
+- new loading animation when entering the app
+- fixed last word not being detected when talking
+
+
+0.1.1 (14/06/2024)
+------------------
+- fixed UI device compatibility
+- fixed STT not working on some devices
+- added 2/3 of the AI chat screen and empty screen for unimplemented ones
+- fixed more UI bugs
+- device font size / bold text options don't break the UI anymore

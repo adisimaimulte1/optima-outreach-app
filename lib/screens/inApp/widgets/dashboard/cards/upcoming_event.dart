@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/details/status_label.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
-import 'package:optima/screens/inApp/widgets/events/event_details.dart';
 
 class UpcomingEventCard extends StatefulWidget {
   const UpcomingEventCard({super.key});

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:optima/screens/inApp/util/aichat.dart';
+import 'package:optima/screens/inApp/util/contact.dart';
 import 'package:optima/screens/inApp/util/events.dart';
+import 'package:optima/screens/inApp/util/users.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
 
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
@@ -170,10 +172,9 @@ class MenuState extends State<Menu> {
       double dx = bottomArcCenter.dx;
       double dy = bottomArcCenter.dy;
 
-      if (index == 0) { return Offset(dx - 130, dy); }
-      else if (index == 1) { return Offset(dx, dy + 140); }
-      else if (index == 1) { return Offset(dx, dy + 140); }
-      else if (index == 2) { return Offset(dx + 130, dy + 80); }
+      if (index == 0) { return Offset(dx - 130, dy + 40); }
+      else if (index == 1) { return Offset(dx, dy + 100); }
+      else if (index == 2) { return Offset(dx + 130, dy + 40); }
 
       return Offset(dx, dy);
     });
@@ -196,6 +197,12 @@ class MenuState extends State<Menu> {
     } else if (source == ChatScreen){
       _pendingScreenChange = ScreenType.chat;
       iconPosition = bottomIconsPositions[1];
+    } else if (source == UsersScreen) {
+      _pendingScreenChange = ScreenType.users;
+      iconPosition = topIconsPositions[2];
+    } else if (source == ContactScreen) {
+      _pendingScreenChange = ScreenType.contact;
+      iconPosition = bottomIconsPositions[0];
     } else {
       _pendingScreenChange = ScreenType.dashboard;
       iconPosition = topIconsPositions[0];
@@ -247,7 +254,7 @@ class MenuState extends State<Menu> {
 
       return Positioned(
         left: dx - 40,
-        top: verticalOffset > 0 ? dy - 40 : dy + 40,
+        top: verticalOffset > 0 ? dy - 40 : dy,
         child: AnimatedOpacity(
           opacity: opacity,
           duration: const Duration(milliseconds: 100),
@@ -294,7 +301,7 @@ class MenuState extends State<Menu> {
 
 
 
-                        final Offset iconPosition = Offset(dx, verticalOffset > 0 ? dy : dy + 80);
+                        final Offset iconPosition = Offset(dx, verticalOffset > 0 ? dy : dy + 40);
                         final screenSize = MediaQuery.of(context).size;
                         final padding = MediaQuery.of(context).padding;
                         final usableHeight = screenSize.height - padding.top - padding.bottom;
@@ -338,7 +345,7 @@ class MenuState extends State<Menu> {
                                 color: Colors.transparent,
                                 border: Border.all(
                                   color: inAppBackgroundColor,
-                                  width: selectedTarget == Offset(dx, verticalOffset > 0 ? dy : dy + 80) ? 10 : 6,
+                                  width: selectedTarget == Offset(dx, verticalOffset > 0 ? dy : dy + 40) ? 10 : 6,
                                 ),
                               ),
                               child: Icon(icons[index], size: 40, color: inAppBackgroundColor),
@@ -384,19 +391,18 @@ class MenuState extends State<Menu> {
         custom_menu.MenuController.instance.selectSource(EventsScreen);
         iconPosition = Offset(center.dx, usableHeight * 0.23 - 60); break;
       case ScreenType.users:
-        custom_menu.MenuController.instance.selectSource(DashboardScreen);
+        custom_menu.MenuController.instance.selectSource(UsersScreen);
         iconPosition = Offset(center.dx + 130, usableHeight * 0.23); break;
       case ScreenType.contact:
-        custom_menu.MenuController.instance.selectSource(DashboardScreen);
-        iconPosition = Offset(center.dx - 130, usableHeight * 0.77); break;
+        custom_menu.MenuController.instance.selectSource(ContactScreen);
+        iconPosition = Offset(center.dx - 130, usableHeight * 0.77 + 40); break;
       case ScreenType.chat:
-        custom_menu.MenuController.instance.selectSource(DashboardScreen);
-        iconPosition = Offset(center.dx, usableHeight * 0.77 + 140); break;
+        custom_menu.MenuController.instance.selectSource(ChatScreen);
+        iconPosition = Offset(center.dx, usableHeight * 0.77 + 100); break;
       case ScreenType.settings:
         custom_menu.MenuController.instance.selectSource(SettingsScreen);
-        iconPosition = Offset(center.dx + 130, usableHeight * 0.77 + 80); break;
+        iconPosition = Offset(center.dx + 130, usableHeight * 0.77 + 40); break;
       case ScreenType.menu:
-        // TODO: Handle this case.
         throw UnimplementedError();
     }
 

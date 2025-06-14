@@ -286,7 +286,7 @@ class AccountDeleteDialogs {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.green,
+          backgroundColor: inAppBackgroundColor,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           elevation: 6,
@@ -296,7 +296,7 @@ class AccountDeleteDialogs {
               "Account deleted successfully.",
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: inAppForegroundColor,
+                color: textHighlightedColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),

@@ -39,6 +39,7 @@ class SpeechToTextService {
       },
       listenMode: ListenMode.dictation,
       partialResults: true,
+      localeId: 'en_US',
     );
   }
 
@@ -108,6 +109,7 @@ class SpeechToTextService {
         },
         listenMode: ListenMode.dictation,
         partialResults: true,
+        localeId: 'en_US',
       );
     }
 

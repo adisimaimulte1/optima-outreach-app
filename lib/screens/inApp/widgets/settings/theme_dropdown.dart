@@ -58,7 +58,7 @@ class _CustomThemeDropdownState extends State<CustomThemeDropdown> {
     final Offset offset = box.localToGlobal(Offset.zero);
 
     popupStackCount.value++;
-    
+
     final result = await showMenu<ThemeMode>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -203,11 +203,10 @@ class _CustomThemeDropdownState extends State<CustomThemeDropdown> {
                     ),
                   ),
                 );
-                },
+              },
             );
           }),
     );
   }
 }
-
 

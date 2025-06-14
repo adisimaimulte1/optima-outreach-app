@@ -1,5 +1,7 @@
+import 'package:device_preview/device_preview.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
@@ -20,6 +22,12 @@ void main() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await LocalStorageService().init();
 
+  /*runApp(
+    DevicePreview(
+      enabled: !kReleaseMode, // Only enable in debug mode
+      builder: (context) => const App(), // Your app widget
+    ),
+  );*/
   runApp(const App()); // NEW ROOT APP
 }
 
