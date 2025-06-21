@@ -107,6 +107,7 @@ flutter:
   assets:
     - assets/images/logo/
     - assets/images/icons/
+    - assets/images/tutorials/
     - assets/splash/
     - assets/audio/intro/
     - assets/audio/wake/

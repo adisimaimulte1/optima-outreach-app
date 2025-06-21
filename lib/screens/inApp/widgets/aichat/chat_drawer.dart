@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
@@ -31,7 +30,7 @@ class ChatDrawer extends StatelessWidget {
                     child: Text(
                       'Events',
                       style: TextStyle(
-                        color: textHighlightedColor,
+                        color: textColor,
                         fontSize: 36,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.4,
@@ -63,18 +62,21 @@ class ChatDrawer extends StatelessWidget {
                           final selected = e == chat.currentEvent;
                           final selectedColor = chat.hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
 
-                          return InkWell(
-                            onTap: () async {
-                              onSelect(e);
-                              Navigator.of(context).pop();
-                            },
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 12),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              child: Row(
-                                children: [
-                                  Expanded(
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _BouncyOption(
+                                    onTap: () async {
+                                      onSelect(e);
+                                      await Future.delayed(const Duration(milliseconds: 200));
+                                      if (context.mounted) Navigator.of(context).pop();
+                                    },
                                     child: Text(
                                       e.eventName,
                                       style: TextStyle(
@@ -84,27 +86,25 @@ class ChatDrawer extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: () {
-                                      Future.delayed(const Duration(milliseconds: 100), () {
-                                        selectedScreenNotifier.value = ScreenType.events;
-                                        showCardOnLaunch = MapEntry(true, MapEntry(e, 'ALL'));
-                                      });
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Icon(
-                                        Icons.open_in_new,
-                                        size: 22,
-                                        color: selected ? selectedColor : textColor,
-                                      ),
-                                    ),
+                                ),
+                                _BouncyIcon(
+                                  onTap: () {
+                                    Future.delayed(const Duration(milliseconds: 100), () {
+                                      selectedScreenNotifier.value = ScreenType.events;
+                                      showCardOnLaunch = MapEntry(true, MapEntry(e, 'ALL'));
+                                    });
+                                  },
+                                  icon: Icon(
+                                    Icons.open_in_new,
+                                    size: 24,
+                                    color: selected ? selectedColor : textColor,
                                   ),
-                                ],
-                              ),
+                                ),
+
+                              ],
                             ),
                           );
+
                         }
                     );
                   },
@@ -117,3 +117,98 @@ class ChatDrawer extends StatelessWidget {
     );
   }
 }
+
+
+
+
+class _BouncyOption extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _BouncyOption({required this.child, required this.onTap});
+
+  @override
+  State<_BouncyOption> createState() => _BouncyOptionState();
+}
+
+class _BouncyOptionState extends State<_BouncyOption> {
+  double _scale = 1.0;
+
+  void _onTapDown(_) => setState(() => _scale = 0.85);
+  void _onTapCancel() => setState(() => _scale = 1.0);
+  void _onTapUp(_) async {
+    await Future.delayed(const Duration(milliseconds: 120));
+    if (mounted) setState(() => _scale = 1.0);
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapCancel: _onTapCancel,
+      onTapUp: _onTapUp,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 1.0, end: _scale),
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutBack,
+        builder: (context, scale, child) {
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.center,
+              child: child,
+            ),
+          );
+        },
+        child: widget.child,
+      ),
+    );
+  }
+
+}
+
+
+class _BouncyIcon extends StatefulWidget {
+  final VoidCallback onTap;
+  final Icon icon;
+
+  const _BouncyIcon({required this.onTap, required this.icon});
+
+  @override
+  State<_BouncyIcon> createState() => _BouncyIconState();
+}
+
+class _BouncyIconState extends State<_BouncyIcon> {
+  double _scale = 1.0;
+
+  void _onTapDown(_) => setState(() => _scale = 0.8);
+  void _onTapCancel() => setState(() => _scale = 1.0);
+  void _onTapUp(_) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) setState(() => _scale = 1.0);
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: AnimatedScale(
+          scale: _scale,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOutBack,
+          child: widget.icon,
+        ),
+      ),
+    );
+  }
+}
+
+

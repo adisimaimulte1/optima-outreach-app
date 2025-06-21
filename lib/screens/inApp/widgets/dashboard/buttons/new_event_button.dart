@@ -51,8 +51,10 @@ class NewEventButtonState extends State<NewEventButton> implements Triggerable {
   Widget build(BuildContext context) {
     return Listener(
       onPointerDown: (_) => _setPressed(true),
-      onPointerUp: (_) {
+      onPointerUp: (_) async {
+        await Future.delayed(const Duration(milliseconds: 80));
         _setPressed(false);
+        await Future.delayed(const Duration(milliseconds: 80));
         if (screenScaleNotifier.value >= 0.99) {
           widget.onTap();
         }

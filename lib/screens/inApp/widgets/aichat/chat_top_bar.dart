@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/aichat/buttons/menu_button.dart';
-import 'package:optima/screens/inApp/widgets/aichat/buttons/search_button.dart';
+import 'package:optima/screens/inApp/widgets/aichat/buttons/round_icon_button.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
 import 'package:provider/provider.dart';
 

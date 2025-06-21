@@ -78,8 +78,10 @@ class ReminderBellButtonState extends State<ReminderBellButton> implements Trigg
       duration: const Duration(milliseconds: 100),
       builder: (context, scale, child) => Listener(
         onPointerDown: (_) => _setPressed(true),
-        onPointerUp: (_) {
+        onPointerUp: (_) async {
+          await Future.delayed(const Duration(milliseconds: 80));
           _setPressed(false);
+          await Future.delayed(const Duration(milliseconds: 80));
           if (screenScaleNotifier.value >= 0.99) {
             widget.onTap?.call();
           }

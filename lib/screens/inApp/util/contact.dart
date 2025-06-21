@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:optima/screens/inApp/widgets/contact/bouncy_contact_info.dart';
 import 'package:optima/screens/inApp/widgets/contact/tutorial_cards.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/globals.dart';
@@ -104,44 +104,13 @@ class ContactScreen extends StatelessWidget {
       children: [
         _title('Contact Us'),
         SizedBox(height: 10),
-        _buildContactInfo(Icons.phone, '  Phone Number', 'tel:+40720781448'),
-        _buildContactInfo(Icons.email, '  Email Address', 'mailto:adrian.c.contras@gmail.com?subject=Optima%20Support&body=Hi%20Optima%20team,%0A%0A'),
-        _buildContactInfo(Icons.link, 'Official Website', 'https://adisimaimulte1.github.io/optima-official-site/'),
+        BouncyContactInfo(icon: Icons.phone, info: '  Phone Number', url: 'tel:+40720781448'),
+        BouncyContactInfo(icon: Icons.email, info: '  Email Address', url: 'mailto:adrian.c.contras@gmail.com?subject=Optima%20Support&body=Hi%20Optima%20team,%0A%0A'),
+        BouncyContactInfo(icon: Icons.link, info: 'Official Website', url: 'https://adisimaimulte1.github.io/optima-official-site/'),
         SizedBox(height: 10),
       ],
     );
   }
-
-  Widget _buildContactInfo(IconData icon, String info, String url) {
-    return GestureDetector(
-      onTap: () => _launchURL(url),
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: textHighlightedColor,
-              size: 30,
-            ),
-            SizedBox(width: 8),
-            Text(
-              info,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 18,
-                fontWeight: FontWeight.w400,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
 
   Widget _title(String text) {
     return Column(
@@ -160,28 +129,6 @@ class ContactScreen extends StatelessWidget {
       ],
     );
   }
-
-  Future<void> _launchURL(String url) async {
-    try {
-      final uri = Uri.parse(url);
-
-      if (uri.scheme == 'mailto') {
-        final Uri emailLaunchUri = Uri(
-          scheme: 'mailto',
-          path: uri.path,
-          query: uri.query,
-        );
-        await launchUrl(emailLaunchUri);
-      }
-      else if (uri.scheme == 'http' || uri.scheme == 'https') {
-        await launchUrl(uri, mode: LaunchMode.inAppWebView);
-      }
-      else {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      debugPrint("Error: $e");
-    }
-  }
-
 }
+
+

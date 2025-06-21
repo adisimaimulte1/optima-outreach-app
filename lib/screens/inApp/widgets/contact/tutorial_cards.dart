@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/contact/tutorial_card_item.dart';
 
 class TutorialCards extends StatefulWidget {
   const TutorialCards({super.key});
@@ -11,6 +12,15 @@ class TutorialCards extends StatefulWidget {
 class _TutorialCardsState extends State<TutorialCards> {
   late final PageController _pageController;
   double _currentPage = 2.0;
+
+  final List<Map<String, dynamic>> _cards = [
+    {'title': 'Getting Started', 'icon': Icons.play_circle},
+    {'title': 'Event Setup', 'icon': Icons.calendar_month},
+    {'title': 'Team Management', 'icon': Icons.groups},
+    {'title': 'Live Assist', 'icon': Icons.headset_mic},
+    {'title': 'Settings', 'icon': Icons.settings},
+  ];
+
 
   @override
   void initState() {
@@ -39,38 +49,12 @@ class _TutorialCardsState extends State<TutorialCards> {
             controller: _pageController,
             itemCount: 5,
             itemBuilder: (context, index) {
-              final double distance = (_currentPage - index).abs();
-              final double scale = 1 - (0.3 * distance).clamp(0.0, 0.3);
-
-              return Transform.scale(
-                scale: scale,
-                alignment: Alignment.center,
-                child: Container(
-                  width: 220,
-                  margin: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: inAppForegroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.help_outline, size: 40, color: textHighlightedColor),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Card $index',
-                        style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        'Description for card $index.',
-                        style: TextStyle(color: textDimColor, fontSize: 14),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
+              final card = _cards[index];
+              return TutorialCardItem(
+                index: index,
+                currentPage: _currentPage,
+                title: card['title'],
+                icon: card['icon'],
               );
             },
           ),
@@ -94,61 +78,6 @@ class _TutorialCardsState extends State<TutorialCards> {
         const SizedBox(height: 4),
         Container(height: 2, width: text.length.toDouble() * 16, color: Colors.white24),
       ],
-    );
-  }
-}
-
-class TutorialCardItem extends StatelessWidget {
-  final int index;
-  final double cardWidth;
-  final double cardSpacing;
-  final double screenWidth;
-  final int pageIndex;
-
-  const TutorialCardItem({
-    super.key,
-    required this.index,
-    required this.cardWidth,
-    required this.cardSpacing,
-    required this.screenWidth,
-    required this.pageIndex,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final double distance = (pageIndex - index).abs().toDouble();
-    final double t = (distance).clamp(0.0, 1.0);
-    final double scale = 1.0 - 0.3 * t;
-
-    return Transform.scale(
-      scale: scale,
-      alignment: Alignment.center,
-      child: Container(
-        width: cardWidth,
-        margin: EdgeInsets.symmetric(horizontal: cardSpacing / 2),
-        decoration: BoxDecoration(
-          color: inAppForegroundColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.help_outline, size: 40, color: textHighlightedColor),
-            const SizedBox(height: 10),
-            Text(
-              'Card $index',
-              style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 5),
-            Text(
-              'Description for card $index.',
-              style: TextStyle(color: textDimColor, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

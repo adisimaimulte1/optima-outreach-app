@@ -156,8 +156,10 @@ class _FilterButtonState extends State<FilterButton> {
   Widget build(BuildContext context) {
     return Listener(
       onPointerDown: (_) => _setPressed(true),
-      onPointerUp: (_) {
+      onPointerUp: (_) async {
+        await Future.delayed(const Duration(milliseconds: 50));
         _setPressed(false);
+        await Future.delayed(const Duration(milliseconds: 50));
         if (screenScaleNotifier.value >= 0.99) {
           _showMenu();
         }
