@@ -24,7 +24,7 @@ class _EventsScreenState extends State<EventsScreen> {
   final PageStorageBucket _bucket = PageStorageBucket();
   final PageStorageKey<String> _filterKey = const PageStorageKey('eventFilter');
 
-  String selectedFilter = 'All';
+  String selectedFilter = 'ALL';
   bool _disableScroll = false;
 
 
@@ -46,14 +46,20 @@ class _EventsScreenState extends State<EventsScreen> {
       if (showAddEventOnLaunch) {
         _showAddEventForm(context);
         showAddEventOnLaunch = false;
-      } else if (showCardOnLaunch.key && showCardOnLaunch.value != null) {
-        showEventDetailsDialog(context, showCardOnLaunch.value!);
-        showCardOnLaunch = const MapEntry(false, null);
+      } else if (showCardOnLaunch.key && showCardOnLaunch.value.key != null) {
+        final eventToShow = showCardOnLaunch.value.key!;
+        final filterToSet = showCardOnLaunch.value.value;
 
-        setState(() {
-          selectedFilter = 'UPCOMING';
-        });
+        showEventDetailsDialog(context, eventToShow);
+        showCardOnLaunch = const MapEntry(false, MapEntry(null, null));
+
+        if (filterToSet != null) {
+          setState(() {
+            selectedFilter = filterToSet;
+          });
+        }
       }
+
     });
   }
 
@@ -61,7 +67,7 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     final currentFilter = PageStorage.of(context).readState(context, identifier: _filterKey) as String? ?? selectedFilter;
-    final filteredEvents = currentFilter == 'All'
+    final filteredEvents = currentFilter == 'ALL'
         ? events
         : events.where((e) => e.status == currentFilter).toList();
     selectedFilter = currentFilter;
@@ -136,7 +142,7 @@ class _EventsScreenState extends State<EventsScreen> {
   Widget _buildFilterMenu() {
     return FilterButton(
       selectedValue: PageStorage.of(context).readState(context, identifier: _filterKey) as String? ?? selectedFilter,
-      options: const ['All', 'UPCOMING', 'COMPLETED', 'CANCELLED'],
+      options: const ['ALL', 'UPCOMING', 'COMPLETED', 'CANCELLED'],
       onSelected: (value) {
         setState(() {
           selectedFilter = value;

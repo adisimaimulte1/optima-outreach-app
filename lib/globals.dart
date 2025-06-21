@@ -128,7 +128,9 @@ final adService = AdService();
 
 
 bool showAddEventOnLaunch = false;
-MapEntry<bool, EventData?> showCardOnLaunch = MapEntry(false, null);
+MapEntry<bool, MapEntry<EventData?, String?>> showCardOnLaunch = MapEntry(false, MapEntry(null, null));
+final Map<String, bool> animatedMessagesCache = {};
+
 
 
 

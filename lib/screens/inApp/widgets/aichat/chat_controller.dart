@@ -1,18 +1,64 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 
 class ChatController extends ChangeNotifier {
   final ScrollController scrollController = ScrollController();
   final TextEditingController inputController = TextEditingController();
+  final TextEditingController searchTextController = TextEditingController();
+
   final FocusNode focusNode = FocusNode();
 
   EventData? currentEvent;
+  bool hasPermission = false;
+
   final List<Map<String, String>> messages = [];
   bool isLoading = false;
 
+  final searchQuery = ValueNotifier<String>('');
+  final isSearchBarVisible = ValueNotifier<bool>(false);
+
+  int _currentMatch = 0;
+  int _totalMatches = 0;
+  int get currentMatch => _totalMatches == 0 ? 0 : _currentMatch + 1;
+  int get totalMatches => _totalMatches;
+
+
+  ChatController() {
+    if (events.isNotEmpty) {
+      setEvent(events.first);
+    }
+  }
+
+
+
+  void toggleSearchBar(bool visible) {
+    isSearchBarVisible.value = visible;
+    if (!visible) updateSearchQuery('');
+  }
+
+  void updateSearchQuery(String query) {
+    searchQuery.value = query;
+
+    if (query.isEmpty) {
+      _currentMatch = 0;
+      _totalMatches = 0;
+    } else {
+      final matches = _matchedMessageIndexes();
+      _totalMatches = matches.length;
+      _currentMatch = _totalMatches > 0 ? 0 : 0;
+    }
+
+    notifyListeners();
+  }
+
+
+
   void setEvent(EventData? event) {
     currentEvent = event;
+    hasPermission = event!.hasPermission(FirebaseAuth.instance.currentUser!.email!);
     messages.clear();
     notifyListeners();
   }
@@ -82,5 +128,45 @@ class ChatController extends ChangeNotifier {
     scrollController.dispose();
     inputController.dispose();
     focusNode.dispose();
+    searchTextController.dispose();
+  }
+
+
+
+  void goToNextMatch() {
+    final matches = _matchedMessageIndexes();
+    if (matches.isEmpty) return;
+
+    _currentMatch = (_currentMatch + 1) % matches.length;
+    scrollToMessage(matches[_currentMatch]);
+    notifyListeners();
+  }
+
+  void goToPreviousMatch() {
+    final matches = _matchedMessageIndexes();
+    if (matches.isEmpty) return;
+
+    _currentMatch = (_currentMatch - 1 + matches.length) % matches.length;
+    scrollToMessage(matches[_currentMatch]);
+    notifyListeners();
+  }
+
+
+
+  List<int> _matchedMessageIndexes() {
+    final q = searchQuery.value;
+    return List.generate(messages.length, (i) => i)
+        .where((i) => messages[i]["content"]?.toLowerCase().contains(q) ?? false)
+        .toList();
+  }
+
+  void scrollToMessage(int index) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      scrollController.animateTo(
+        index * 80.0, // adjust if message height varies
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    });
   }
 }

@@ -12,14 +12,13 @@ class ChatTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24, left: 20, right: 20, bottom: 12),
-      child: Consumer<ChatController>(
-        builder: (context, chat, _) {
-          final event = chat.currentEvent;
-          final name = event?.eventName ?? 'No Event Selected';
+    return Consumer<ChatController>(
+      builder: (context, chat, _) {
+        final event = chat.currentEvent;
 
-          return Column(
+        return Padding(
+          padding: const EdgeInsets.only(top: 24, left: 20, right: 20, bottom: 12),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -36,28 +35,38 @@ class ChatTopBar extends StatelessWidget {
                     RoundIconButton(
                       icon: Icons.search,
                       iconSize: 40,
-                      onTap: () {},
+                      onTap: () {
+                        final controller = chat.searchTextController;
+                        controller.text = chat.searchQuery.value;
+                        controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: controller.text.length),
+                        );
+                        chat.toggleSearchBar(true);
+                        chat.updateSearchQuery(controller.text);
+                      },
                     ),
                   ],
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
+              if (event != null)
+                Text(
+                  event.eventName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.1,
+                  ),
                 ),
-              ),
+              const SizedBox(height: 4),
               Divider(color: textDimColor, thickness: 1),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

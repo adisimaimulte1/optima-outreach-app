@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
@@ -60,6 +61,7 @@ class ChatDrawer extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final e = events[index];
                           final selected = e == chat.currentEvent;
+                          final selectedColor = chat.hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
 
                           return InkWell(
                             onTap: () async {
@@ -76,20 +78,18 @@ class ChatDrawer extends StatelessWidget {
                                     child: Text(
                                       e.eventName,
                                       style: TextStyle(
-                                        color: selected ? textHighlightedColor : textColor,
+                                        color: selected ? selectedColor : textColor,
                                         fontSize: 16,
                                         fontWeight: selected ? FontWeight.bold : FontWeight.w600,
                                       ),
                                     ),
                                   ),
                                   GestureDetector(
-                                    behavior: HitTestBehavior.opaque, // Prevents tap from falling through
+                                    behavior: HitTestBehavior.opaque,
                                     onTap: () {
-                                      screenScaleNotifier.value = 0.85;
                                       Future.delayed(const Duration(milliseconds: 100), () {
-                                        screenScaleNotifier.value = 1.0;
                                         selectedScreenNotifier.value = ScreenType.events;
-                                        showCardOnLaunch = MapEntry(true, e);
+                                        showCardOnLaunch = MapEntry(true, MapEntry(e, 'ALL'));
                                       });
                                     },
                                     child: Padding(
@@ -97,7 +97,7 @@ class ChatDrawer extends StatelessWidget {
                                       child: Icon(
                                         Icons.open_in_new,
                                         size: 22,
-                                        color: selected ? textHighlightedColor : textColor,
+                                        color: selected ? selectedColor : textColor,
                                       ),
                                     ),
                                   ),

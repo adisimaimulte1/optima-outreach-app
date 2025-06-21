@@ -20,15 +20,17 @@ class ChatInputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chat = context.watch<ChatController>();
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     if (chat.currentEvent == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 38),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 12 + bottomInset),
       child: Container(
         decoration: BoxDecoration(
           color: inAppForegroundColor,
-          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: textDimColor, width: 1.3),
+          borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(

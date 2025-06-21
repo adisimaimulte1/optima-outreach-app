@@ -70,7 +70,7 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
   void _handleTap() {
     if (_upcomingEvent == null) return;
     selectedScreenNotifier.value = ScreenType.events;
-    showCardOnLaunch = MapEntry(true, _upcomingEvent);
+    showCardOnLaunch = MapEntry(true, MapEntry(_upcomingEvent, 'UPCOMING'));
   }
 
   void _setPressed(bool isPressed) {
