@@ -6,13 +6,14 @@ import 'package:optima/screens/inApp/widgets/events/details/member_avatar.dart';
 import 'package:optima/screens/inApp/widgets/events/details/location_block.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class EventDetails extends StatefulWidget {
-  final EventData eventData;
+  final String eventId;
   final void Function(EventData newEvent)? onStatusChange;
 
-  const EventDetails({super.key, required this.eventData, this.onStatusChange});
+  const EventDetails({super.key, required this.eventId, this.onStatusChange});
 
   @override
   State<EventDetails> createState() => _EventDetailsState();
@@ -29,16 +30,19 @@ class _EventDetailsState extends State<EventDetails> {
   void initState() {
     super.initState();
     popupStackCount.value++;
-    selectedStatus = widget.eventData.status;
-    _loadResolvedMembers();
+
+    final eventData = EventLiveSyncService().getNotifier(widget.eventId)!.value;
+    selectedStatus = eventData.status;
+
+    _loadResolvedMembers(eventData);
   }
 
 
 
 
-  Future<void> _loadResolvedMembers() async {
-    final rawMembers = widget.eventData.eventMembers;
-    final creatorEmail = widget.eventData.createdBy.toLowerCase();
+  Future<void> _loadResolvedMembers(EventData eventData) async {
+    final rawMembers = eventData.eventMembers;
+    final creatorEmail = eventData.createdBy.toLowerCase();
 
     final List<Member> initial = [];
 
@@ -73,7 +77,7 @@ class _EventDetailsState extends State<EventDetails> {
     for (final member in rawMembers) {
       final email = member['email'];
       if (email != null) {
-        await LocalCache().recacheMemberStatus(email, widget.eventData.id!);
+        await LocalCache().recacheMemberStatus(email, widget.eventId);
       }
     }
 
@@ -81,7 +85,7 @@ class _EventDetailsState extends State<EventDetails> {
     if (mounted) {
       setState(() {
         _resolvedMembers = _resolvedMembers.map((member) {
-          final status = getGlobalMemberStatus(member.id, widget.eventData.id!);
+          final status = getGlobalMemberStatus(member.id, widget.eventId);
           final isCreator = member.id.toLowerCase() == creatorEmail;
           final isPending = isCreator ? false : status == 'pending';
 
@@ -118,50 +122,57 @@ class _EventDetailsState extends State<EventDetails> {
 
   @override
   Widget build(BuildContext context) {
-    hasPermission = widget.eventData.hasPermission(FirebaseAuth.instance.currentUser!.email!);
-    color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+    final notifier = EventLiveSyncService().getNotifier(widget.eventId);
 
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 700),
-      height: 650,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF24324A), Color(0xFF2F445E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 6),
+    return ValueListenableBuilder<EventData>(
+      valueListenable: notifier!,
+      builder: (context, liveEvent, _) {
+        hasPermission = liveEvent.hasPermission(FirebaseAuth.instance.currentUser!.email!);
+        color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+        selectedStatus = liveEvent.status;
+
+        return Container(
+          constraints: const BoxConstraints(maxWidth: 700),
+          height: 650,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF24324A), Color(0xFF2F445E)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusSelector(context),
-          const SizedBox(height: 16),
-          _buildTitleBlock(context),
-          LocationBlock(
-              address: widget.eventData.locationAddress!,
-              color: color),
-          CollaboratorsBlock(members: _resolvedMembers, creatorId: widget.eventData.createdBy),
-          _buildGoalsBlock(),
-          _buildVisibilityAudienceBlock(),
-          const Spacer(),
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatusSelector(context, liveEvent),
+              const SizedBox(height: 16),
+              _buildTitleBlock(context, liveEvent),
+              LocationBlock(address: liveEvent.locationAddress!, color: color),
+              CollaboratorsBlock(members: _resolvedMembers, creatorId: liveEvent.createdBy),
+              _buildGoalsBlock(liveEvent),
+              _buildVisibilityAudienceBlock(liveEvent),
+              const Spacer(),
+            ],
+          ),
+        );
+      },
     );
   }
 
 
 
-  Widget _buildStatusSelector(BuildContext context) {
+
+  Widget _buildStatusSelector(BuildContext context, EventData eventData) {
     final statusList = ["UPCOMING", "COMPLETED", "CANCELLED"];
 
     return Row(
@@ -197,11 +208,11 @@ class _EventDetailsState extends State<EventDetails> {
               if (selectedStatus == status) return;
 
               setState(() => selectedStatus = status);
-              widget.eventData.status = status;
+              eventData.status = status;
 
-              CloudStorageService().saveEvent(widget.eventData);
+              CloudStorageService().saveEvent(eventData);
 
-              widget.onStatusChange?.call(widget.eventData);
+              widget.onStatusChange?.call(eventData);
             },
 
             child: AnimatedContainer(
@@ -227,13 +238,13 @@ class _EventDetailsState extends State<EventDetails> {
     );
   }
 
-  Widget _buildTitleBlock(BuildContext context) {
+  Widget _buildTitleBlock(BuildContext context, EventData eventData) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final title = widget.eventData.eventName;
+            final title = eventData.eventName;
             final style = TextStyle(
               color: textColor,
               fontSize: 26,
@@ -277,7 +288,7 @@ class _EventDetailsState extends State<EventDetails> {
             Icon(Icons.calendar_today, color: color, size: 20),
             const SizedBox(width: 6),
             Text(
-              formatDate(widget.eventData.selectedDate!),
+              formatDate(eventData.selectedDate!),
               style: TextStyle(
                 color: textColor,
                 fontSize: 16,
@@ -288,7 +299,7 @@ class _EventDetailsState extends State<EventDetails> {
             Icon(Icons.access_time, color: color, size: 20),
             const SizedBox(width: 6),
             Text(
-              formatTime(widget.eventData.selectedTime!),
+              formatTime(eventData.selectedTime!),
               style: TextStyle(
                 color: textColor,
                 fontSize: 16,
@@ -301,8 +312,8 @@ class _EventDetailsState extends State<EventDetails> {
     );
   }
 
-  Widget _buildGoalsBlock() {
-    final goals = widget.eventData.eventGoals;
+  Widget _buildGoalsBlock(EventData eventData) {
+    final goals = eventData.eventGoals;
     if (goals.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -354,10 +365,10 @@ class _EventDetailsState extends State<EventDetails> {
     );
   }
 
-  Widget _buildVisibilityAudienceBlock() {
-    final isPublic = widget.eventData.isPublic;
-    final isPaid = widget.eventData.isPaid;
-    final tags = widget.eventData.audienceTags;
+  Widget _buildVisibilityAudienceBlock(EventData eventData) {
+    final isPublic = eventData.isPublic;
+    final isPaid = eventData.isPaid;
+    final tags = eventData.audienceTags;
 
     final TextStyle selectedStyle = TextStyle(
       color: color,
@@ -443,7 +454,7 @@ class _EventDetailsState extends State<EventDetails> {
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                "${widget.eventData.eventPrice?.toStringAsFixed(2) ?? '?'} ${widget.eventData.eventCurrency ?? ''}",
+                                "${eventData.eventPrice?.toStringAsFixed(2) ?? '?'} ${eventData.eventCurrency ?? ''}",
                                 style: selectedStyle.copyWith(fontSize: 18),
                               ),
                             ),
@@ -528,9 +539,9 @@ class _EventDetailsState extends State<EventDetails> {
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 160), // set desired max width
                           child: Text(
-                            widget.eventData.organizationType == "Custom"
-                                ? widget.eventData.customOrg
-                                : widget.eventData.organizationType,
+                            eventData.organizationType == "Custom"
+                                ? eventData.customOrg
+                                : eventData.organizationType,
                             softWrap: true,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -565,14 +576,14 @@ class _EventDetailsState extends State<EventDetails> {
                         const SizedBox(width: 6),
                         Switch(
                           value: hasPermission
-                          ? (credits > 0 ? widget.eventData.jamieEnabled : false)
-                          : widget.eventData.jamieEnabled,
+                          ? (credits > 0 ? eventData.jamieEnabled : false)
+                          : eventData.jamieEnabled,
                           onChanged: (value) {
                             setState(() {
                               if (!hasPermission) {return;}
 
-                              widget.eventData.jamieEnabled = value;
-                              CloudStorageService().saveEvent(widget.eventData);
+                              eventData.jamieEnabled = value;
+                              CloudStorageService().saveEvent(eventData);
                             });
                           },
                           activeColor: color,

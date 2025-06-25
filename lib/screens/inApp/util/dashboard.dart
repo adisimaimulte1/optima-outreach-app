@@ -14,6 +14,8 @@ import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_but
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/location/location_processor.dart';
 import 'package:optima/services/notifications/notification_popup.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
@@ -150,7 +152,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
       flex: 6,
       child: SizedBox(
         height: height,
-        child: UpcomingEventCard(),
+        child: Builder(
+          builder: (context) {
+            final nextEvent = events
+                .where((e) =>
+            e.selectedDate != null &&
+                e.selectedDate!.isAfter(DateTime.now()) &&
+                e.status == "UPCOMING")
+                .toList()
+              ..sort((a, b) => a.selectedDate!.compareTo(b.selectedDate!));
+
+            if (nextEvent.isEmpty) return const UpcomingEventCard(); // fallback
+
+            final eventId = nextEvent.first.id!;
+            final notifier = EventLiveSyncService().getNotifier(eventId);
+
+            if (notifier == null) return const UpcomingEventCard();
+
+            return ValueListenableBuilder<EventData>(
+              valueListenable: notifier,
+              builder: (context, liveEvent, _) {
+                return UpcomingEventCard();
+              },
+            );
+          },
+        ),
+
       ),
     );
   }

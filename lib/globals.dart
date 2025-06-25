@@ -81,7 +81,10 @@ String? photoUrl;
 int credits = 0; // teapa ca daca schimbi asta nu primesti credite in plus
 String plan = ""; // teapa ca daca schimbi asta nu ai alt plan ;)
 double subCredits = 0;
+
 List<EventData> events = [];
+final Map<String, ValueNotifier<EventData>> eventNotifiers = {};
+
 
 
 
@@ -129,7 +132,10 @@ final adService = AdService();
 
 bool showAddEventOnLaunch = false;
 MapEntry<bool, MapEntry<EventData?, String?>> showCardOnLaunch = MapEntry(false, MapEntry(null, null));
-final Map<String, bool> animatedMessagesCache = {};
+
+
+
+final int tutorialImagesCount = 5;
 
 
 
@@ -186,6 +192,16 @@ void setIsDarkModeNotifier(bool isDarkSystem) {
 
   textHighlightedColor = isDarkModeNotifier.value ? darkColorPrimary : lightColorPrimary;
   textSecondaryHighlightedColor = isDarkModeNotifier.value ? darkColorSecondary : lightColorSecondary;
+}
+
+void preCacheTutorialImages(BuildContext context) {
+  for (int i = 0; i < tutorialImagesCount; i++) {
+    precacheImage(
+      AssetImage('assets/images/tutorials/tutorial_$i.png'),
+      context,
+      onError: (_, __) {},
+    );
+  }
 }
 
 Widget responsiveText(

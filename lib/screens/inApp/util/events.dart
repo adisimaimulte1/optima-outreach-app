@@ -10,6 +10,7 @@ import 'package:optima/screens/inApp/widgets/events/event_card.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/events/event_details.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 
 
@@ -189,50 +190,30 @@ class _EventsScreenState extends State<EventsScreen> {
       );
     }
 
+    final useListView = screenScaleNotifier.value < 0.99;
+
     return Expanded(
-      child: screenScaleNotifier.value < 0.99
+      child: useListView
           ? ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
         itemCount: filteredEvents.length,
         itemBuilder: (context, index) {
           final event = filteredEvents[index];
-          return EventCard(
-            key: ValueKey(event.id ?? event.eventName),
-            eventData: event,
-            onDelete: (eventToDelete, hasPermission) {
-              setState(() async {
-                if (hasPermission) {
-                  CloudStorageService().deleteEvent(eventToDelete);
-                  events.removeWhere((e) => e.id == eventToDelete.id);
-                } else {
-                  await CloudStorageService().removeMemberFromEvent(
-                    event: eventToDelete,
-                    email: FirebaseAuth.instance.currentUser!.email!,
-                  );
-                  events.removeWhere((e) => e.id == eventToDelete.id);
-                }
-              });
+          final notifier = EventLiveSyncService().getNotifier(event.id ?? '');
+
+          return ValueListenableBuilder<EventData>(
+            valueListenable: notifier!,
+            builder: (context, liveEvent, _) {
+              return EventCard(
+                key: ValueKey(liveEvent.id!),
+                eventId: liveEvent.id!,
+                onDelete: _handleDelete,
+                onEdit: _handleEdit,
+                onReplace: _handleReplace,
+                onStatusChange: (_) => setState(() {}),
+              );
             },
-            onEdit: (eventToEdit) async {
-              final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
-              if (updatedEvent != null) {
-                setState(() {
-                  final index = events.indexOf(eventToEdit);
-                  if (index != -1) events[index] = updatedEvent;
-                });
-              }
-            },
-            onReplace: (oldEvent, newEvent) {
-              setState(() {
-                final oldIndex = events.indexOf(oldEvent);
-                if (oldIndex != -1) {
-                  events.removeAt(oldIndex);
-                  events.insert(oldIndex, newEvent);
-                }
-              });
-            },
-            onStatusChange: (event) => { setState(() {}) },
           );
         },
       )
@@ -243,45 +224,24 @@ class _EventsScreenState extends State<EventsScreen> {
         buildDefaultDragHandles: false,
         proxyDecorator: (child, index, animation) {
           final event = filteredEvents[index];
-          return Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
-            child: EventCard(
-              eventData: event,
-              onDelete: (eventToDelete, hasPermission) {
-                setState(() {
-                  if (hasPermission) {
-                    CloudStorageService().deleteEvent(eventToDelete);
-                    events.removeWhere((e) => e.id == eventToDelete.id);
-                  } else {
-                    CloudStorageService().removeMemberFromEvent(
-                      event: eventToDelete,
-                      email: FirebaseAuth.instance.currentUser!.email!,
-                    );
-                    events.removeWhere((e) => e.id == eventToDelete.id);
-                  }
-                });
-              },
-              onEdit: (eventToEdit) async {
-                final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
-                if (updatedEvent != null) {
-                  setState(() {
-                    final index = events.indexOf(eventToEdit);
-                    if (index != -1) events[index] = updatedEvent;
-                  });
-                }
-              },
-              onReplace: (oldEvent, newEvent) {
-                setState(() {
-                  final oldIndex = events.indexOf(oldEvent);
-                  if (oldIndex != -1) {
-                    events.removeAt(oldIndex);
-                    events.insert(oldIndex, newEvent);
-                  }
-                });
-              },
-              onStatusChange: (event) => { setState(() {}) },
-            ),
+          final notifier = EventLiveSyncService().getNotifier(event.id ?? '');
+
+          return ValueListenableBuilder<EventData>(
+            valueListenable: notifier!,
+            builder: (context, liveEvent, _) {
+              return Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
+                child: EventCard(
+                  key: ValueKey(liveEvent.id!),
+                  eventId: liveEvent.id!,
+                  onDelete: _handleDelete,
+                  onEdit: _handleEdit,
+                  onReplace: _handleReplace,
+                  onStatusChange: (_) => setState(() {}),
+                ),
+              );
+            },
           );
         },
         onReorder: (oldIndex, newIndex) {
@@ -293,51 +253,63 @@ class _EventsScreenState extends State<EventsScreen> {
         },
         itemBuilder: (context, index) {
           final event = filteredEvents[index];
+          final notifier = EventLiveSyncService().getNotifier(event.id ?? '');
+
           return ReorderableDragStartListener(
             key: ValueKey(event.id ?? event.eventName),
             index: index,
-            child: EventCard(
-              eventData: event,
-              onDelete: (eventToDelete, hasPermission) {
-                setState(() {
-                  if (hasPermission) {
-                    CloudStorageService().deleteEvent(eventToDelete);
-                    events.removeWhere((e) => e.id == eventToDelete.id);
-                  } else {
-                    CloudStorageService().removeMemberFromEvent(
-                      event: eventToDelete,
-                      email: FirebaseAuth.instance.currentUser!.email!,
-                    );
-                    events.removeWhere((e) => e.id == eventToDelete.id);
-                  }
-                });
+            child: ValueListenableBuilder<EventData>(
+              valueListenable: notifier!,
+              builder: (context, liveEvent, _) {
+                return EventCard(
+                  key: ValueKey(liveEvent.id!),
+                  eventId: liveEvent.id!,
+                  onDelete: _handleDelete,
+                  onEdit: _handleEdit,
+                  onReplace: _handleReplace,
+                  onStatusChange: (_) => setState(() {}),
+                );
               },
-              onEdit: (eventToEdit) async {
-                final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
-                if (updatedEvent != null) {
-                  setState(() {
-                    final index = events.indexOf(eventToEdit);
-                    if (index != -1) events[index] = updatedEvent;
-                  });
-                }
-              },
-              onReplace: (oldEvent, newEvent) {
-                setState(() {
-                  final oldIndex = events.indexOf(oldEvent);
-                  if (oldIndex != -1) {
-                    events.removeAt(oldIndex);
-                    events.insert(oldIndex, newEvent);
-                  }
-                });
-              },
-              onStatusChange: (event) => { setState(() {}) },
             ),
           );
         },
       ),
     );
-
   }
+
+  void _handleDelete(EventData eventToDelete, bool hasPermission) async {
+    setState(() {
+      if (hasPermission) {
+        CloudStorageService().deleteEvent(eventToDelete);
+      } else {
+        CloudStorageService().removeMemberFromEvent(
+          event: eventToDelete,
+          email: FirebaseAuth.instance.currentUser!.email!,
+        );
+      }
+      events.removeWhere((e) => e.id == eventToDelete.id);
+    });
+  }
+
+  Future<void> _handleEdit(EventData eventToEdit) async {
+    final updatedEvent = await showEventFormOverlay(context, initial: eventToEdit);
+    if (updatedEvent != null) {
+      setState(() {
+        final index = events.indexOf(eventToEdit);
+        if (index != -1) events[index] = updatedEvent;
+      });
+    }
+  }
+
+  void _handleReplace(EventData oldEvent, EventData newEvent) {
+    setState(() {
+      final oldIndex = events.indexOf(oldEvent);
+      if (oldIndex != -1) {
+        events[oldIndex] = newEvent;
+      }
+    });
+  }
+
 
 
 
@@ -441,7 +413,7 @@ class _EventsScreenState extends State<EventsScreen> {
               child: GestureDetector(
                 onTap: () {},
                 child: EventDetails(
-                  eventData: event,
+                  eventId: event.id!,
                   onStatusChange: (_) => setState(() {}),
                 ),
               ),

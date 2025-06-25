@@ -142,6 +142,7 @@ class MenuState extends State<Menu> {
       setState(() {
         _activeBeams.clear();
       });
+
     }
   }
 
@@ -208,6 +209,8 @@ class MenuState extends State<Menu> {
       iconPosition = topIconsPositions[0];
     }
 
+
+    debugPrint("Selected Icon: $_pendingScreenChange");
 
     // start the beam bby
     final newBeamKey = GlobalKey<ParticleBeamEffectState>();
@@ -385,22 +388,16 @@ class MenuState extends State<Menu> {
     // Determine the correct icon position
     switch (screenType) {
       case ScreenType.dashboard:
-        custom_menu.MenuController.instance.selectSource(DashboardScreen);
         iconPosition = Offset(center.dx - 130, usableHeight * 0.23); break;
       case ScreenType.events:
-        custom_menu.MenuController.instance.selectSource(EventsScreen);
         iconPosition = Offset(center.dx, usableHeight * 0.23 - 60); break;
       case ScreenType.users:
-        custom_menu.MenuController.instance.selectSource(UsersScreen);
         iconPosition = Offset(center.dx + 130, usableHeight * 0.23); break;
       case ScreenType.contact:
-        custom_menu.MenuController.instance.selectSource(ContactScreen);
         iconPosition = Offset(center.dx - 130, usableHeight * 0.77 + 40); break;
       case ScreenType.chat:
-        custom_menu.MenuController.instance.selectSource(ChatScreen);
         iconPosition = Offset(center.dx, usableHeight * 0.77 + 100); break;
       case ScreenType.settings:
-        custom_menu.MenuController.instance.selectSource(SettingsScreen);
         iconPosition = Offset(center.dx + 130, usableHeight * 0.77 + 40); break;
       case ScreenType.menu:
         throw UnimplementedError();
@@ -412,7 +409,7 @@ class MenuState extends State<Menu> {
       key: newBeamKey,
       start: iconPosition,
       end: center,
-      spawnRate: const Duration(milliseconds: 90), // slower for realism
+      spawnRate: const Duration(milliseconds: 90),
       maxParticles: 50,
     );
 

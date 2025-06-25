@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
@@ -6,8 +7,8 @@ import 'package:optima/screens/inApp/widgets/aichat/chat_input_bar.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_messages.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_top_bar.dart';
 import 'package:optima/screens/inApp/widgets/aichat/popups/floating_search_bar.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:provider/provider.dart';
-
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -18,7 +19,6 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   late final ChatController chat;
-
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -35,22 +35,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
-
-  @override
-  void didChangeMetrics() {
-    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
-    if (bottomInset > 0) {
-      // Wait for keyboard to fully open and layout to stabilize
-      Future.delayed(const Duration(milliseconds: 50), () {
-        if (mounted) {
-          chat.scrollToBottom();
-        }
-      });
-    }
-  }
-
-
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
@@ -58,18 +42,20 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       child: AbsScreen(
         sourceType: ChatScreen,
         builder: (context, isMinimized, scale) {
-          final disableScroll = scale < 0.99;
-          if (disableScroll) {
+          chat.handleScaleChange(scale);
+
+          if (chat.isScrollDisabled) {
             FocusScope.of(context).unfocus();
             chat.focusNode.unfocus();
           }
+
 
           return ValueListenableBuilder<bool>(
             valueListenable: chat.isSearchBarVisible,
             builder: (context, isSearchVisible, _) {
               return Consumer<ChatController>(
                 builder: (context, chat, _) {
-                  final hasEvent = chat.currentEvent != null;
+                  final currentEvent = chat.currentEvent;
 
                   return Stack(
                     children: [
@@ -78,7 +64,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                         drawer: ChatDrawer(onSelect: chat.setEvent),
                         backgroundColor: Colors.transparent,
                         resizeToAvoidBottomInset: true,
-                        body: SafeArea(child: _buildChatBody(chat, hasEvent)),
+                        body: SafeArea(child: _buildChatBody(chat, currentEvent)),
                       ),
                       if (isSearchVisible) _buildFloatingSearchBar(),
                     ],
@@ -92,16 +78,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-
-
-  Widget _buildChatBody(ChatController chat, bool hasEvent) {
+  Widget _buildChatBody(ChatController chat, EventData? currentEvent) {
     return Column(
       children: [
         ChatTopBar(scaffoldKey: _scaffoldKey),
-        if (!hasEvent)
+        if (currentEvent == null)
           _buildNoEventMessage()
         else ...[
-          _buildMessageList(chat),
+          _buildMessageList(currentEvent),
           _buildChatInput(chat),
         ],
       ],
@@ -110,10 +94,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   Widget _buildNoEventMessage() {
     return Expanded(
-      child: Transform.translate(
-        offset: const Offset(0, -6), // shift up by 15 pixels
-        child: Center(
-          child: Text(
+      child: Center(
+        child: Transform.translate(
+          offset: Offset(0, -6),
+          child: const Text(
             "no events",
             style: TextStyle(
               color: Colors.white24,
@@ -127,10 +111,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildMessageList(ChatController chat) {
-    final visibleMessages = chat.messages;
 
-    if (visibleMessages.isEmpty) {
+
+  Widget _buildMessageList(EventData event) {
+
+    if (event.aiChatMessages.isEmpty) {
       return Expanded(
         child: Center(
           child: Column(
@@ -156,17 +141,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     return Expanded(
       child: ListView.builder(
         controller: chat.scrollController,
+        reverse: true,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        itemCount: visibleMessages.length,
+        itemCount: event.aiChatMessages.length,
         itemBuilder: (context, index) {
-          final msg = visibleMessages[index];
-          return ValueListenableBuilder<String>(
-            valueListenable: chat.searchQuery,
-            builder: (context, query, _) =>
-                ChatMessageBubble(
-                  key: ValueKey(msg['id']),
-                  msg: msg,
-                ),
+          final msg = event.aiChatMessages[event.aiChatMessages.length - 1 - index];
+          return ChatMessageBubble(
+            key: ValueKey(msg.id),
+            msg: msg,
+            event: event,
           );
         },
       ),
@@ -174,6 +157,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildChatInput(ChatController chat) {
+    final event = chat.currentEvent;
+
+    if (!event!.hasPermission(FirebaseAuth.instance.currentUser!.email!)) return const SizedBox.shrink();
+
     return ChatInputBar(
       controller: chat.inputController,
       focusNode: chat.focusNode,

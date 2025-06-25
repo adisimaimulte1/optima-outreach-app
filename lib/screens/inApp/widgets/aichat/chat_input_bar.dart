@@ -3,7 +3,7 @@ import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
 import 'package:provider/provider.dart';
 
-class ChatInputBar extends StatelessWidget {
+class ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onSend;
@@ -18,56 +18,115 @@ class ChatInputBar extends StatelessWidget {
   });
 
   @override
+  State<ChatInputBar> createState() => _ChatInputBarState();
+}
+
+class _ChatInputBarState extends State<ChatInputBar> {
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_handleTextChange);
+  }
+
+  void _handleTextChange() {
+    final hasText = widget.controller.text.trim().isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() => _hasText = hasText);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleTextChange);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final chat = context.watch<ChatController>();
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
     if (chat.currentEvent == null) return const SizedBox.shrink();
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, 12 + bottomInset),
-      child: Container(
-        decoration: BoxDecoration(
-          color: inAppForegroundColor,
-          border: Border.all(color: textDimColor, width: 1.3),
-          borderRadius: BorderRadius.circular(12),
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return ValueListenableBuilder<int>(
+      valueListenable: creditNotifier,
+      builder: (_, credits, __) {
+        final hasCredits = credits > 0;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(12, 0, 12, 12 + bottomInset),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              color: hasCredits ? inAppForegroundColor : inAppForegroundColor.withOpacity(0.5),
+              border: Border.all(
+                color: hasCredits ? textDimColor : Colors.grey,
+                width: 1.2,
+              ),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              children: [
+                _buildPhotoButton(hasCredits),
+                const SizedBox(width: 4),
+                _buildTextField(hasCredits),
+                const SizedBox(width: 4),
+                _buildSendButton(hasCredits),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPhotoButton(bool hasCredits) {
+    return GestureDetector(
+      onTap: hasCredits ? widget.onImage : null,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(Icons.photo, color: hasCredits ? textColor : Colors.grey, size: 22),
+      ),
+    );
+  }
+
+  Widget _buildTextField(bool hasCredits) {
+    return Expanded(
+      child: TextField(
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        enabled: hasCredits,
+        onSubmitted: (_) => hasCredits ? widget.onSend() : null,
+        style: TextStyle(color: textColor),
+        decoration: InputDecoration(
+          hintText: hasCredits
+              ? "Ask Jamie something..."
+              : "You need credits to ask Jamie.",
+          hintStyle: const TextStyle(color: Colors.white60),
+          border: InputBorder.none,
+          isDense: true,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: onImage,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(Icons.photo, color: textColor),
-              ),
-            ),
-            Expanded(
-              child: TextField(
-                controller: controller,
-                focusNode: focusNode,
-                onSubmitted: (_) => onSend(),
-                style: TextStyle(color: textColor),
-                decoration: const InputDecoration(
-                  hintText: "Ask Jamie something...",
-                  hintStyle: TextStyle(color: Colors.white70),
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: onSend,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(Icons.send, color: textColor),
-              ),
-            ),
-          ],
+      ),
+    );
+  }
+
+  Widget _buildSendButton(bool hasCredits) {
+    final isSendActive = hasCredits && _hasText;
+    return GestureDetector(
+      onTap: isSendActive ? widget.onSend : null,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          Icons.send,
+          color: isSendActive ? textColor : Colors.grey,
+          size: 22,
         ),
       ),
     );
   }
 }
-

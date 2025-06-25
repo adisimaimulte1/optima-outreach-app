@@ -83,6 +83,16 @@ Change Log
 ------------------
 - fixed UI device compatibility
 - fixed STT not working on some devices
-- added 2/3 of the AI chat screen and empty screen for unimplemented ones
+- added 2/3 of the AI Chat screen and empty screen for unimplemented ones
 - fixed more UI bugs
 - device font size / bold text options don't break the UI anymore
+
+
+0.1.2 (21/06/2024)
+------------------
+- added UI for the Contact screen
+- fixed initial beam being in wrong position
+- added UI QOL changes to the AI Chat screen + Dashboard + Events screen
+- live event updates without reloading
+- You can write messages to Jamie in the AI Chat screen - basic version
+

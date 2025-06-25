@@ -12,6 +12,7 @@ class TutorialCards extends StatefulWidget {
 class _TutorialCardsState extends State<TutorialCards> {
   late final PageController _pageController;
   double _currentPage = 2.0;
+  bool _isMinimized = false;
 
   final List<Map<String, dynamic>> _cards = [
     {'title': 'Getting Started', 'icon': Icons.play_circle},
@@ -21,20 +22,43 @@ class _TutorialCardsState extends State<TutorialCards> {
     {'title': 'Settings', 'icon': Icons.settings},
   ];
 
-
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(
-      viewportFraction: 0.6,
-      initialPage: 2,
-    );
+
+    _pageController = PageController(viewportFraction: 0.6, initialPage: 2);
 
     _pageController.addListener(() {
       setState(() {
         _currentPage = _pageController.page ?? _currentPage;
       });
     });
+
+    screenScaleNotifier.addListener(_handleScaleChange);
+    _isMinimized = screenScaleNotifier.value < 0.99;
+  }
+
+  void _handleScaleChange() {
+    final minimized = screenScaleNotifier.value < 0.99;
+    if (_isMinimized != minimized && mounted) {
+      setState(() => _isMinimized = minimized);
+
+      if (minimized) {
+        final currentPage = _pageController.page ?? _currentPage;
+        _pageController.animateToPage(
+          currentPage.round(),
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOut,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    screenScaleNotifier.removeListener(_handleScaleChange);
+    super.dispose();
   }
 
   @override
@@ -45,18 +69,21 @@ class _TutorialCardsState extends State<TutorialCards> {
         const SizedBox(height: 30),
         SizedBox(
           height: MediaQuery.of(context).size.height / 3,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: 5,
-            itemBuilder: (context, index) {
-              final card = _cards[index];
-              return TutorialCardItem(
-                index: index,
-                currentPage: _currentPage,
-                title: card['title'],
-                icon: card['icon'],
-              );
-            },
+          child: IgnorePointer(
+            ignoring: _isMinimized,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _cards.length,
+              itemBuilder: (context, index) {
+                final card = _cards[index];
+                return TutorialCardItem(
+                  index: index,
+                  currentPage: _currentPage,
+                  title: card['title'],
+                  icon: card['icon'],
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -76,7 +103,11 @@ class _TutorialCardsState extends State<TutorialCards> {
           ),
         ),
         const SizedBox(height: 4),
-        Container(height: 2, width: text.length.toDouble() * 16, color: Colors.white24),
+        Container(
+          height: 2,
+          width: text.length.toDouble() * 16,
+          color: Colors.white24,
+        ),
       ],
     );
   }

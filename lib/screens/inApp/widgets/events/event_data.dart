@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:optima/screens/inApp/widgets/aichat/chat_message.dart';
 
 class EventData {
   String eventName;
@@ -23,6 +24,9 @@ class EventData {
   String status;
   String? id;
   String createdBy;
+
+  List<AiChatMessage> aiChatMessages = [];
+
 
   EventData({
     required this.eventName,
@@ -74,7 +78,8 @@ class EventData {
   factory EventData.fromMap(
       Map<String, dynamic> map, {
         required List<QueryDocumentSnapshot<Map<String, dynamic>>> memberDocs,
-      }){
+        required List<QueryDocumentSnapshot<Map<String, dynamic>>> aiChatDocs,
+      }) {
     final timeParts = (map['selectedTime'] as String?)?.split(':') ?? ['0', '0'];
 
     final List<Map<String, dynamic>> members = memberDocs.map((doc) {
@@ -86,7 +91,15 @@ class EventData {
       };
     }).toList();
 
-    return EventData(
+    final List<AiChatMessage> aiMessages = aiChatDocs
+        .map((doc) => AiChatMessage.fromFirestore(doc.data(), doc.id))
+        .toList()
+        .reversed
+        .toList();
+
+
+
+    final event = EventData(
       eventName: map['eventName'],
       organizationType: map['organizationType'],
       customOrg: map['customOrg'],
@@ -116,7 +129,11 @@ class EventData {
       status: map['status'] ?? "UPCOMING",
       createdBy: map['createdBy'] ?? "",
     );
+
+    event.aiChatMessages = aiMessages;
+    return event;
   }
+
 
   bool hasPermission(String email) {
     return email == createdBy;

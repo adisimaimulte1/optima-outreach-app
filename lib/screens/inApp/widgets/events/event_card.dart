@@ -4,9 +4,10 @@ import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/events/event_details.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 
 class EventCard extends StatefulWidget {
-  final EventData eventData;
+  final String eventId;
   final void Function(EventData oldEvent, EventData newEvent)? onReplace;
   final void Function(EventData event)? onStatusChange;
   final void Function(EventData event)? onEdit;
@@ -15,7 +16,7 @@ class EventCard extends StatefulWidget {
 
   const EventCard({
     super.key,
-    required this.eventData,
+    required this.eventId,
     this.onReplace,
     this.onEdit,
     this.onDelete,
@@ -62,20 +63,20 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
   }
 
 
-  Future<void> _handleDragEnd(BoxConstraints constraints) async {
+  Future<void> _handleDragEnd(BoxConstraints constraints, EventData eventData) async {
     final width = constraints.maxWidth;
     final progress = _dragOffset.abs() / width;
 
     if (progress > _threshold) {
       if (_dragOffset > 0) {
-        final isUpcoming = widget.eventData.status == "UPCOMING";
+        final isUpcoming = eventData.status == "UPCOMING";
         if (isUpcoming && hasPermission) {
-          widget.onEdit?.call(widget.eventData);
+          widget.onEdit?.call(eventData);
         }
       } else {
         final shouldDelete = await _showEventDeleteDialog(context);
         if (shouldDelete) {
-            widget.onDelete?.call(widget.eventData, hasPermission);
+            widget.onDelete?.call(eventData, hasPermission);
         }
       }
     }
@@ -97,32 +98,40 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    hasPermission = widget.eventData.hasPermission(FirebaseAuth.instance.currentUser!.email!);
-    color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+    final notifier = EventLiveSyncService().getNotifier(widget.eventId)!;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: LayoutBuilder(
-        builder: (context, constraints) => GestureDetector(
-          onTap: () {
-            if (_dragOffset.abs() < 5) {
-              _showEventDetailsPopup(context);
-            }
-          },
-          onHorizontalDragUpdate: (d) => _handleDragUpdate(d, constraints),
-          onHorizontalDragEnd: (_) => _handleDragEnd(constraints),
-          child: Stack(
-            children: [
-              if (_dragOffset != 0) _buildBackground(constraints),
-              _buildForeground(),
-            ],
+    return ValueListenableBuilder<EventData>(
+      valueListenable: notifier,
+      builder: (context, liveEvent, _) {
+        hasPermission = liveEvent.hasPermission(FirebaseAuth.instance.currentUser!.email!);
+        color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: LayoutBuilder(
+            builder: (context, constraints) => GestureDetector(
+              onTap: () {
+                if (_dragOffset.abs() < 5) {
+                  _showEventDetailsPopup(context, liveEvent);
+                }
+              },
+              onHorizontalDragUpdate: (d) => _handleDragUpdate(d, constraints),
+              onHorizontalDragEnd: (_) => _handleDragEnd(constraints, liveEvent),
+              child: Stack(
+                children: [
+                  if (_dragOffset != 0) _buildBackground(constraints, liveEvent),
+                  _buildForeground(liveEvent),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildBackground(BoxConstraints constraints) {
+
+  Widget _buildBackground(BoxConstraints constraints, EventData eventData) {
     return Positioned.fill(
       child: Row(
         children: [
@@ -130,7 +139,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
             SizedBox(
               width: constraints.maxWidth,
               child: _buildSwipeAction(
-                widget.eventData.status == "UPCOMING" && hasPermission ? Icons.edit : Icons.edit_off,
+                eventData.status == "UPCOMING" && hasPermission ? Icons.edit : Icons.edit_off,
                 color,
                 Alignment.centerLeft,
                 iconColor: inAppBackgroundColor,
@@ -157,8 +166,8 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildForeground() {
-    final event = widget.eventData;
+  Widget _buildForeground(EventData eventData) {
+    final event = eventData;
 
     return Transform.translate(
       offset: Offset(_dragOffset, 0),
@@ -375,7 +384,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
         false;
   }
 
-  void _showEventDetailsPopup(BuildContext context) {
+  void _showEventDetailsPopup(BuildContext context, EventData eventData) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -391,9 +400,9 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
               child: GestureDetector(
                 onTap: () {}, // Absorb inside
                 child: EventDetails(
-                  eventData: widget.eventData,
+                  eventId: widget.eventId,
                   onStatusChange: (_) {
-                    widget.onStatusChange?.call(widget.eventData);
+                    widget.onStatusChange?.call(eventData);
                     if (mounted) setState(() {});
                   },
                 ),

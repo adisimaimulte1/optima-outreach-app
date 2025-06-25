@@ -152,7 +152,7 @@ class LocalStorageService {
   Future<void> setSessionData(Map<String, dynamic> data) async {
     final cleanedData = data.map((key, value) {
       if (value is Timestamp) {
-        return MapEntry(key, value.toDate()); // ✅ Convert to DateTime
+        return MapEntry(key, value.toDate()); // convert to DateTime
       }
       return MapEntry(key, value);
     });

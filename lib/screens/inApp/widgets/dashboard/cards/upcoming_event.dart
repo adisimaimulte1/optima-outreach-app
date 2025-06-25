@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/details/status_label.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 
 class UpcomingEventCard extends StatefulWidget {
   const UpcomingEventCard({super.key});
@@ -13,19 +14,30 @@ class UpcomingEventCard extends StatefulWidget {
 }
 
 class UpcomingEventCardState extends State<UpcomingEventCard> {
-  String _title = "no upcoming events";
-  String _date = "--.--";
-  String _time = "--:--";
-  bool hasPermission = false;
-  EventData? _upcomingEvent;
-
   double _scale = 1.0;
+
+  EventData? get _nextEvent {
+    final now = DateTime.now();
+    final upcoming = events
+        .where((e) =>
+    e.selectedDate != null &&
+        e.selectedDate!.isAfter(now) &&
+        e.status == "UPCOMING")
+        .toList()
+      ..sort((a, b) => a.selectedDate!.compareTo(b.selectedDate!));
+    return upcoming.isNotEmpty ? upcoming.first : null;
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadNextEvent();
     screenScaleNotifier.addListener(_handleScaleChange);
+  }
+
+  void _handleScaleChange() {
+    if (screenScaleNotifier.value < 1.00 && _scale != 1.0) {
+      setState(() => _scale = 1.0);
+    }
   }
 
   @override
@@ -34,144 +46,173 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
     super.dispose();
   }
 
-  void _handleScaleChange() {
-    if (screenScaleNotifier.value < 1.00 && _scale != 1.0) {
-      setState(() {
-        _scale = 1.0;
-      });
-    }
-  }
-
-  void _loadNextEvent() {
-    final now = DateTime.now();
-
-    final nextEvent = events
-        .where((e) => e.selectedDate != null && e.selectedDate!.isAfter(now))
-        .toList()
-      ..sort((a, b) => a.selectedDate!.compareTo(b.selectedDate!));
-
-    if (nextEvent.isNotEmpty) {
-      final EventData event = nextEvent.first;
-      final date = event.selectedDate!;
-      final time = event.selectedTime ?? const TimeOfDay(hour: 0, minute: 0);
-      hasPermission = event.hasPermission(FirebaseAuth.instance.currentUser!.email!);
-
-      final combined = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-
-      setState(() {
-        _title = event.eventName;
-        _date = DateFormat('d MMM').format(combined);
-        _time = formatTime(time);
-        _upcomingEvent = event;
-      });
-    }
-  }
-
-  void _handleTap() {
-    if (_upcomingEvent == null) return;
+  void _handleTap(EventData event) {
     selectedScreenNotifier.value = ScreenType.events;
-    showCardOnLaunch = MapEntry(true, MapEntry(_upcomingEvent, 'UPCOMING'));
+    showCardOnLaunch = MapEntry(true, MapEntry(event, 'UPCOMING'));
   }
 
   void _setPressed(bool isPressed) {
-    setState(() {
-      _scale = isPressed ? 0.85 : 1.0;
-    });
+    setState(() => _scale = isPressed ? 0.85 : 1.0);
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+    final nextEvent = _nextEvent;
+    if (nextEvent == null) return _buildNoEventCard();
 
-    return Listener(
-      onPointerDown: (_) => _setPressed(true),
-      onPointerUp: (_) {
-        _setPressed(false);
-        if (screenScaleNotifier.value >= 0.99) {
-          _handleTap();
-        }
-      },
-      onPointerCancel: (_) => _setPressed(false),
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 1.0, end: _scale),
-        duration: const Duration(milliseconds: 100),
-        builder: (context, scale, child) {
-          return Transform.scale(
-            scale: scale,
-            child: Container(
-              decoration: BoxDecoration(
-                color: inAppForegroundColor,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: borderColor),
+    final notifier = EventLiveSyncService().getNotifier(nextEvent.id!);
+
+    return ValueListenableBuilder<EventData>(
+      valueListenable: notifier!,
+      builder: (context, event, _) {
+        final color = event.hasPermission(FirebaseAuth.instance.currentUser!.email!)
+            ? textSecondaryHighlightedColor
+            : textHighlightedColor;
+
+        final date = event.selectedDate!;
+        final time = event.selectedTime ?? const TimeOfDay(hour: 0, minute: 0);
+        final formattedDate = DateFormat('d MMM').format(
+          DateTime(date.year, date.month, date.day, time.hour, time.minute),
+        );
+        final formattedTime = formatTime(time);
+
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 1.0, end: _scale),
+          duration: const Duration(milliseconds: 100),
+          builder: (context, scale, _) {
+            return Transform.scale(
+              scale: scale,
+              child: Listener(
+                onPointerDown: (_) => _setPressed(true),
+                onPointerUp: (_) {
+                  _setPressed(false);
+                  if (screenScaleNotifier.value >= 0.99) {
+                    _handleTap(event);
+                  }
+                },
+                onPointerCancel: (_) => _setPressed(false),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: inAppForegroundColor,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: borderColor),
+                  ),
+                  padding: const EdgeInsets.all(22),
+                  child: _buildCardContent(
+                    color,
+                    event.eventName,
+                    formattedDate,
+                    formattedTime,
+                  ),
+                ),
               ),
-              padding: const EdgeInsets.all(22),
-              child: _buildCardContent(color),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCardContent(Color color, String title, String date, String time) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        StatusLabel(label: "UPCOMING EVENT", isUpcoming: true, color: color),
+        const SizedBox(height: 10),
+        _buildDateTimeRow(color, date, time),
+        const SizedBox(height: 10),
+        _buildScaledTitle(title),
+      ],
+    );
+  }
+
+  Widget _buildScaledTitle(String title) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          alignment: Alignment.center,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
+              softWrap: false,
+              style: TextStyle(
+                color: textColor,
+                fontSize: title == "no upcoming events" ? 16 : 22,
+                fontWeight: FontWeight.w800,
+                height: 1.3,
+              ),
             ),
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNoEventCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: inAppForegroundColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: borderColor),
+      ),
+      padding: const EdgeInsets.all(22),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            StatusLabel(label: "NO UPCOMING EVENTS", isUpcoming: true, color: textHighlightedColor),
+            const SizedBox(height: 10),
+            _buildDateTimeRow(textHighlightedColor, "--.--", "--:--"),
+            const SizedBox(height: 10),
+            _buildTitle("no upcoming events"),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCardContent(Color color) {
+  Widget _buildDateTimeRow(Color color, String date, String time) {
     return FittedBox(
       fit: BoxFit.scaleDown,
-      child: Column(
+      alignment: Alignment.centerLeft,
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          StatusLabel(
-            label: "UPCOMING EVENT",
-            isUpcoming: true,
-            color: color,
+          Icon(Icons.calendar_today, color: color, size: 20),
+          const SizedBox(width: 4),
+          Text(
+            date,
+            style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 10),
-          _buildDateTimeRow(color),
-          const SizedBox(height: 10),
-          _buildTitle(),
+          const SizedBox(width: 12),
+          Icon(Icons.access_time, color: color, size: 18),
+          const SizedBox(width: 4),
+          Text(
+            time,
+            style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDateTimeRow(Color color) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(Icons.calendar_today, color: color, size: 20),
-        const SizedBox(width: 4),
-        Text(
-          _date,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
+  Widget _buildTitle(String title) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: textColor,
+          fontSize: title == "no upcoming events" ? 16 : 22,
+          fontWeight: FontWeight.w800,
+          height: 1.3,
         ),
-        const SizedBox(width: 12),
-        Icon(Icons.access_time, color: color, size: 18),
-        const SizedBox(width: 4),
-        Text(
-          _time,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTitle() {
-    return Text(
-      _title,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        color: textColor,
-        fontSize: _title == "no upcoming events" ? 16 : 22,
-        fontWeight: FontWeight.w800,
-        height: 1.3,
       ),
     );
   }

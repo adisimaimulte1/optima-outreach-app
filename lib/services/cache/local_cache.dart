@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/credits/credit_service.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -141,8 +142,6 @@ class LocalCache {
     await prefs.remove('jamieEnabled');
     await prefs.remove('wakeWordEnabled');
     await prefs.remove('jamieReminders');
-
-    clearCachedEvents();
   }
 
   Future<bool> isCacheComplete() async {
@@ -194,8 +193,15 @@ class LocalCache {
 
     events[index].eventMembers = updatedMembers;
 
-    // Update the cache too
-    await cacheSingleEvent(events[index]);
+    // update the cache too
+    final membersSnap = await FirebaseFirestore.instance
+        .collection('events')
+        .doc(event.id)
+        .collection('members')
+        .get();
+
+    final memberList = membersSnap.docs.map((doc) => doc.data()).toList();
+    event.eventMembers = memberList; // attach members for cache
   }
 
   Future<void> recacheMemberStatus(String email, String eventID, {String fallbackStatus = 'pending'}) async {
@@ -242,13 +248,6 @@ class LocalCache {
 
 
 
-  Future<void> cacheUserEventsFromApp(List<EventData> events) async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> jsonList =
-    events.map((e) => jsonEncode(e.toMap())).toList();
-    await prefs.setStringList('cached_user_events', jsonList);
-  }
-
   Future<void> cacheUserEventsFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -265,11 +264,26 @@ class LocalCache {
 
     for (final doc in snapshot.docs) {
       final membersSnap = await doc.reference.collection('members').get();
-      final memberList = membersSnap.docs.map((doc) => doc.data()).toList(); // ✅ Extract member maps
+      final aiChatSnap = await doc.reference                // initial 20 messages loaded
+          .collection("aichat")
+          .orderBy("timestamp", descending: true)
+          .limit(20)
+          .get();
 
-      final event = EventData.fromMap(doc.data(), memberDocs: membersSnap.docs)..id = doc.id;
 
-      event.eventMembers = memberList; // Manually attach members for caching
+      final memberList = membersSnap.docs.map((doc) => doc.data()).toList(); // extract member maps
+
+
+      // caching the event itself
+      final event = EventData.fromMap(
+          doc.data(),
+          memberDocs: membersSnap.docs,
+          aiChatDocs: aiChatSnap.docs,
+      )..id = doc.id;
+
+
+
+      // caching member photos
 
       final isManager = event.eventManagers.contains(userEmail);
       final memberEntry = memberList.firstWhere(
@@ -290,74 +304,8 @@ class LocalCache {
       relevantEvents.add(event);
     }
 
-    await cacheUserEventsFromApp(relevantEvents);
     events = relevantEvents;
-  }
-
-  Future<void> cacheSingleEvent(EventData event) async {
-    final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getStringList('cached_user_events') ?? [];
-
-    // fetch members for this event
-    final membersSnap = await FirebaseFirestore.instance
-        .collection('events')
-        .doc(event.id)
-        .collection('members')
-        .get();
-
-    final memberList = membersSnap.docs.map((doc) => doc.data()).toList();
-    event.eventMembers = memberList; // attach members for cache
-
-    final updated = existing.map((e) {
-      final decoded = jsonDecode(e);
-      return decoded['id'] == event.id
-          ? jsonEncode(event.toMap())
-          : e;
-    }).toList();
-
-    final contains = updated.any((e) {
-      final decoded = jsonDecode(e);
-      return decoded['id'] == event.id;
-    });
-
-    if (!contains) {
-      updated.insert(0, jsonEncode(event.toMap()));
-    }
-
-    await prefs.setStringList('cached_user_events', updated);
-  }
-
-
-
-  Future<List<EventData>> getCachedUserEvents() async {
-    final prefs = await SharedPreferences.getInstance();
-
-
-    final List<String>? jsonList = prefs.getStringList('cached_user_events');
-    if (jsonList == null) return [];
-
-
-    return jsonList.map((jsonStr) {
-      final Map<String, dynamic> map = jsonDecode(jsonStr);
-      return EventData.fromMap(map, memberDocs: []);
-    }).toList();
-  }
-
-  Future<void> deleteCachedEvent(String eventId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getStringList('cached_user_events') ?? [];
-
-    final updated = existing.where((e) {
-      final decoded = jsonDecode(e);
-      return decoded['id'] != eventId;
-    }).toList();
-
-    await prefs.setStringList('cached_user_events', updated);
-  }
-
-  Future<void> clearCachedEvents() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('cached_user_events');
+    EventLiveSyncService().startAll();
   }
 
 
@@ -368,6 +316,7 @@ class LocalCache {
     aiVoice.stopLoop();
 
     LocalStorageService().setIsGoogleUser(false);
+    EventLiveSyncService().stopAll();
     await FirebaseAuth.instance.signOut();
   }
 

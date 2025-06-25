@@ -5,6 +5,7 @@ import 'package:optima/globals.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
 
@@ -260,18 +261,19 @@ class AccountDeleteDialogs {
         throw FirebaseAuthException(message: "Password is required.", code: 'password-missing');
       }
 
-      // 🔁 Cleanup
+      // Cleanup
       creditNotifier.cancel();
       subCreditNotifier.cancel();
       selectedPlan.cancel();
 
       LocalNotificationService().stopListening();
+      EventLiveSyncService().stopAll();
       await LocalCache().deleteAll();
       await CloudStorageService().deleteAll();
 
       await user.delete();
 
-      // ✅ Remove loading and navigate
+      // Remove loading and navigate
       Navigator.of(context, rootNavigator: true).pop(); // close loading
       await Future.delayed(const Duration(milliseconds: 100));
 

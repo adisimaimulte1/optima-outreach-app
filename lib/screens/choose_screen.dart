@@ -13,6 +13,7 @@ import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/users.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
+import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
 import 'package:optima/screens/inApp/widgets/menu/menu_overlay.dart';
 import 'package:optima/services/sessions/session_service.dart';
 
@@ -34,7 +35,13 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
   @override
   void initState() {
     super.initState();
+
     popupStackCount.value = 0;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      preCacheTutorialImages(context);
+    });
+
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
@@ -98,16 +105,22 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
             builder: (context, selectedScreen, _) {
               switch (selectedScreen) {
                 case ScreenType.dashboard:
+                  custom_menu.MenuController.instance.selectSource(DashboardScreen);
                   return const DashboardScreen();
                 case ScreenType.settings:
+                  custom_menu.MenuController.instance.selectSource(SettingsScreen);
                   return const SettingsScreen();
                 case ScreenType.chat:
+                  custom_menu.MenuController.instance.selectSource(ChatScreen);
                   return const ChatScreen();
                 case ScreenType.events:
+                  custom_menu.MenuController.instance.selectSource(EventsScreen);
                   return const EventsScreen();
                 case ScreenType.users:
+                  custom_menu.MenuController.instance.selectSource(UsersScreen);
                   return const UsersScreen();
                 case ScreenType.contact:
+                  custom_menu.MenuController.instance.selectSource(ContactScreen);
                   return const ContactScreen();
                 case ScreenType.menu:
                   return const DashboardScreen();

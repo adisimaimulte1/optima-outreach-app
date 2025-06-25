@@ -124,8 +124,6 @@ class CloudStorageService {
         }, SetOptions(merge: true));
       }
     }
-
-    await LocalCache().cacheSingleEvent(event);
   }
 
   Future<void> deleteEvent(EventData event) async {
@@ -136,7 +134,6 @@ class CloudStorageService {
         .doc(event.id);
 
     await docRef.delete();
-    await LocalCache().deleteCachedEvent(event.id!);
   }
 
   Future<void> removeMemberFromEvent({
@@ -163,7 +160,6 @@ class CloudStorageService {
         .where((m) => (m['email'] as String?)?.toLowerCase() != email.toLowerCase())
         .toList();
 
-    await LocalCache().cacheSingleEvent(event);
   }
 
 
