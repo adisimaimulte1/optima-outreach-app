@@ -6,7 +6,7 @@ import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_drawer.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_input_bar.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_messages.dart';
+import 'package:optima/screens/inApp/widgets/aichat/chat_message_bubble.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_top_bar.dart';
 import 'package:optima/screens/inApp/widgets/aichat/popups/floating_search_bar.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
@@ -51,6 +51,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             FocusScope.of(context).unfocus();
             chat.focusNode.unfocus();
           }
+
+          if (scale < 0.99 && chat.isSearchBarVisible.value) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              chat.toggleSearchBar(false);
+            });
+          }
+
 
 
           return ValueListenableBuilder<bool>(
@@ -148,51 +155,45 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
 
   Widget _buildMessageList(EventData event) {
-
-    if (event.aiChatMessages.isEmpty) {
-      return Expanded(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.chat_bubble_outline, size: 64, color: Colors.white24),
-              const SizedBox(height: 8),
-              Text(
-                "no messages yet",
-                style: TextStyle(
-                  color: Colors.white24,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onTap: () {
-          if (chat.shouldIgnoreNextTap) {
-            chat.shouldIgnoreNextTap = false; // reset it
-            return;
-          }
-          chat.closeMenu();
-        },
-        child: ListView.builder(
-          controller: chat.scrollController,
-          reverse: true,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          itemCount: event.aiChatMessages.length,
-          itemBuilder: (context, index) {
-            final msg = event.aiChatMessages[event.aiChatMessages.length - 1 - index];
-            return ChatMessageBubble(
-              key: ValueKey(msg.id),
-              msg: msg,
-              event: event,
+        onTapDown: (details) => chat.handleOutsideTap(details, context),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: chat.showPinnedOnly,
+          builder: (context, showPinnedOnly, _) {
+            final allMessages = event.aiChatMessages;
+            final filteredMessages = showPinnedOnly
+                ? allMessages.where((m) => m.isPinned).toList()
+                : allMessages;
+
+            if (filteredMessages.isEmpty) {
+              return Center(
+                child: Text(
+                  showPinnedOnly ? "no pinned messages" : "no messages",
+                  style: TextStyle(
+                    color: Colors.white24,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              controller: chat.scrollController,
+              reverse: true,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              itemCount: filteredMessages.length,
+              itemBuilder: (context, index) {
+                final msg = filteredMessages[filteredMessages.length - 1 - index];
+                return ChatMessageBubble(
+                  key: ValueKey(msg.id),
+                  msg: msg,
+                  event: event,
+                );
+              },
             );
           },
         ),

@@ -4,11 +4,15 @@ import 'package:optima/globals.dart';
 class MiniMenuButton extends StatefulWidget {
   final VoidCallback onPressed;
   final IconData icon;
+  final bool isActive;
+  final bool enableActiveStyle;
 
   const MiniMenuButton({
     super.key,
     required this.onPressed,
     required this.icon,
+    this.isActive = false,
+    this.enableActiveStyle = false,
   });
 
   @override
@@ -24,9 +28,13 @@ class _MiniMenuButtonState extends State<MiniMenuButton> {
     screenScaleNotifier.addListener(_handleScaleChange);
   }
 
-  void _handleScaleChange() {
-    if (screenScaleNotifier.value < 0.99 && _scale != 1.0) {
-      setState(() => _scale = 1.0);
+  @override
+  void didUpdateWidget(covariant MiniMenuButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive != widget.isActive ||
+        oldWidget.enableActiveStyle != widget.enableActiveStyle ||
+        oldWidget.icon != widget.icon) {
+      setState(() {});
     }
   }
 
@@ -36,14 +44,26 @@ class _MiniMenuButtonState extends State<MiniMenuButton> {
     super.dispose();
   }
 
+
+
+  void _handleScaleChange() {
+    if (screenScaleNotifier.value < 0.99 && _scale != 1.0) {
+      setState(() => _scale = 1.0);
+    }
+  }
+
   void _setPressed(bool isPressed) {
     setState(() {
       _scale = isPressed ? 0.7 : 1.0;
     });
   }
 
+
+
   @override
   Widget build(BuildContext context) {
+    final bool active = widget.isActive && widget.enableActiveStyle;
+
     return Listener(
       onPointerDown: (_) => _setPressed(true),
       onPointerUp: (_) {
@@ -63,7 +83,7 @@ class _MiniMenuButtonState extends State<MiniMenuButton> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: inAppForegroundColor,
+                color: active ? textHighlightedColor : inAppForegroundColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: textDimColor,
@@ -73,7 +93,9 @@ class _MiniMenuButtonState extends State<MiniMenuButton> {
               child: Icon(
                 widget.icon,
                 size: 32,
-                color: textColor,
+                color: active
+                    ? inAppBackgroundColor
+                    : textColor.withOpacity(0.7),
               ),
             ),
           );

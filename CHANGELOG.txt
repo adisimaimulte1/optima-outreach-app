@@ -102,4 +102,14 @@ Change Log
 - switched event ownership colors for consistency
 - fixed icons and occasional UI clipping bugs
 - removed the images for the tutorial cards. Added custom cards
-- fixed some more aichat bugs (still doesn't work, let me sleep)
+- fixed some more AI Chat bugs (still doesn't work, let me sleep)
+
+
+0.1.35 (27/06/2024)
+------------------
+- fixed all this stuff:
+    * made delete + pin buttons work
+    * made the pin button actually pin the message
+    * added a date and proper time formatting for the messages + pin indicator + made text bigger
+    * make delete + pin buttons & search bar disappear on: outside tap, screen scale change, menu enter
+

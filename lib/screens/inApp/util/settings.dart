@@ -573,7 +573,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Tiles.tile(
             context: context,
             icon: Icons.info_outline,
-            title: "App Version 1.0.0",
+            title: "App Version 2.0.0",
             showArrow: false,
             leadingFraction: (_versionTapCount == 1)
                 ? 1 / 3

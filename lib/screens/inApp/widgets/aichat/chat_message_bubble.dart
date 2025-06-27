@@ -8,6 +8,8 @@ import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:provider/provider.dart';
 import 'chat_controller.dart';
 import 'chat_message.dart';
+import 'package:intl/intl.dart';
+
 
 import 'package:flutter_markdown/flutter_markdown.dart' show MarkdownBody, MarkdownStyleSheet;
 
@@ -28,42 +30,33 @@ class ChatMessageBubble extends StatefulWidget {
 
 class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProviderStateMixin {
   late ChatController chat;
-
   bool _startTyping = false;
   bool _showActions = false;
   bool _wasMinimized = false;
-  Timer? _hideTimer;
-
 
   late final AnimationController _bubbleController;
   late final Animation<double> _scaleAnim;
   late final AnimationController _buttonsController;
 
-
-  final GlobalKey _buttonsKey = GlobalKey();
-
+  late final buttonsKey;
+  late final bubbleKey;
 
   @override
   void initState() {
     super.initState();
     chat = context.read<ChatController>();
+    buttonsKey = chat.getButtonsKey(widget.msg.id);
+    bubbleKey = chat.getBubbleKey(widget.msg.id);
 
     chat.openMessageId.addListener(_syncActionVisibility);
     screenScaleNotifier.addListener(_handleScaleChange);
 
-    _bubbleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-
+    _bubbleController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     _scaleAnim = Tween<double>(begin: 1.0, end: 0.90).animate(
       CurvedAnimation(parent: _bubbleController, curve: Curves.easeOut),
     );
 
-    _buttonsController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
+    _buttonsController = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
 
     if (widget.msg.content != "...thinking" && !widget.msg.hasAnimated) {
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -74,81 +67,57 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
     }
   }
 
-
   @override
   void dispose() {
     chat.openMessageId.removeListener(_syncActionVisibility);
     screenScaleNotifier.removeListener(_handleScaleChange);
-
     _bubbleController.dispose();
     _buttonsController.dispose();
-    _hideTimer?.cancel();
     super.dispose();
   }
 
-
-
-
   void _onLongPress() {
-    _hideTimer?.cancel();
-
-    chat.openMenu(widget.msg.id);
-
-    _bubbleController.forward(from: 0).whenComplete(() {
-      if (mounted) {
-        setState(() => _showActions = true);
-        _buttonsController.forward(from: 0);
-
-        // Scale back up AFTER icons show
-        _bubbleController.reverse();
-      }
-    });
-
+    if (!chat.hasPermission) return;
+    chat.openMessageOptions(widget.msg.id);
   }
 
   void _hideIcons() {
-    _hideTimer?.cancel();
-    chat.closeMenu();
+    _buttonsController.reverse();
+    _bubbleController.reverse();
 
-    _buttonsController.reverse().whenComplete(() {
-      if (mounted) {
-        setState(() => _showActions = false);
-        _bubbleController.reverse();
-      }
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) setState(() => _showActions = false);
     });
   }
 
-  void _syncActionVisibility() {
-    final openId = chat.openMessageId.value;
-    final isOpen = openId == widget.msg.id;
 
-    if (!isOpen && _showActions) {
+  void _syncActionVisibility() {
+    final isOpen = chat.openMessageId.value == widget.msg.id;
+
+    if (isOpen && !_showActions) {
+      setState(() => _showActions = true);
+      _buttonsController.forward(from: 0);
+      _bubbleController.forward(from: 0).then((_) {
+        if (mounted) _bubbleController.reverse();
+      });
+    } else if (!isOpen && _showActions) {
       _hideIcons();
     }
   }
 
   void _handleScaleChange() {
     final isMinimized = screenScaleNotifier.value < 0.99;
-
     if (isMinimized && !_wasMinimized) {
       _wasMinimized = true;
+
       if (_showActions) _hideIcons();
+      if (chat.openMessageId.value!.isNotEmpty) {
+        chat.closeMessageOptions();
+      }
     } else if (!isMinimized && _wasMinimized) {
       _wasMinimized = false;
     }
   }
-
-
-
-
-  Widget _actionIcon(IconData icon, VoidCallback onTap) {
-    return MiniMenuButton(
-      icon: icon,
-      onPressed: onTap,
-    );
-  }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -159,116 +128,91 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Dismiss layer
-          if (_showActions)
-            Positioned.fill(
-              child: Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerDown: (event) {
-                  final bubbleBox = context.findRenderObject() as RenderBox?;
-                  final buttonsBox = _buttonsKey.currentContext?.findRenderObject() as RenderBox?;
-
-                  final tap = event.position;
-
-                  isInsideBox(RenderBox? box) {
-                    if (box == null) return false;
-                    final offset = box.localToGlobal(Offset.zero);
-                    final size = box.size;
-                    return tap.dx >= offset.dx &&
-                        tap.dx <= offset.dx + size.width &&
-                        tap.dy >= offset.dy &&
-                        tap.dy <= offset.dy + size.height;
-                  }
-
-                  final tappedInsideBubble = isInsideBox(bubbleBox);
-                  final tappedInsideButtons = isInsideBox(buttonsBox);
-
-                  if (!tappedInsideBubble && !tappedInsideButtons) {
-                    _hideIcons();
-                  }
-                },
-
-                child: const SizedBox(),
-              ),
-            ),
-
-
-          // Message bubble
-          Align(
-            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-            child: RawGestureDetector(
-              gestures: {
-                LongPressGestureRecognizer:
-                GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
-                      () => LongPressGestureRecognizer(duration: const Duration(milliseconds: 200)),
-                      (instance) => instance.onLongPress = _onLongPress,
-                ),
-              },
-              child: AnimatedBuilder(
-                animation: _bubbleController,
-                builder: (context, child) => Transform.scale(
-                  scale: _scaleAnim.value,
-                  child: child,
-                ),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.all(12),
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.65,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isUser
-                        ? (chat.hasPermission ? textHighlightedColor : textSecondaryHighlightedColor)
-                        : inAppForegroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isUser
-                          ? (chat.hasPermission ? textHighlightedColor : textSecondaryHighlightedColor)
-                          : textDimColor,
-                      width: 1.3,
-                    ),
-                  ),
-                  child: widget.msg.content == '...thinking'
-                      ? const ChatBubbleThinkingDots()
-                      : _buildMessageContent(context, isUser, chat),
-                ),
-              ),
-            ),
-          ),
-
-          // Action buttons above bubble
-          if (_showActions)
-            Positioned(
-              top: -50,
-              right: isUser ? 0 : null,
-              left: !isUser ? 0 : null,
-              child: AnimatedBuilder(
-                animation: Listenable.merge([_buttonsController, screenScaleNotifier]),
-                builder: (context, child) {
-                  final screenScale = screenScaleNotifier.value;
-                  return Transform.scale(
-                    scale: screenScale.clamp(0.6, 1.0),
-                    alignment: Alignment.topRight,
-                    child: FadeTransition(
-                      opacity: _buttonsController,
-                      child: child,
-                    ),
-                  );
-                },
-                child: GestureDetector(
-                  key: _buttonsKey,
-                  onTapDown: (_) => chat.ignoreNextTap(),
-                  child: Row(
-                    children: [
-                      _actionIcon(Icons.push_pin_outlined, _hideIcons),
-                      const SizedBox(width: 8),
-                      _actionIcon(Icons.delete, _hideIcons),
-                    ],
-                  ),
-                ),
-              )
-            ),
+          _buildMessageBubble(context, isUser),
+          if (_showActions) _buildActionButtons(isUser),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(BuildContext context, bool isUser) {
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: RawGestureDetector(
+        key: bubbleKey,
+        gestures: {
+          LongPressGestureRecognizer: GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+                () => LongPressGestureRecognizer(duration: const Duration(milliseconds: 200)),
+                (instance) => instance.onLongPress = _onLongPress,
+          ),
+        },
+        child: AnimatedBuilder(
+          animation: _bubbleController,
+          builder: (context, child) => Transform.scale(scale: _scaleAnim.value, child: child),
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.all(12),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.65,
+            ),
+            decoration: BoxDecoration(
+              color: isUser
+                  ? (chat.hasPermission ? textHighlightedColor : textSecondaryHighlightedColor)
+                  : inAppForegroundColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isUser
+                    ? (chat.hasPermission ? textHighlightedColor : textSecondaryHighlightedColor)
+                    : textDimColor,
+                width: 1.3,
+              ),
+            ),
+            child: widget.msg.content == '...thinking'
+                ? const ChatBubbleThinkingDots()
+                : _buildMessageContent(context, isUser, chat),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(bool isUser) {
+    return Positioned(
+      top: 6,
+      right: !isUser ? 0 : null,
+      left: isUser ? 0 : null,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_buttonsController, screenScaleNotifier]),
+        builder: (context, child) {
+          final screenScale = screenScaleNotifier.value;
+          return Transform.scale(
+            scale: screenScale.clamp(0.6, 1.0),
+            alignment: Alignment.topRight,
+            child: FadeTransition(opacity: _buttonsController, child: child),
+          );
+        },
+        child: Row(
+          key: buttonsKey,
+          children: [
+            MiniMenuButton(
+              icon: Icons.push_pin_outlined,
+              isActive: widget.msg.isPinned,
+              enableActiveStyle: true,
+              onPressed: () {
+                setState(() {
+                  widget.msg.isPinned = !widget.msg.isPinned;
+                });
+              },
+            ),
+            const SizedBox(width: 8),
+            MiniMenuButton(
+              icon: Icons.delete,
+              onPressed: () async {
+                await chat.deleteChatMessage(messageId: widget.msg.id);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -308,19 +252,40 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
           hasPermission: chat.hasPermission,
           durationPerChar: shouldAnimate ? Duration.zero : const Duration(milliseconds: 25),
           id: msg.id,
-          onFinished: () {} //() => msg.hasAnimated = true,
+          onFinished: () {},
         )
             : const SizedBox(height: 18),
         Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            TimeOfDay.fromDateTime(msg.timestamp).format(context),
-            style: TextStyle(
-              color: isUser ? inAppBackgroundColor : Colors.white38,
-              fontSize: 11,
-            ),
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                "${formatDate(msg.timestamp)} - ${DateFormat('h:mm a').format(msg.timestamp)}",
+                style: TextStyle(
+                  color: isUser ? inAppBackgroundColor : Colors.white38,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (msg.isPinned) ...[
+                const SizedBox(width: 6),
+                Transform.translate(
+                  offset: const Offset(0, 4),
+                  child: Icon(
+                    Icons.push_pin_rounded,
+                    size: 16,
+                    color: isUser ? inAppBackgroundColor : Colors.white38,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
+
+
       ],
     );
   }

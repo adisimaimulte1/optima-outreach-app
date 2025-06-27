@@ -6,7 +6,7 @@ class AiChatMessage {
   final String content;
   final String? replyTo;
   final DateTime timestamp;
-  final bool isPinned;
+  bool isPinned;
 
   AiChatMessage({
     required this.id,

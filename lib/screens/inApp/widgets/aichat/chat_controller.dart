@@ -14,19 +14,27 @@ class ChatController extends ChangeNotifier {
   final TextEditingController searchTextController = TextEditingController();
   final FocusNode focusNode = FocusNode();
 
+  final Map<String, GlobalKey> _buttonsKeyMap = {};
+  final Map<String, GlobalKey> _bubbleKeyMap = {};
+
+  GlobalKey getButtonsKey(String id) { return _buttonsKeyMap.putIfAbsent(id, () => GlobalKey()); }
+  GlobalKey getBubbleKey(String id) { return _bubbleKeyMap.putIfAbsent(id, () => GlobalKey()); }
+
   EventData? currentEvent;
   bool hasPermission = false;
   bool isLoading = false;
 
   final searchQuery = ValueNotifier<String>('');
   final isSearchBarVisible = ValueNotifier<bool>(false);
-  final ValueNotifier<String?> openMessageId = ValueNotifier(null);
 
-  void openMenu(String id) => openMessageId.value = id;
-  void closeMenu() => openMessageId.value = null;
+  final ValueNotifier<String?> openMessageId = ValueNotifier(null);
+  final ValueNotifier<bool> showPinnedOnly = ValueNotifier(false);
+
+
+  void openMessageOptions(String id) => openMessageId.value = id;
+  void closeMessageOptions() => openMessageId.value = null;
 
   bool _isScrollDisabled = false;
-  bool shouldIgnoreNextTap = false;
 
   int _currentMatch = 0;
   int _totalMatches = 0;
@@ -35,15 +43,47 @@ class ChatController extends ChangeNotifier {
 
   bool get isScrollDisabled => _isScrollDisabled;
 
-
-
   ChatController() {
     if (events.isNotEmpty) {
       setEvent(events.first);
     }
   }
 
+  Future<void> deleteChatMessage({required String messageId}) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || currentEvent == null) return;
 
+    final idToken = await user.getIdToken();
+
+    final msgIndex = currentEvent!.aiChatMessages.indexWhere(
+      (m) => m.id == messageId,
+    );
+    if (msgIndex == -1) return;
+    final removedMsg = currentEvent!.aiChatMessages.removeAt(msgIndex);
+
+    notifyListeners();
+
+    final response = await http.post(
+      Uri.parse(
+        'https://optima-livekit-token-server.onrender.com/textChat/delete',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $idToken',
+      },
+      body: jsonEncode({
+        'eventId': currentEvent!.id,
+        'messageId': messageId,
+        'userId': user.uid,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      debugPrint("deleteChatMessage error: ${response.body}");
+      currentEvent!.aiChatMessages.insert(msgIndex, removedMsg);
+      notifyListeners();
+    }
+  }
 
   void handleScaleChange(double value) {
     final shouldDisable = value < 0.99;
@@ -76,7 +116,9 @@ class ChatController extends ChangeNotifier {
 
   void setEvent(EventData? event) {
     currentEvent = event;
-    hasPermission = event!.hasPermission(FirebaseAuth.instance.currentUser!.email!);
+    hasPermission = event!.hasPermission(
+      FirebaseAuth.instance.currentUser!.email!,
+    );
     notifyListeners();
   }
 
@@ -85,7 +127,7 @@ class ChatController extends ChangeNotifier {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       scrollController.animateTo(
         index * 80.0,
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
     });
@@ -116,10 +158,32 @@ class ChatController extends ChangeNotifier {
     searchTextController.dispose();
   }
 
-  void ignoreNextTap() {
-    shouldIgnoreNextTap = true;
-  }
+  void handleOutsideTap(TapDownDetails details, BuildContext context) {
+    if (openMessageId.value == null) return;
 
+    final buttonsBox =
+        _buttonsKeyMap[openMessageId.value]?.currentContext?.findRenderObject()
+            as RenderBox?;
+    final bubbleBox =
+        _bubbleKeyMap[openMessageId.value]?.currentContext?.findRenderObject()
+            as RenderBox?;
+    final tap = details.globalPosition;
+
+    bool isInside(RenderBox? box) {
+      if (box == null) return false;
+      final offset = box.localToGlobal(Offset.zero);
+      final size = box.size;
+      return tap.dx >= offset.dx &&
+          tap.dx <= offset.dx + size.width &&
+          tap.dy >= offset.dy &&
+          tap.dy <= offset.dy + size.height;
+    }
+
+    final tappedBubble = isInside(bubbleBox);
+    final tappedButtons = isInside(buttonsBox);
+
+    if (!tappedBubble && !tappedButtons) closeMessageOptions();
+  }
 
 
 
@@ -147,6 +211,13 @@ class ChatController extends ChangeNotifier {
     currentEvent!.aiChatMessages.add(userMsg);
     currentEvent!.aiChatMessages.add(thinkingMsg);
     isLoading = true;
+
+    scrollController.animateTo(
+      scrollController.position.minScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+
     notifyListeners();
 
     inputController.clear();
@@ -163,7 +234,7 @@ class ChatController extends ChangeNotifier {
           'eventId': currentEvent!.id,
           'userId': user.uid, // checked by backend if it's a manager
           'message': text,
-          'replyTo': currentEvent!.aiChatMessages.last.replyTo
+          'replyTo': currentEvent!.aiChatMessages.last.replyTo,
         }),
       );
 
@@ -172,29 +243,35 @@ class ChatController extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final reply = data['reply'] ?? '[No response]';
-        currentEvent!.aiChatMessages.add(AiChatMessage(
-          id: UniqueKey().toString(),
-          role: 'assistant',
-          content: reply,
-          timestamp: DateTime.now(),
-        ));
+        currentEvent!.aiChatMessages.add(
+          AiChatMessage(
+            id: UniqueKey().toString(),
+            role: 'assistant',
+            content: reply,
+            timestamp: DateTime.now(),
+          ),
+        );
       } else {
         final error = jsonDecode(response.body)['error'] ?? 'Unknown error';
-        currentEvent!.aiChatMessages.add(AiChatMessage(
-          id: UniqueKey().toString(),
-          role: 'assistant',
-          content: '[Error: $error]',
-          timestamp: DateTime.now(),
-        ));
+        currentEvent!.aiChatMessages.add(
+          AiChatMessage(
+            id: UniqueKey().toString(),
+            role: 'assistant',
+            content: '[Error: $error]',
+            timestamp: DateTime.now(),
+          ),
+        );
       }
     } catch (e) {
       debugPrint("textChat error: $e");
-      currentEvent!.aiChatMessages.add(AiChatMessage(
-        id: UniqueKey().toString(),
-        role: 'assistant',
-        content: '[Error: could not connect to Jamie]',
-        timestamp: DateTime.now(),
-      ));
+      currentEvent!.aiChatMessages.add(
+        AiChatMessage(
+          id: UniqueKey().toString(),
+          role: 'assistant',
+          content: '[Error: could not connect to Jamie]',
+          timestamp: DateTime.now(),
+        ),
+      );
     }
 
     isLoading = false;
@@ -207,35 +284,40 @@ class ChatController extends ChangeNotifier {
 
     await file.readAsBytes(); // optional use
 
-    currentEvent!.aiChatMessages.add(AiChatMessage(
-      id: UniqueKey().toString(),
-      role: 'user',
-      content: 'IMG',
-      timestamp: DateTime.now(),
-    ));
+    currentEvent!.aiChatMessages.add(
+      AiChatMessage(
+        id: UniqueKey().toString(),
+        role: 'user',
+        content: 'IMG',
+        timestamp: DateTime.now(),
+      ),
+    );
 
     isLoading = true;
     notifyListeners();
 
     await Future.delayed(const Duration(seconds: 2));
 
-    currentEvent!.aiChatMessages.add(AiChatMessage(
-      id: UniqueKey().toString(),
-      role: 'assistant',
-      content: 'Jamie processed the image and found... pixels.',
-      timestamp: DateTime.now(),
-    ));
+    currentEvent!.aiChatMessages.add(
+      AiChatMessage(
+        id: UniqueKey().toString(),
+        role: 'assistant',
+        content: 'Jamie processed the image and found... pixels.',
+        timestamp: DateTime.now(),
+      ),
+    );
 
     isLoading = false;
     notifyListeners();
   }
 
-
-
   List<int> _matchedMessageIndexes() {
     final q = searchQuery.value.toLowerCase();
     return List.generate(currentEvent?.aiChatMessages.length ?? 0, (i) => i)
-        .where((i) => currentEvent!.aiChatMessages[i].content.toLowerCase().contains(q))
+        .where(
+          (i) =>
+              currentEvent!.aiChatMessages[i].content.toLowerCase().contains(q),
+        )
         .toList();
   }
 }

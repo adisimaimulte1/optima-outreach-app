@@ -15,6 +15,9 @@ class ChatTopBar extends StatelessWidget {
     return Consumer<ChatController>(
       builder: (context, chat, _) {
         final event = chat.currentEvent;
+        final isSearchActive = chat.isSearchBarVisible.value;
+
+        bool isPinned = false;
 
         return Padding(
           padding: const EdgeInsets.only(top: 24, left: 20, right: 20, bottom: 12),
@@ -23,18 +26,38 @@ class ChatTopBar extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  MenuButton(onPressed: () => scaffoldKey.currentState?.openDrawer()),
+                  MenuButton(
+                    onPressed: () {
+                      if (chat.isSearchBarVisible.value) {
+                        chat.toggleSearchBar(false);
+                      }
+                      scaffoldKey.currentState?.openDrawer();
+                    },
+                  ),
+
                   const Spacer(),
                   if (event != null) ...[
-                    RoundIconButton(
-                      icon: Icons.push_pin_outlined,
-                      iconSize: 35,
-                      onTap: () {},
+                    ValueListenableBuilder<bool>(
+                      valueListenable: chat.showPinnedOnly,
+                      builder: (context, isPinned, _) {
+                        return RoundIconButton(
+                          icon: Icons.push_pin_outlined,
+                          iconSize: 35,
+                          isActive: isPinned,
+                          enableActiveStyle: true,
+                          onTap: () {
+                            chat.showPinnedOnly.value = !isPinned;
+                            chat.closeMessageOptions();
+                            },
+                        );
+                      },
                     ),
                     const SizedBox(width: 12),
                     RoundIconButton(
                       icon: Icons.search,
                       iconSize: 40,
+                      isActive: isSearchActive,
+                      enableActiveStyle: true,
                       onTap: () {
                         final controller = chat.searchTextController;
                         controller.text = chat.searchQuery.value;
