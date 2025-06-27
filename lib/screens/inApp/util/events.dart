@@ -279,6 +279,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   void _handleDelete(EventData eventToDelete, bool hasPermission) async {
     setState(() {
+
       if (hasPermission) {
         CloudStorageService().deleteEvent(eventToDelete);
       } else {
@@ -287,6 +288,8 @@ class _EventsScreenState extends State<EventsScreen> {
           email: FirebaseAuth.instance.currentUser!.email!,
         );
       }
+
+      EventLiveSyncService().stopListeningToEvent(eventToDelete.id!);
       events.removeWhere((e) => e.id == eventToDelete.id);
     });
   }

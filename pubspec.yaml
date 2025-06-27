@@ -25,6 +25,7 @@ dependencies:
   url_launcher: ^6.3.1
 
   lucide_icons: ^0.257.0
+  lucide_icons_flutter: ^3.0.6
 
   http: ^1.3.0
   livekit_client: ^2.2.0
@@ -109,7 +110,6 @@ flutter:
   assets:
     - assets/images/logo/
     - assets/images/icons/
-    - assets/images/tutorials/
     - assets/splash/
     - assets/audio/intro/
     - assets/audio/wake/

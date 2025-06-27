@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/aichat/buttons/mini_menu_button.dart';
 import 'package:optima/screens/inApp/widgets/aichat/typing_dots.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:provider/provider.dart';
@@ -25,38 +27,36 @@ class ChatMessageBubble extends StatefulWidget {
 }
 
 class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProviderStateMixin {
+  late ChatController chat;
+
   bool _startTyping = false;
   bool _showActions = false;
+  bool _wasMinimized = false;
   Timer? _hideTimer;
 
 
   late final AnimationController _bubbleController;
-  late final Animation<double> _shakeAnim;
   late final Animation<double> _scaleAnim;
   late final AnimationController _buttonsController;
 
+
+  final GlobalKey _buttonsKey = GlobalKey();
 
 
   @override
   void initState() {
     super.initState();
+    chat = context.read<ChatController>();
+
+    chat.openMessageId.addListener(_syncActionVisibility);
+    screenScaleNotifier.addListener(_handleScaleChange);
 
     _bubbleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 200),
     );
 
-    _shakeAnim = TweenSequence([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 6.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 6.0, end: -6.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -6.0, end: 3.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 3.0, end: 0.0), weight: 1),
-    ]).animate(CurvedAnimation(
-      parent: _bubbleController,
-      curve: Curves.easeOutCubic,
-    ));
-
-    _scaleAnim = Tween<double>(begin: 1.0, end: 0.95).animate(
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.90).animate(
       CurvedAnimation(parent: _bubbleController, curve: Curves.easeOut),
     );
 
@@ -74,8 +74,12 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
     }
   }
 
+
   @override
   void dispose() {
+    chat.openMessageId.removeListener(_syncActionVisibility);
+    screenScaleNotifier.removeListener(_handleScaleChange);
+
     _bubbleController.dispose();
     _buttonsController.dispose();
     _hideTimer?.cancel();
@@ -86,31 +90,61 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
 
 
   void _onLongPress() {
-    setState(() => _showActions = true);
     _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted) setState(() => _showActions = false);
+
+    chat.openMenu(widget.msg.id);
+
+    _bubbleController.forward(from: 0).whenComplete(() {
+      if (mounted) {
+        setState(() => _showActions = true);
+        _buttonsController.forward(from: 0);
+
+        // Scale back up AFTER icons show
+        _bubbleController.reverse();
+      }
     });
+
   }
 
   void _hideIcons() {
     _hideTimer?.cancel();
-    setState(() => _showActions = false);
+    chat.closeMenu();
+
+    _buttonsController.reverse().whenComplete(() {
+      if (mounted) {
+        setState(() => _showActions = false);
+        _bubbleController.reverse();
+      }
+    });
   }
 
+  void _syncActionVisibility() {
+    final openId = chat.openMessageId.value;
+    final isOpen = openId == widget.msg.id;
+
+    if (!isOpen && _showActions) {
+      _hideIcons();
+    }
+  }
+
+  void _handleScaleChange() {
+    final isMinimized = screenScaleNotifier.value < 0.99;
+
+    if (isMinimized && !_wasMinimized) {
+      _wasMinimized = true;
+      if (_showActions) _hideIcons();
+    } else if (!isMinimized && _wasMinimized) {
+      _wasMinimized = false;
+    }
+  }
+
+
+
+
   Widget _actionIcon(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          color: inAppForegroundColor,
-          border: Border.all(color: textDimColor, width: 1.4),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, size: 30, color: textColor),
-      ),
+    return MiniMenuButton(
+      icon: icon,
+      onPressed: onTap,
     );
   }
 
@@ -119,46 +153,77 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
   @override
   Widget build(BuildContext context) {
     final isUser = widget.msg.role == 'user';
-    final chat = context.read<ChatController>();
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        if (_showActions)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _hideIcons,
-              behavior: HitTestBehavior.translucent,
-              child: const SizedBox(),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Dismiss layer
+          if (_showActions)
+            Positioned.fill(
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (event) {
+                  final bubbleBox = context.findRenderObject() as RenderBox?;
+                  final buttonsBox = _buttonsKey.currentContext?.findRenderObject() as RenderBox?;
+
+                  final tap = event.position;
+
+                  isInsideBox(RenderBox? box) {
+                    if (box == null) return false;
+                    final offset = box.localToGlobal(Offset.zero);
+                    final size = box.size;
+                    return tap.dx >= offset.dx &&
+                        tap.dx <= offset.dx + size.width &&
+                        tap.dy >= offset.dy &&
+                        tap.dy <= offset.dy + size.height;
+                  }
+
+                  final tappedInsideBubble = isInsideBox(bubbleBox);
+                  final tappedInsideButtons = isInsideBox(buttonsBox);
+
+                  if (!tappedInsideBubble && !tappedInsideButtons) {
+                    _hideIcons();
+                  }
+                },
+
+                child: const SizedBox(),
+              ),
             ),
-          ),
-        GestureDetector(
-          onLongPress: _onLongPress,
-            child: Align(
-              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+
+
+          // Message bubble
+          Align(
+            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+            child: RawGestureDetector(
+              gestures: {
+                LongPressGestureRecognizer:
+                GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+                      () => LongPressGestureRecognizer(duration: const Duration(milliseconds: 200)),
+                      (instance) => instance.onLongPress = _onLongPress,
+                ),
+              },
               child: AnimatedBuilder(
                 animation: _bubbleController,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(_shakeAnim.value, 0),
-                    child: Transform.scale(
-                      scale: _scaleAnim.value,
-                      child: child,
-                    ),
-                  );
-                },
+                builder: (context, child) => Transform.scale(
+                  scale: _scaleAnim.value,
+                  child: child,
+                ),
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 6),
                   padding: const EdgeInsets.all(12),
-                  constraints: const BoxConstraints(maxWidth: 280, minHeight: 40),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.65,
+                  ),
                   decoration: BoxDecoration(
                     color: isUser
-                        ? (chat.hasPermission ? textSecondaryHighlightedColor : textHighlightedColor)
+                        ? (chat.hasPermission ? textHighlightedColor : textSecondaryHighlightedColor)
                         : inAppForegroundColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isUser
-                          ? (chat.hasPermission ? textSecondaryHighlightedColor : textHighlightedColor)
+                          ? (chat.hasPermission ? textHighlightedColor : textSecondaryHighlightedColor)
                           : textDimColor,
                       width: 1.3,
                     ),
@@ -169,33 +234,42 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
                 ),
               ),
             ),
-        ),
-        if (_showActions)
-          Positioned(
-            top: -50,
-            right: isUser ? 0 : null,
-            left: !isUser ? 0 : null,
-            child: ScaleTransition(
-              scale: CurvedAnimation(
-                parent: _buttonsController,
-                curve: Curves.easeOutBack,
-              ),
-              child: Row(
-                children: [
-                  _actionIcon(Icons.push_pin_rounded, () {
-                    debugPrint("📌 Pin message: ${widget.msg.id}");
-                    _hideIcons();
-                  }),
-                  const SizedBox(width: 8),
-                  _actionIcon(Icons.delete_outline_rounded, () {
-                    debugPrint("🗑️ Delete message: ${widget.msg.id}");
-                    _hideIcons();
-                  }),
-                ],
-              ),
-            ),
           ),
-      ],
+
+          // Action buttons above bubble
+          if (_showActions)
+            Positioned(
+              top: -50,
+              right: isUser ? 0 : null,
+              left: !isUser ? 0 : null,
+              child: AnimatedBuilder(
+                animation: Listenable.merge([_buttonsController, screenScaleNotifier]),
+                builder: (context, child) {
+                  final screenScale = screenScaleNotifier.value;
+                  return Transform.scale(
+                    scale: screenScale.clamp(0.6, 1.0),
+                    alignment: Alignment.topRight,
+                    child: FadeTransition(
+                      opacity: _buttonsController,
+                      child: child,
+                    ),
+                  );
+                },
+                child: GestureDetector(
+                  key: _buttonsKey,
+                  onTapDown: (_) => chat.ignoreNextTap(),
+                  child: Row(
+                    children: [
+                      _actionIcon(Icons.push_pin_outlined, _hideIcons),
+                      const SizedBox(width: 8),
+                      _actionIcon(Icons.delete, _hideIcons),
+                    ],
+                  ),
+                ),
+              )
+            ),
+        ],
+      ),
     );
   }
 
@@ -205,7 +279,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
     final shouldAnimate = !_startTyping || msg.hasAnimated;
     final textStyle = TextStyle(
       color: isUser ? inAppForegroundColor : textColor,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w900,
       fontSize: 15.5,
       height: 1.4,
     );

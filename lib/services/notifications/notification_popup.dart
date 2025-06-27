@@ -7,6 +7,7 @@ import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_audience_step.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 
 class NotificationPopup extends StatelessWidget {
@@ -328,6 +329,7 @@ class NotificationPopup extends StatelessWidget {
 
     // Step 5: Cache the updated event
     await LocalCache().cacheUserEventsFromFirestore();
+
   }
 
 

@@ -20,21 +20,28 @@ class ChatController extends ChangeNotifier {
 
   final searchQuery = ValueNotifier<String>('');
   final isSearchBarVisible = ValueNotifier<bool>(false);
+  final ValueNotifier<String?> openMessageId = ValueNotifier(null);
+
+  void openMenu(String id) => openMessageId.value = id;
+  void closeMenu() => openMessageId.value = null;
 
   bool _isScrollDisabled = false;
+  bool shouldIgnoreNextTap = false;
 
   int _currentMatch = 0;
   int _totalMatches = 0;
   int get currentMatch => _totalMatches == 0 ? 0 : _currentMatch + 1;
   int get totalMatches => _totalMatches;
 
+  bool get isScrollDisabled => _isScrollDisabled;
+
+
+
   ChatController() {
     if (events.isNotEmpty) {
       setEvent(events.first);
     }
   }
-
-  bool get isScrollDisabled => _isScrollDisabled;
 
 
 
@@ -108,6 +115,11 @@ class ChatController extends ChangeNotifier {
     focusNode.dispose();
     searchTextController.dispose();
   }
+
+  void ignoreNextTap() {
+    shouldIgnoreNextTap = true;
+  }
+
 
 
 

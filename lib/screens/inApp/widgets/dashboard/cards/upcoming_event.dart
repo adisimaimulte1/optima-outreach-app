@@ -66,8 +66,8 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
       valueListenable: notifier!,
       builder: (context, event, _) {
         final color = event.hasPermission(FirebaseAuth.instance.currentUser!.email!)
-            ? textSecondaryHighlightedColor
-            : textHighlightedColor;
+            ? textHighlightedColor
+            : textSecondaryHighlightedColor;
 
         final date = event.selectedDate!;
         final time = event.selectedTime ?? const TimeOfDay(hour: 0, minute: 0);
@@ -84,8 +84,11 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
               scale: scale,
               child: Listener(
                 onPointerDown: (_) => _setPressed(true),
-                onPointerUp: (_) {
+                onPointerUp: (_) async {
+                  await Future.delayed(const Duration(milliseconds: 100));
                   _setPressed(false);
+                  await Future.delayed(const Duration(milliseconds: 100));
+
                   if (screenScaleNotifier.value >= 0.99) {
                     _handleTap(event);
                   }
@@ -118,9 +121,9 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         StatusLabel(label: "UPCOMING EVENT", isUpcoming: true, color: color),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         _buildDateTimeRow(color, date, time),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         _buildScaledTitle(title),
       ],
     );

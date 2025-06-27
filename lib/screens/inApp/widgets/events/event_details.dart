@@ -128,7 +128,7 @@ class _EventDetailsState extends State<EventDetails> {
       valueListenable: notifier!,
       builder: (context, liveEvent, _) {
         hasPermission = liveEvent.hasPermission(FirebaseAuth.instance.currentUser!.email!);
-        color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+        color = hasPermission ?  textHighlightedColor : textSecondaryHighlightedColor;
         selectedStatus = liveEvent.status;
 
         return Container(
@@ -556,32 +556,36 @@ class _EventDetailsState extends State<EventDetails> {
                     ),
                     const SizedBox(height: 6),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Icon(Icons.smart_toy_outlined, color: Colors.white70, size: 20),
-                        const SizedBox(width: 6),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 200), // set desired max width
-                          child: Text(
-                            "Utilize AI help",
-                            softWrap: true,
-                            overflow: TextOverflow.visible,
-                            maxLines: 2,
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                        Row(
+                          children: [
+                            const Icon(Icons.smart_toy_outlined, color: Colors.white70, size: 20),
+                            const SizedBox(width: 6),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 200),
+                              child: Text(
+                                "AI Help",
+                                softWrap: true,
+                                overflow: TextOverflow.visible,
+                                maxLines: 2,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 6),
                         Switch(
                           value: hasPermission
-                          ? (credits > 0 ? eventData.jamieEnabled : false)
-                          : eventData.jamieEnabled,
+                              ? (credits > 0 ? eventData.jamieEnabled : false)
+                              : eventData.jamieEnabled,
                           onChanged: (value) {
                             setState(() {
-                              if (!hasPermission) {return;}
-
+                              if (!hasPermission) return;
                               eventData.jamieEnabled = value;
                               CloudStorageService().saveEvent(eventData);
                             });

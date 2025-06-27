@@ -274,7 +274,7 @@ class AccountDeleteDialogs {
       await user.delete();
 
       // Remove loading and navigate
-      Navigator.of(context, rootNavigator: true).pop(); // close loading
+      Navigator.of(context, rootNavigator: true).pop();
       await Future.delayed(const Duration(milliseconds: 100));
 
       Navigator.of(context).pushAndRemoveUntil(

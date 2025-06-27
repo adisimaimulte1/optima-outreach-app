@@ -25,6 +25,7 @@ import 'package:optima/screens/inApp/widgets/settings/tiles.dart';
 
 import 'package:optima/globals.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 
 import 'package:optima/services/storage/local_storage_service.dart';
@@ -638,6 +639,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subCreditNotifier.cancel();
             selectedPlan.cancel();
 
+            EventLiveSyncService().stopAll();
             LocalNotificationService().stopListening();
             await LocalCache().logout();
             await SessionService().deleteCurrentSession();
@@ -653,7 +655,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   (route) => false,
             );
           },
-        icon: const Icon(Icons.logout),
         label: const Text(
             "Log Out",
             style: TextStyle(fontWeight: FontWeight.bold)

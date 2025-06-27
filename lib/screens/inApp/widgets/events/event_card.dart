@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/events/event_details.dart';
@@ -40,7 +41,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
   final double _threshold = 0.86;
 
   bool hasPermission = true;
-  Color color = textSecondaryHighlightedColor;
+  Color color = textHighlightedColor;
 
   @override
   void initState() {
@@ -67,7 +68,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
     final width = constraints.maxWidth;
     final progress = _dragOffset.abs() / width;
 
-    if (progress > _threshold) {
+    if ((progress - _threshold).abs() < 0.04) {
       if (_dragOffset > 0) {
         final isUpcoming = eventData.status == "UPCOMING";
         if (isUpcoming && hasPermission) {
@@ -104,7 +105,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
       valueListenable: notifier,
       builder: (context, liveEvent, _) {
         hasPermission = liveEvent.hasPermission(FirebaseAuth.instance.currentUser!.email!);
-        color = hasPermission ? textSecondaryHighlightedColor : textHighlightedColor;
+        color = hasPermission ?  textHighlightedColor : textSecondaryHighlightedColor;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 14),
@@ -152,7 +153,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
             SizedBox(
               width: constraints.maxWidth,
               child: _buildSwipeAction(
-                Icons.delete,
+                hasPermission ? Icons.delete : LucideIcons.logOut600,
                 Colors.red,
                 Alignment.centerRight,
                 iconColor: inAppBackgroundColor,
@@ -344,7 +345,7 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
         actionsAlignment: MainAxisAlignment.spaceEvenly,
         title: Column(
           children: [
-            Icon(Icons.delete_outline, size: 48, color: Colors.red),
+            Icon(hasPermission ? Icons.delete_outline : LucideIcons.logOut600, size: 48, color: Colors.red),
             const SizedBox(height: 12),
             Text(
               hasPermission ? "Delete Event" : "Exit event",

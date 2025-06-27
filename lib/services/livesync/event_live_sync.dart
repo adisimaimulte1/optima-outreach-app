@@ -13,16 +13,18 @@ class EventLiveSyncService {
 
   ValueNotifier<EventData>? getNotifier(String eventId) => eventNotifiers[eventId];
 
-  void startAll() {
+  Future<void> startAll() async {
+    stopAll();
+
     for (final event in events) {
       final eventId = event.id;
       if (eventId != null) {
-        listenToEvent(eventId);
+        await listenToEvent(eventId);
       }
     }
   }
 
-  void listenToEvent(String eventId) {
+  Future<void> listenToEvent(String eventId) async {
     if (_eventListeners.containsKey(eventId)) return;
 
     final ref = FirebaseFirestore.instance.collection('events').doc(eventId);

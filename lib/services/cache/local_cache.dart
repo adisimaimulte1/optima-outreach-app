@@ -305,7 +305,7 @@ class LocalCache {
     }
 
     events = relevantEvents;
-    EventLiveSyncService().startAll();
+    await EventLiveSyncService().startAll();
   }
 
 

@@ -189,7 +189,7 @@ class _LiquidFillTextState extends State<LiquidFillText> with SingleTickerProvid
     final canvas = Canvas(pictureRecorder);
     final paint = Paint()
       ..shader = LinearGradient(
-        colors: [textHighlightedColor, textSecondaryHighlightedColor],
+        colors: [textSecondaryHighlightedColor, textHighlightedColor],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(bounds);

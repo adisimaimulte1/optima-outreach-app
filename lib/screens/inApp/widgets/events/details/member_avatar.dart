@@ -234,7 +234,7 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
           height: widget.size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: dashed ? Colors.transparent : textSecondaryHighlightedColor,
+            color: dashed ? Colors.transparent : textHighlightedColor,
             border: Border.all(color: widget.color, width: dashed ? 2 : 3),
           ),
           child: ClipOval(child: content),
@@ -345,7 +345,7 @@ class ContributorAvatar extends StatelessWidget {
           key: ValueKey(member.id),
           member: member,
           size: size,
-          color: showCrown ? textSecondaryHighlightedColor : textHighlightedColor,
+          color: showCrown ? textHighlightedColor : textSecondaryHighlightedColor,
           dimmed: member.isPending,
           isCreator: showCrown,
           onLong: () {}, // no-op

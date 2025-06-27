@@ -125,7 +125,7 @@ class DateTimeStep extends StatelessWidget {
     final picked = await showDatePicker(
       context: context,
       initialDate: selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
+      firstDate: selectedDate ?? DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: _customPickerTheme,
     ).whenComplete(() => popupStackCount.value--);

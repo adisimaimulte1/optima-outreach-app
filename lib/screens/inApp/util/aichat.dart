@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_drawer.dart';
@@ -19,6 +21,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   late final ChatController chat;
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -57,22 +60,53 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 builder: (context, chat, _) {
                   final currentEvent = chat.currentEvent;
 
-                  return Stack(
-                    children: [
-                      Scaffold(
-                        key: _scaffoldKey,
-                        drawer: ChatDrawer(onSelect: chat.setEvent),
-                        backgroundColor: Colors.transparent,
-                        resizeToAvoidBottomInset: true,
-                        body: SafeArea(child: _buildChatBody(chat, currentEvent)),
-                      ),
-                      if (isSearchVisible) _buildFloatingSearchBar(),
-                    ],
+                  return ValueListenableBuilder<double>(
+                    valueListenable: screenScaleNotifier,
+                    builder: (context, scale, _) {
+                      // Close drawer automatically if scale drops
+                      if (scale < 0.99 && _scaffoldKey.currentState?.isDrawerOpen == true) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _scaffoldKey.currentState?.closeDrawer();
+                        });
+                      }
+
+                      return Stack(
+                        children: [
+                          Scaffold(
+                            key: _scaffoldKey,
+                            drawer: ChatDrawer(onSelect: chat.setEvent),
+                            drawerEnableOpenDragGesture: scale >= 0.99,
+                            backgroundColor: Colors.transparent,
+                            resizeToAvoidBottomInset: true,
+                            body: SafeArea(child: _buildChatBody(chat, currentEvent)),
+                          ),
+
+                          if (scale < 0.99)
+                            Positioned.fill(
+                              child: AbsorbPointer(
+                                absorbing: true,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onPanDown: (_) {
+                                    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+                                      _scaffoldKey.currentState?.closeDrawer();
+                                    }
+                                  },
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                            ),
+
+                          if (isSearchVisible) _buildFloatingSearchBar(),
+                        ],
+                      );
+                    },
                   );
                 },
               );
             },
           );
+
         },
       ),
     );
@@ -139,19 +173,29 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
 
     return Expanded(
-      child: ListView.builder(
-        controller: chat.scrollController,
-        reverse: true,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        itemCount: event.aiChatMessages.length,
-        itemBuilder: (context, index) {
-          final msg = event.aiChatMessages[event.aiChatMessages.length - 1 - index];
-          return ChatMessageBubble(
-            key: ValueKey(msg.id),
-            msg: msg,
-            event: event,
-          );
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          if (chat.shouldIgnoreNextTap) {
+            chat.shouldIgnoreNextTap = false; // reset it
+            return;
+          }
+          chat.closeMenu();
         },
+        child: ListView.builder(
+          controller: chat.scrollController,
+          reverse: true,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          itemCount: event.aiChatMessages.length,
+          itemBuilder: (context, index) {
+            final msg = event.aiChatMessages[event.aiChatMessages.length - 1 - index];
+            return ChatMessageBubble(
+              key: ValueKey(msg.id),
+              msg: msg,
+              event: event,
+            );
+          },
+        ),
       ),
     );
   }

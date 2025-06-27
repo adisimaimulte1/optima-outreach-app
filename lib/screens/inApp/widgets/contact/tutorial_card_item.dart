@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
@@ -74,31 +75,33 @@ class _TutorialCardItemState extends State<TutorialCardItem> with SingleTickerPr
   }
 
   Widget _buildCardContent() {
-    return Container(
-      width: 220,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24, width: 2),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/images/tutorials/tutorial_${widget.index}.png',
-              fit: BoxFit.cover,
-              cacheWidth: 300,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double cardWidth = constraints.maxWidth;
+        final double cardHeight = constraints.maxHeight;
+
+        return Container(
+          width: cardWidth,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white24, width: 2),
+            gradient: LinearGradient(
+              begin: Alignment.bottomRight,
+              end: Alignment.topLeft,
+              colors: [
+                textHighlightedColor,
+                textSecondaryHighlightedColor,
+              ],
             ),
-            Container(
-              color: inAppForegroundColor.withOpacity(0.3),
-            ),
-            Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ..._generateStaticCircles(widget.index, cardWidth, cardHeight),
+                Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
@@ -108,15 +111,14 @@ class _TutorialCardItemState extends State<TutorialCardItem> with SingleTickerPr
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(widget.icon, size: 40, color: textHighlightedColor),
+                        Icon(widget.icon, size: 40, color: inAppBackgroundColor),
                         const SizedBox(height: 10),
                         Text(
                           widget.title,
                           style: TextStyle(
-                            color: textColor,
+                            color: inAppBackgroundColor,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            shadows: [Shadow(color: Colors.black, blurRadius: 3)],
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -124,10 +126,43 @@ class _TutorialCardItemState extends State<TutorialCardItem> with SingleTickerPr
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _generateStaticCircles(int seed, double cardWidth, double cardHeight) {
+    final List<Widget> circles = [];
+    final random = Random(seed);
+
+    const int circleCount = 18;
+
+    for (int i = 0; i < circleCount; i++) {
+      final double size = 4 + random.nextDouble() * 4;
+      final double top = random.nextDouble() * (cardHeight - size);
+      final double left = random.nextDouble() * (cardWidth - size);
+      final double opacity = 0.1 + random.nextDouble() * 0.15;
+
+      circles.add(Positioned(
+        top: top,
+        left: left,
+        child: _circle(size, inAppForegroundColor.withOpacity(opacity)),
+      ));
+    }
+
+    return circles;
+  }
+
+  Widget _circle(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
       ),
     );
   }

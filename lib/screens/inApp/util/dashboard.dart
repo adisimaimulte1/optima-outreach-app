@@ -33,6 +33,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _handleFirstLaunch();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final nextEvent = events
+          .where((e) =>
+      e.selectedDate != null &&
+          e.selectedDate!.isAfter(DateTime.now()) &&
+          e.status == "UPCOMING")
+          .toList()
+        ..sort((a, b) => a.selectedDate!.compareTo(b.selectedDate!));
+
+      if (nextEvent.isNotEmpty) {
+        final notifier = EventLiveSyncService().getNotifier(nextEvent.first.id!);
+        if (notifier != null) {
+          notifier.value = notifier.value; // force rebuild manually
+        }
+      }
+    });
+
   }
 
   void _handleFirstLaunch() async {
