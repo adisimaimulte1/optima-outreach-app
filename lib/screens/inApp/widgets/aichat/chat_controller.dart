@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_message.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 
 class ChatController extends ChangeNotifier {
   final ScrollController scrollController = ScrollController();
@@ -29,7 +30,7 @@ class ChatController extends ChangeNotifier {
 
   final ValueNotifier<String?> openMessageId = ValueNotifier(null);
   final ValueNotifier<bool> showPinnedOnly = ValueNotifier(false);
-
+  ValueNotifier<EventData>? _liveNotifier;
 
   void openMessageOptions(String id) => openMessageId.value = id;
   void closeMessageOptions() => openMessageId.value = null;
@@ -48,6 +49,8 @@ class ChatController extends ChangeNotifier {
       setEvent(events.first);
     }
   }
+
+
 
   Future<void> deleteChatMessage({required String messageId}) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -85,6 +88,33 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  Future<void> pinChatMessage({
+    required String messageId,
+    required bool pin,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || currentEvent == null) return;
+
+    final idToken = await user.getIdToken();
+
+    await http.post(
+      Uri.parse('https://optima-livekit-token-server.onrender.com/textChat/pinMessage'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $idToken',
+      },
+      body: jsonEncode({
+        'eventId': currentEvent!.id,
+        'messageId': messageId,
+        'userId': user.uid,
+        'pin': pin,
+      }),
+    );
+  }
+
+
+
+
   void handleScaleChange(double value) {
     final shouldDisable = value < 0.99;
     if (_isScrollDisabled != shouldDisable) {
@@ -101,55 +131,86 @@ class ChatController extends ChangeNotifier {
     if (!visible) updateSearchQuery('');
   }
 
+
+
+  void setEvent(EventData? event) {
+    if (_liveNotifier != null) {
+      _liveNotifier!.removeListener(_handleLiveUpdate);
+      _liveNotifier = null;
+    }
+
+    if (event != null && event.id != null) {
+      _liveNotifier = EventLiveSyncService().getNotifier(event.id!);
+      _liveNotifier?.addListener(_handleLiveUpdate);
+      _handleLiveUpdate(); // immediately sync state
+    }
+  }
+
+  void _handleLiveUpdate() {
+    final live = _liveNotifier?.value;
+    if (live == null) return;
+
+    currentEvent = live;
+    hasPermission = live.hasPermission(FirebaseAuth.instance.currentUser?.email ?? '');
+    notifyListeners();
+  }
+
+
+
   void updateSearchQuery(String query) {
     searchQuery.value = query;
     if (query.isEmpty) {
       _currentMatch = 0;
       _totalMatches = 0;
     } else {
-      final matches = _matchedMessageIndexes();
+      final matches = _matchedMessageIds();
       _totalMatches = matches.length;
       _currentMatch = _totalMatches > 0 ? 0 : 0;
     }
     notifyListeners();
   }
 
-  void setEvent(EventData? event) {
-    currentEvent = event;
-    hasPermission = event!.hasPermission(
-      FirebaseAuth.instance.currentUser!.email!,
-    );
-    notifyListeners();
-  }
-
-  void scrollToMessage(int index) {
-    if (_isScrollDisabled || !scrollController.hasClients) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      scrollController.animateTo(
-        index * 80.0,
-        duration: const Duration(milliseconds: 400),
+  void scrollToMessage(String messageId) {
+    final context = _bubbleKeyMap[messageId]?.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
+        alignment: 0.5,
       );
-    });
+    }
   }
 
   void goToNextMatch() {
-    final matches = _matchedMessageIndexes();
+    final matches = _matchedMessageIds();
     if (matches.isEmpty) return;
 
     _currentMatch = (_currentMatch + 1) % matches.length;
     scrollToMessage(matches[_currentMatch]);
+
     notifyListeners();
   }
 
   void goToPreviousMatch() {
-    final matches = _matchedMessageIndexes();
+    final matches = _matchedMessageIds();
     if (matches.isEmpty) return;
 
     _currentMatch = (_currentMatch - 1 + matches.length) % matches.length;
     scrollToMessage(matches[_currentMatch]);
     notifyListeners();
   }
+
+  List<String> _matchedMessageIds() {
+    final q = searchQuery.value.toLowerCase();
+    return currentEvent?.aiChatMessages
+        .where((msg) => msg.content.toLowerCase().contains(q))
+        .map((msg) => msg.id)
+        .toList() ??
+        [];
+  }
+
+
 
   void disposeAll() {
     scrollController.dispose();
@@ -309,15 +370,5 @@ class ChatController extends ChangeNotifier {
 
     isLoading = false;
     notifyListeners();
-  }
-
-  List<int> _matchedMessageIndexes() {
-    final q = searchQuery.value.toLowerCase();
-    return List.generate(currentEvent?.aiChatMessages.length ?? 0, (i) => i)
-        .where(
-          (i) =>
-              currentEvent!.aiChatMessages[i].content.toLowerCase().contains(q),
-        )
-        .toList();
   }
 }

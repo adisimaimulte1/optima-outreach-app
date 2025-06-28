@@ -113,3 +113,9 @@ Change Log
     * added a date and proper time formatting for the messages + pin indicator + made text bigger
     * make delete + pin buttons & search bar disappear on: outside tap, screen scale change, menu enter
 
+0.1.4 (28/06/2024)
+------------------
+- update pinned messages to the database
+- live sync the AI Chat messages
+- make the search bar highlight the searched text live
+- fixed AI messages getting cut off

@@ -134,6 +134,50 @@ class EventData {
     return event;
   }
 
+  EventData copyWith({
+    String? eventName,
+    String? organizationType,
+    String? customOrg,
+    DateTime? selectedDate,
+    TimeOfDay? selectedTime,
+    String? locationAddress,
+    LatLng? locationLatLng,
+    List<String>? eventManagers,
+    List<Map<String, dynamic>>? eventMembers,
+    List<String>? eventGoals,
+    List<String>? audienceTags,
+    bool? isPublic,
+    bool? isPaid,
+    double? eventPrice,
+    String? eventCurrency,
+    bool? jamieEnabled,
+    String? status,
+    String? id,
+    String? createdBy,
+    List<AiChatMessage>? aiChatMessages,
+  }) {
+    return EventData(
+      eventName: eventName ?? this.eventName,
+      organizationType: organizationType ?? this.organizationType,
+      customOrg: customOrg ?? this.customOrg,
+      selectedDate: selectedDate ?? this.selectedDate,
+      selectedTime: selectedTime ?? this.selectedTime,
+      locationAddress: locationAddress ?? this.locationAddress,
+      locationLatLng: locationLatLng ?? this.locationLatLng,
+      eventManagers: eventManagers ?? this.eventManagers,
+      eventMembers: eventMembers ?? this.eventMembers,
+      eventGoals: eventGoals ?? this.eventGoals,
+      audienceTags: audienceTags ?? this.audienceTags,
+      isPublic: isPublic ?? this.isPublic,
+      isPaid: isPaid ?? this.isPaid,
+      eventPrice: eventPrice ?? this.eventPrice,
+      eventCurrency: eventCurrency ?? this.eventCurrency,
+      jamieEnabled: jamieEnabled ?? this.jamieEnabled,
+      status: status ?? this.status,
+      createdBy: createdBy ?? this.createdBy,
+    )..id = id ?? this.id
+      ..aiChatMessages = aiChatMessages ?? this.aiChatMessages;
+  }
 
   bool hasPermission(String email) {
     return email == createdBy;

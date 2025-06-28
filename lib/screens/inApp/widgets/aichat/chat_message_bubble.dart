@@ -6,12 +6,13 @@ import 'package:optima/screens/inApp/widgets/aichat/buttons/mini_menu_button.dar
 import 'package:optima/screens/inApp/widgets/aichat/typing_dots.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:provider/provider.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'chat_controller.dart';
 import 'chat_message.dart';
 import 'package:intl/intl.dart';
 
 
-import 'package:flutter_markdown/flutter_markdown.dart' show MarkdownBody, MarkdownStyleSheet;
+import 'package:flutter_markdown/flutter_markdown.dart' show MarkdownBody, MarkdownElementBuilder, MarkdownStyleSheet;
 
 
 class ChatMessageBubble extends StatefulWidget {
@@ -106,6 +107,8 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
   }
 
   void _handleScaleChange() {
+    if (!mounted) return;
+
     final isMinimized = screenScaleNotifier.value < 0.99;
     if (isMinimized && !_wasMinimized) {
       _wasMinimized = true;
@@ -201,6 +204,10 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
               onPressed: () {
                 setState(() {
                   widget.msg.isPinned = !widget.msg.isPinned;
+                  chat.pinChatMessage(
+                    messageId: widget.msg.id,
+                    pin: widget.msg.isPinned,
+                  );
                 });
               },
             ),
@@ -357,32 +364,122 @@ class _AnimatedHighlightTextState extends State<AnimatedHighlightText> {
   }
 
   Widget _buildHighlightedText(String content) {
+    final highlight = widget.highlight.trim();
+    if (highlight.isEmpty) {
+      return MarkdownBody(
+        data: content,
+        styleSheet: _styleSheet(),
+        extensionSet: md.ExtensionSet.gitHubFlavored,
+      );
+    }
+
+    // Inject ==...== around matches (won’t break Markdown like bold/italic)
+    final escaped = RegExp.escape(highlight);
+    final pattern = RegExp('($escaped)', caseSensitive: false);
+
+    final injected = content.replaceAllMapped(
+      pattern,
+          (match) => '==${match[0]}==',
+    );
+
     return MarkdownBody(
-      data: content,
-      styleSheet: MarkdownStyleSheet(
-        p: widget.baseStyle,
-        h1: widget.baseStyle.copyWith(fontSize: 22, fontWeight: FontWeight.bold),
-        h2: widget.baseStyle.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
-        h3: widget.baseStyle.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
-        em: widget.baseStyle.copyWith(fontStyle: FontStyle.italic),
-        strong: widget.baseStyle.copyWith(fontWeight: FontWeight.bold),
-        del: widget.baseStyle.copyWith(decoration: TextDecoration.lineThrough),
-        code: widget.baseStyle.copyWith(
-          fontFamily: 'monospace',
-          backgroundColor: Colors.black.withOpacity(0.4),
-          color: widget.baseStyle.color,
-        ),
-        codeblockPadding: EdgeInsets.zero,
-        codeblockDecoration: BoxDecoration(
-          color: Colors.transparent,
-        ),
-        blockquote: widget.baseStyle.copyWith(
-          color: Colors.grey[400],
-          fontStyle: FontStyle.italic,
-        ),
-        listBullet: widget.baseStyle,
-        blockSpacing: 8,
+      data: injected,
+      styleSheet: _styleSheet(),
+      extensionSet: md.ExtensionSet(
+        md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+        [
+          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+          HighlightSyntax(),
+        ],
       ),
+      builders: {
+        'highlight': _HighlightBuilder(widget.baseStyle, widget.isUser, widget.hasPermission),
+      },
+    );
+  }
+
+
+
+  MarkdownStyleSheet _styleSheet() {
+    return MarkdownStyleSheet(
+      p: widget.baseStyle,
+      h1: widget.baseStyle.copyWith(fontSize: 22, fontWeight: FontWeight.bold),
+      h2: widget.baseStyle.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
+      h3: widget.baseStyle.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
+      em: widget.baseStyle.copyWith(fontStyle: FontStyle.italic),
+      strong: widget.baseStyle.copyWith(fontWeight: FontWeight.bold),
+      del: widget.baseStyle.copyWith(decoration: TextDecoration.lineThrough),
+      code: widget.baseStyle.copyWith(
+        fontFamily: 'monospace',
+        backgroundColor: Colors.black.withOpacity(0.4),
+        color: widget.baseStyle.color,
+      ),
+      codeblockPadding: EdgeInsets.zero,
+      codeblockDecoration: const BoxDecoration(color: Colors.transparent),
+      blockquote: widget.baseStyle.copyWith(
+        color: Colors.grey[400],
+        fontStyle: FontStyle.italic,
+      ),
+      listBullet: widget.baseStyle,
+      blockSpacing: 8,
     );
   }
 }
+
+
+
+class HighlightSyntax extends md.InlineSyntax {
+  HighlightSyntax() : super(r'==(.+?)==');
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    final el = md.Element.text('highlight', match[1]!);
+    parser.addNode(el);
+    return true;
+  }
+}
+
+class _HighlightBuilder extends MarkdownElementBuilder {
+  final TextStyle baseStyle;
+  final bool isUser;
+  final bool hasPermission;
+
+  _HighlightBuilder(this.baseStyle, this.isUser, this.hasPermission);
+
+  @override
+  Widget visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    final color = isUser
+        ? (hasPermission
+        ? textSecondaryHighlightedColor.withOpacity(0.6)
+        : textHighlightedColor.withOpacity(0.6))
+        : textDimColor.withOpacity(0.3);
+
+    final effectiveStyle = preferredStyle ?? baseStyle;
+
+    return RichText(
+      text: TextSpan(
+        children: [
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: Container(
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text(
+                element.textContent,
+                style: effectiveStyle.copyWith(
+                  color: effectiveStyle.color?.withOpacity(0.95),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+}
+

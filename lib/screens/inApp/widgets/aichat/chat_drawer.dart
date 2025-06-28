@@ -85,7 +85,7 @@ class ChatDrawer extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final e = events[index];
-              final selected = e == chat.currentEvent;
+              final selected = e.id == chat.currentEvent?.id;
               final selectedColor = chat.hasPermission
                   ? textHighlightedColor
                   : textSecondaryHighlightedColor;
