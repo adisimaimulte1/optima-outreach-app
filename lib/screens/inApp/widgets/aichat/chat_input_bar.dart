@@ -7,14 +7,12 @@ class ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onSend;
-  final VoidCallback onImage;
 
   const ChatInputBar({
     super.key,
     required this.controller,
     required this.focusNode,
     required this.onSend,
-    required this.onImage,
   });
 
   @override
@@ -70,7 +68,6 @@ class _ChatInputBarState extends State<ChatInputBar> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
-                _buildPhotoButton(hasCredits),
                 const SizedBox(width: 4),
                 _buildTextField(hasCredits),
                 const SizedBox(width: 4),
@@ -80,17 +77,6 @@ class _ChatInputBarState extends State<ChatInputBar> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildPhotoButton(bool hasCredits) {
-    return GestureDetector(
-      onTap: hasCredits ? widget.onImage : null,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Icon(Icons.photo, color: hasCredits ? textColor : Colors.grey, size: 22),
-      ),
     );
   }
 

@@ -17,8 +17,6 @@ class ChatTopBar extends StatelessWidget {
         final event = chat.currentEvent;
         final isSearchActive = chat.isSearchBarVisible.value;
 
-        bool isPinned = false;
-
         return Padding(
           padding: const EdgeInsets.only(top: 24, left: 20, right: 20, bottom: 12),
           child: Column(
@@ -47,6 +45,8 @@ class ChatTopBar extends StatelessWidget {
                           enableActiveStyle: true,
                           onTap: () {
                             chat.showPinnedOnly.value = !isPinned;
+                            chat.isSearchBarVisible.value = false;
+                            chat.resetScrollController();
                             chat.closeMessageOptions();
                             },
                         );

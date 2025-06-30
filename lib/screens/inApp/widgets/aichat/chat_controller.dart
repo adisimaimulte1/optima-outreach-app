@@ -3,14 +3,16 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_message.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ChatController extends ChangeNotifier {
-  final ScrollController scrollController = ScrollController();
+  ItemScrollController itemScrollController = ItemScrollController();
+  ItemPositionsListener itemPositionsListener = ItemPositionsListener.create();
+
   final TextEditingController inputController = TextEditingController();
   final TextEditingController searchTextController = TextEditingController();
   final FocusNode focusNode = FocusNode();
@@ -18,12 +20,13 @@ class ChatController extends ChangeNotifier {
   final Map<String, GlobalKey> _buttonsKeyMap = {};
   final Map<String, GlobalKey> _bubbleKeyMap = {};
 
-  GlobalKey getButtonsKey(String id) { return _buttonsKeyMap.putIfAbsent(id, () => GlobalKey()); }
-  GlobalKey getBubbleKey(String id) { return _bubbleKeyMap.putIfAbsent(id, () => GlobalKey()); }
-
   EventData? currentEvent;
   bool hasPermission = false;
   bool isLoading = false;
+
+  GlobalKey getBubbleKey(String id) {
+    return GlobalObjectKey('bubble-${id}_${showPinnedOnly.value}');
+  }
 
   final searchQuery = ValueNotifier<String>('');
   final isSearchBarVisible = ValueNotifier<bool>(false);
@@ -59,7 +62,7 @@ class ChatController extends ChangeNotifier {
     final idToken = await user.getIdToken();
 
     final msgIndex = currentEvent!.aiChatMessages.indexWhere(
-      (m) => m.id == messageId,
+          (m) => m.id == messageId,
     );
     if (msgIndex == -1) return;
     final removedMsg = currentEvent!.aiChatMessages.removeAt(msgIndex);
@@ -119,17 +122,26 @@ class ChatController extends ChangeNotifier {
     final shouldDisable = value < 0.99;
     if (_isScrollDisabled != shouldDisable) {
       _isScrollDisabled = shouldDisable;
-      if (shouldDisable && scrollController.hasClients) {
-        scrollController.jumpTo(scrollController.offset);
-        scrollController.position.activity?.dispose();
+
+      if (_isScrollDisabled) {
+        focusNode.unfocus();
       }
     }
   }
+
+  void resetScrollController() {
+    itemScrollController = ItemScrollController();
+    itemPositionsListener = ItemPositionsListener.create();
+  }
+
+
+
 
   void toggleSearchBar(bool visible) {
     isSearchBarVisible.value = visible;
     if (!visible) updateSearchQuery('');
   }
+
 
 
 
@@ -166,20 +178,28 @@ class ChatController extends ChangeNotifier {
       final matches = _matchedMessageIds();
       _totalMatches = matches.length;
       _currentMatch = _totalMatches > 0 ? 0 : 0;
+
+      if (_totalMatches == 1) {
+        scrollToMessage(matches[0]);
+      }
     }
     notifyListeners();
   }
 
   void scrollToMessage(String messageId) {
-    final context = _bubbleKeyMap[messageId]?.currentContext;
-    if (context != null) {
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        alignment: 0.5,
-      );
-    }
+    final messages = showPinnedOnly.value
+        ? currentEvent!.aiChatMessages.where((m) => m.isPinned).toList()
+        : currentEvent!.aiChatMessages;
+
+    final index = messages.indexWhere((m) => m.id == messageId);
+    if (index == -1) return;
+
+    itemScrollController.scrollTo(
+      index: messages.length - 1 - index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: 0.5,
+    );
   }
 
   void goToNextMatch() {
@@ -213,7 +233,6 @@ class ChatController extends ChangeNotifier {
 
 
   void disposeAll() {
-    scrollController.dispose();
     inputController.dispose();
     focusNode.dispose();
     searchTextController.dispose();
@@ -223,11 +242,11 @@ class ChatController extends ChangeNotifier {
     if (openMessageId.value == null) return;
 
     final buttonsBox =
-        _buttonsKeyMap[openMessageId.value]?.currentContext?.findRenderObject()
-            as RenderBox?;
+    _buttonsKeyMap[openMessageId.value]?.currentContext?.findRenderObject()
+    as RenderBox?;
     final bubbleBox =
-        _bubbleKeyMap[openMessageId.value]?.currentContext?.findRenderObject()
-            as RenderBox?;
+    _bubbleKeyMap[openMessageId.value]?.currentContext?.findRenderObject()
+    as RenderBox?;
     final tap = details.globalPosition;
 
     bool isInside(RenderBox? box) {
@@ -273,11 +292,13 @@ class ChatController extends ChangeNotifier {
     currentEvent!.aiChatMessages.add(thinkingMsg);
     isLoading = true;
 
-    scrollController.animateTo(
-      scrollController.position.minScrollExtent,
+    itemScrollController.scrollTo(
+      index: 0,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
+      alignment: 0.0,
     );
+
 
     notifyListeners();
 
@@ -334,39 +355,6 @@ class ChatController extends ChangeNotifier {
         ),
       );
     }
-
-    isLoading = false;
-    notifyListeners();
-  }
-
-  Future<void> pickAndSendImage() async {
-    final file = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (file == null || currentEvent == null) return;
-
-    await file.readAsBytes(); // optional use
-
-    currentEvent!.aiChatMessages.add(
-      AiChatMessage(
-        id: UniqueKey().toString(),
-        role: 'user',
-        content: 'IMG',
-        timestamp: DateTime.now(),
-      ),
-    );
-
-    isLoading = true;
-    notifyListeners();
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    currentEvent!.aiChatMessages.add(
-      AiChatMessage(
-        id: UniqueKey().toString(),
-        role: 'assistant',
-        content: 'Jamie processed the image and found... pixels.',
-        timestamp: DateTime.now(),
-      ),
-    );
 
     isLoading = false;
     notifyListeners();

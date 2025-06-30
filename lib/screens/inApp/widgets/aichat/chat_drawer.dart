@@ -237,4 +237,3 @@ class _BouncyIconState extends State<_BouncyIcon> {
   }
 }
 
-

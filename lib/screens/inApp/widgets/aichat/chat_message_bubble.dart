@@ -39,15 +39,10 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
   late final Animation<double> _scaleAnim;
   late final AnimationController _buttonsController;
 
-  late final buttonsKey;
-  late final bubbleKey;
-
   @override
   void initState() {
     super.initState();
     chat = context.read<ChatController>();
-    buttonsKey = chat.getButtonsKey(widget.msg.id);
-    bubbleKey = chat.getBubbleKey(widget.msg.id);
 
     chat.openMessageId.addListener(_syncActionVisibility);
     screenScaleNotifier.addListener(_handleScaleChange);
@@ -114,9 +109,12 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
       _wasMinimized = true;
 
       if (_showActions) _hideIcons();
-      if (chat.openMessageId.value!.isNotEmpty) {
+
+      final id = chat.openMessageId.value;
+      if (id != null && id.isNotEmpty) {
         chat.closeMessageOptions();
       }
+
     } else if (!isMinimized && _wasMinimized) {
       _wasMinimized = false;
     }
@@ -142,7 +140,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: RawGestureDetector(
-        key: bubbleKey,
         gestures: {
           LongPressGestureRecognizer: GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
                 () => LongPressGestureRecognizer(duration: const Duration(milliseconds: 200)),
@@ -195,7 +192,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
           );
         },
         child: Row(
-          key: buttonsKey,
           children: [
             MiniMenuButton(
               icon: Icons.push_pin_outlined,
@@ -482,4 +478,3 @@ class _HighlightBuilder extends MarkdownElementBuilder {
   }
 
 }
-

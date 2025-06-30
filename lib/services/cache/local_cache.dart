@@ -264,10 +264,8 @@ class LocalCache {
 
     for (final doc in snapshot.docs) {
       final membersSnap = await doc.reference.collection('members').get();
-      final aiChatSnap = await doc.reference                // initial 20 messages loaded
-          .collection("aichat")
+      final aiChatSnap = await doc.reference.collection("aichat")
           .orderBy("timestamp", descending: true)
-          .limit(20)
           .get();
 
 
@@ -276,9 +274,9 @@ class LocalCache {
 
       // caching the event itself
       final event = EventData.fromMap(
-          doc.data(),
-          memberDocs: membersSnap.docs,
-          aiChatDocs: aiChatSnap.docs,
+        doc.data(),
+        memberDocs: membersSnap.docs,
+        aiChatDocs: aiChatSnap.docs,
       )..id = doc.id;
 
 

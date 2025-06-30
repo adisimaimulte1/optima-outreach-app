@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
@@ -11,6 +10,7 @@ import 'package:optima/screens/inApp/widgets/aichat/chat_top_bar.dart';
 import 'package:optima/screens/inApp/widgets/aichat/popups/floating_search_bar.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:provider/provider.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -181,15 +181,17 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               );
             }
 
-            return ListView.builder(
-              controller: chat.scrollController,
+            return ScrollablePositionedList.builder(
+              key: ValueKey(showPinnedOnly),
+              itemCount: filteredMessages.length,
+              itemScrollController: chat.itemScrollController,
+              itemPositionsListener: chat.itemPositionsListener,
               reverse: true,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              itemCount: filteredMessages.length,
               itemBuilder: (context, index) {
                 final msg = filteredMessages[filteredMessages.length - 1 - index];
                 return ChatMessageBubble(
-                  key: ValueKey(msg.id),
+                  key: chat.getBubbleKey(msg.id),
                   msg: msg,
                   event: event,
                 );
@@ -210,7 +212,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       controller: chat.inputController,
       focusNode: chat.focusNode,
       onSend: chat.sendMessage,
-      onImage: chat.pickAndSendImage,
     );
   }
 

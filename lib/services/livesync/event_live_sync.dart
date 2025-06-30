@@ -8,7 +8,7 @@ import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 
 class EventLiveSyncService {
   static final EventLiveSyncService _instance =
-      EventLiveSyncService._internal();
+  EventLiveSyncService._internal();
   factory EventLiveSyncService() => _instance;
   EventLiveSyncService._internal();
 
