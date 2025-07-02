@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/scroll_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/contact/tutorial_card_item.dart';
+
+
+
 
 class TutorialCards extends StatefulWidget {
   const TutorialCards({super.key});
@@ -11,7 +15,6 @@ class TutorialCards extends StatefulWidget {
 
 class _TutorialCardsState extends State<TutorialCards> {
   late final PageController _pageController;
-  double _currentPage = 2.0;
   bool _isMinimized = false;
 
   final List<Map<String, dynamic>> _cards = [
@@ -26,11 +29,12 @@ class _TutorialCardsState extends State<TutorialCards> {
   void initState() {
     super.initState();
 
-    _pageController = PageController(viewportFraction: 0.6, initialPage: 2);
+    _pageController = PageController(viewportFraction: 0.6, initialPage: currentTutorialPage.round());
+    PageRegistry.register(ScreenType.contact, _pageController);
 
     _pageController.addListener(() {
       setState(() {
-        _currentPage = _pageController.page ?? _currentPage;
+        currentTutorialPage = _pageController.page ?? currentTutorialPage;
       });
     });
 
@@ -44,7 +48,7 @@ class _TutorialCardsState extends State<TutorialCards> {
       setState(() => _isMinimized = minimized);
 
       if (minimized) {
-        final currentPage = _pageController.page ?? _currentPage;
+        final currentPage = _pageController.page ?? currentTutorialPage;
         _pageController.animateToPage(
           currentPage.round(),
           duration: const Duration(milliseconds: 400),
@@ -57,6 +61,7 @@ class _TutorialCardsState extends State<TutorialCards> {
   @override
   void dispose() {
     _pageController.dispose();
+    PageRegistry.unregister(ScreenType.contact);
     screenScaleNotifier.removeListener(_handleScaleChange);
     super.dispose();
   }
@@ -77,8 +82,9 @@ class _TutorialCardsState extends State<TutorialCards> {
               itemBuilder: (context, index) {
                 final card = _cards[index];
                 return TutorialCardItem(
+                  key: tutorialCardKeys[index],
                   index: index,
-                  currentPage: _currentPage,
+                  currentPage: currentTutorialPage,
                   title: card['title'],
                   icon: card['icon'],
                 );

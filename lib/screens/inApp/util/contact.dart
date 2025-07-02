@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/trigger_proxy.dart';
 import 'package:optima/screens/inApp/widgets/contact/bouncy_contact_info.dart';
 import 'package:optima/screens/inApp/widgets/contact/tutorial_cards.dart';
 
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/globals.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContactScreen extends StatelessWidget {
   const ContactScreen({super.key});
@@ -103,11 +105,27 @@ class ContactScreen extends StatelessWidget {
     return Column(
       children: [
         _title('Contact Us'),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
+
         BouncyContactInfo(icon: Icons.phone, info: '  Phone Number', url: 'tel:+40720781448'),
+        TriggerProxy(
+          key: phoneTriggerKey,
+          onTriggered: () => launchUrl(Uri.parse('tel:+40720781448')),
+        ),
+
         BouncyContactInfo(icon: Icons.email, info: '  Email Address', url: 'mailto:adrian.c.contras@gmail.com?subject=Optima%20Support&body=Hi%20Optima%20team,%0A%0A'),
+        TriggerProxy(
+          key: emailTriggerKey,
+          onTriggered: () => launchUrl(Uri.parse('mailto:adrian.c.contras@gmail.com?subject=Optima%20Support&body=Hi%20Optima%20team,%0A%0A')),
+        ),
+
         BouncyContactInfo(icon: Icons.link, info: 'Official Website', url: 'https://adisimaimulte1.github.io/optima-official-site/'),
-        SizedBox(height: 10),
+        TriggerProxy(
+          key: websiteTriggerKey,
+          onTriggered: () => launchUrl(Uri.parse('https://adisimaimulte1.github.io/optima-official-site/')),
+        ),
+
+        const SizedBox(height: 10),
       ],
     );
   }

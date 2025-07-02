@@ -2,15 +2,23 @@ class Intent {
   final String id;
   final List<String> triggers;
   final List<String> targets;
+  final List<String> notContains;
 
   Intent({
     required this.id,
     required this.triggers,
     required this.targets,
+    this.notContains = const [],
   });
 
   bool matches(String input, List<String> negations) {
     final normalized = input.toLowerCase();
+
+
+    for (final block in notContains) {
+      if (normalized.contains(block)) return false;
+    }
+
 
     for (final trigger in triggers) {
       if (!normalized.contains(trigger)) continue;

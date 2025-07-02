@@ -4,6 +4,7 @@ import 'package:optima/screens/inApp/util/contact.dart';
 import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/users.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
+import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
 
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
 import 'package:optima/screens/inApp/widgets/menu/selection_beam.dart';
@@ -136,6 +137,13 @@ class MenuState extends State<Menu> {
       if (selectedScreenNotifier.value != ScreenType.settings) {
         ScrollPersistence.offset = 0.0;
       }
+      if (selectedScreenNotifier.value != ScreenType.chat) {
+        chatController = ChatController();
+        aiChatScaffoldKey = GlobalKey<ScaffoldState>();
+      }
+      if (selectedScreenNotifier.value != ScreenType.contact) {
+        currentTutorialPage = 2.0;
+      }
 
       _handleIncomingSource();
     } else if (isFull && _activeBeams.isNotEmpty) {
@@ -210,7 +218,6 @@ class MenuState extends State<Menu> {
     }
 
 
-    debugPrint("Selected Icon: $_pendingScreenChange");
 
     // start the beam bby
     final newBeamKey = GlobalKey<ParticleBeamEffectState>();

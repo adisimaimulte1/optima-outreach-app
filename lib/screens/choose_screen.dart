@@ -13,6 +13,7 @@ import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/users.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
+import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
 import 'package:optima/screens/inApp/widgets/menu/menu_overlay.dart';
 import 'package:optima/services/sessions/session_service.dart';
@@ -37,10 +38,6 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
     super.initState();
 
     popupStackCount.value = 0;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      preCacheTutorialImages(context);
-    });
 
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -103,6 +100,7 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
           child: ValueListenableBuilder<ScreenType>(
             valueListenable: selectedScreenNotifier,
             builder: (context, selectedScreen, _) {
+
               switch (selectedScreen) {
                 case ScreenType.dashboard:
                   custom_menu.MenuController.instance.selectSource(DashboardScreen);

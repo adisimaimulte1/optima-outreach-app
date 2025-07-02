@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:optima/ai/navigator/ai_navigator.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/details/status_label.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
@@ -13,10 +14,10 @@ class UpcomingEventCard extends StatefulWidget {
   State<UpcomingEventCard> createState() => UpcomingEventCardState();
 }
 
-class UpcomingEventCardState extends State<UpcomingEventCard> {
+class UpcomingEventCardState extends State<UpcomingEventCard> implements Triggerable {
   double _scale = 1.0;
 
-  EventData? get _nextEvent {
+  EventData? get nextEvent {
     final now = DateTime.now();
     final upcoming = events
         .where((e) =>
@@ -57,10 +58,9 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
 
   @override
   Widget build(BuildContext context) {
-    final nextEvent = _nextEvent;
     if (nextEvent == null) return _buildNoEventCard();
 
-    final notifier = EventLiveSyncService().getNotifier(nextEvent.id!);
+    final notifier = EventLiveSyncService().getNotifier(nextEvent!.id!);
 
     return ValueListenableBuilder<EventData>(
       valueListenable: notifier!,
@@ -218,5 +218,17 @@ class UpcomingEventCardState extends State<UpcomingEventCard> {
         ),
       ),
     );
+  }
+
+
+
+  @override
+  void triggerFromAI() {
+    final event = nextEvent;
+    if (event != null && screenScaleNotifier.value >= 0.99) {
+      _handleTap(event);
+    } else {
+      debugPrint("🔒 No event to open or screen not ready");
+    }
   }
 }

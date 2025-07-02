@@ -5,9 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:optima/ai/ai_assistant.dart';
 import 'package:optima/ai/ai_status_dots.dart';
+import 'package:optima/ai/navigator/trigger_proxy.dart';
 import 'package:optima/screens/inApp/menu.dart';
+import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
+import 'package:optima/screens/inApp/widgets/contact/tutorial_card_item.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_button.dart';
+import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/ads/ad_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
@@ -46,9 +50,21 @@ enum UserState {
 final GlobalKey<MenuState> menuGlobalKey = GlobalKey<MenuState>();
 final GlobalKey<NewEventButtonState> createEventButtonKey = GlobalKey<NewEventButtonState>();
 final GlobalKey<ReminderBellButtonState> showNotificationsKey = GlobalKey<ReminderBellButtonState>();
+final GlobalKey<UpcomingEventCardState> showUpcomingEventCardKey = GlobalKey<UpcomingEventCardState>();
 
-final GlobalKey showCreditsTileKey = GlobalKey();
-final GlobalKey showSessionsTileKey = GlobalKey();
+final List<GlobalKey<TutorialCardItemState>> tutorialCardKeys = List.generate(5, (_) => GlobalKey<TutorialCardItemState>());
+
+final GlobalKey<TriggerProxyState> showCreditsTileKey = GlobalKey<TriggerProxyState>();
+final GlobalKey<TriggerProxyState> showSessionsTileKey = GlobalKey<TriggerProxyState>();
+
+final GlobalKey<TriggerProxyState> phoneTriggerKey = GlobalKey<TriggerProxyState>();
+final GlobalKey<TriggerProxyState> emailTriggerKey = GlobalKey<TriggerProxyState>();
+final GlobalKey<TriggerProxyState> websiteTriggerKey = GlobalKey<TriggerProxyState>();
+
+GlobalKey<ScaffoldState> aiChatScaffoldKey = GlobalKey<ScaffoldState>();
+
+
+
 
 final ValueNotifier<UniqueKey> appReloadKey = ValueNotifier(UniqueKey());
 final ValueNotifier<int> popupStackCount = ValueNotifier(0);
@@ -84,6 +100,13 @@ double subCredits = 0;
 
 List<EventData> events = [];
 final Map<String, ValueNotifier<EventData>> eventNotifiers = {};
+
+
+
+double currentTutorialPage = 2.0;
+ChatController chatController = ChatController();
+bool hasResetAiChat = true;
+
 
 
 
@@ -192,16 +215,6 @@ void setIsDarkModeNotifier(bool isDarkSystem) {
 
   textHighlightedColor = isDarkModeNotifier.value ? darkColorPrimary : lightColorPrimary;
   textSecondaryHighlightedColor = isDarkModeNotifier.value ? darkColorSecondary : lightColorSecondary;
-}
-
-void preCacheTutorialImages(BuildContext context) {
-  for (int i = 0; i < tutorialImagesCount; i++) {
-    precacheImage(
-      AssetImage('assets/images/tutorials/tutorial_$i.png'),
-      context,
-      onError: (_, __) {},
-    );
-  }
 }
 
 Widget responsiveText(

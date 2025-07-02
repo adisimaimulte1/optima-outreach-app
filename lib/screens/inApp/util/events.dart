@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:optima/ai/navigator/scroll_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
@@ -25,6 +26,8 @@ class _EventsScreenState extends State<EventsScreen> {
   final PageStorageBucket _bucket = PageStorageBucket();
   final PageStorageKey<String> _filterKey = const PageStorageKey('eventFilter');
 
+  final ScrollController _scrollController = ScrollController();
+
   String selectedFilter = 'ALL';
   bool _disableScroll = false;
 
@@ -32,6 +35,7 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   void initState() {
     super.initState();
+    ScrollRegistry.register(ScreenType.events, _scrollController);
 
     final allEmails = events
         .expand((e) => e.eventMembers.map((m) => m['email']))
@@ -41,7 +45,6 @@ class _EventsScreenState extends State<EventsScreen> {
     for (final email in allEmails) {
       LocalCache().recacheMemberPhoto(email);
     }
-
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (showAddEventOnLaunch) {
@@ -62,6 +65,13 @@ class _EventsScreenState extends State<EventsScreen> {
       }
 
     });
+  }
+
+  @override
+  void dispose() {
+    ScrollRegistry.unregister(ScreenType.events);
+    _scrollController.dispose();
+    super.dispose();
   }
 
 
@@ -195,6 +205,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return Expanded(
       child: useListView
           ? ListView.builder(
+        controller: _scrollController,
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
         itemCount: filteredEvents.length,
@@ -218,6 +229,7 @@ class _EventsScreenState extends State<EventsScreen> {
         },
       )
           : ReorderableListView.builder(
+        scrollController: _scrollController,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
         itemCount: filteredEvents.length,

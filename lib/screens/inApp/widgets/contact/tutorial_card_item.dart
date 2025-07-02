@@ -1,7 +1,9 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/ai_navigator.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/tutorial/tutorial_screen.dart';
 
 class TutorialCardItem extends StatefulWidget {
   final int index;
@@ -18,10 +20,10 @@ class TutorialCardItem extends StatefulWidget {
   });
 
   @override
-  State<TutorialCardItem> createState() => _TutorialCardItemState();
+  State<TutorialCardItem> createState() => TutorialCardItemState();
 }
 
-class _TutorialCardItemState extends State<TutorialCardItem> with SingleTickerProviderStateMixin {
+class TutorialCardItemState extends State<TutorialCardItem> with SingleTickerProviderStateMixin implements Triggerable {
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
 
@@ -47,6 +49,7 @@ class _TutorialCardItemState extends State<TutorialCardItem> with SingleTickerPr
   void _onTapUp(_) async {
     await Future.delayed(const Duration(milliseconds: 120));
     if (mounted) _controller.reverse();
+    _showTutorialOverlay();
   }
 
   void _onTapCancel() => _controller.reverse();
@@ -165,5 +168,29 @@ class _TutorialCardItemState extends State<TutorialCardItem> with SingleTickerPr
         shape: BoxShape.circle,
       ),
     );
+  }
+
+
+
+  void _showTutorialOverlay() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.9),
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, _, __) => TutorialOverlayScreen(
+        tutorialNumber: widget.index + 1, // not starting from 0
+      ),
+    );
+  }
+
+
+  @override
+  void triggerFromAI() {
+    if (screenScaleNotifier.value >= 0.99) {
+      _showTutorialOverlay();
+    } else {
+      debugPrint("🔒 Screen not ready");
+    }
   }
 }

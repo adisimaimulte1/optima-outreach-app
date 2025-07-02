@@ -180,17 +180,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 .toList()
               ..sort((a, b) => a.selectedDate!.compareTo(b.selectedDate!));
 
-            if (nextEvent.isEmpty) return const UpcomingEventCard(); // fallback
+            if (nextEvent.isEmpty) return UpcomingEventCard(key: showUpcomingEventCardKey); // fallback
 
             final eventId = nextEvent.first.id!;
             final notifier = EventLiveSyncService().getNotifier(eventId);
 
-            if (notifier == null) return const UpcomingEventCard();
+            if (notifier == null) return UpcomingEventCard(key: showUpcomingEventCardKey);
 
             return ValueListenableBuilder<EventData>(
               valueListenable: notifier,
               builder: (context, liveEvent, _) {
-                return UpcomingEventCard();
+                return UpcomingEventCard(key: showUpcomingEventCardKey);
               },
             );
           },

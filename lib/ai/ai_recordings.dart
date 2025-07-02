@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:optima/globals.dart';
 
@@ -141,6 +142,15 @@ class AiRecordings {
 
   /// Plays a random Jamie action response (like navigate/dashboard, event/add)
   static Future<String> getActionResponse(String actionPath, int total) async {
+    if (actionPath.endsWith("show_upcoming_event")) {
+      final hasUpcoming = _hasUpcomingEvent();
+
+      debugPrint("hasUpcoming: $hasUpcoming");
+      actionPath = hasUpcoming
+          ? actionPath
+          : 'tap_widget/dashboard/no_upcoming_event';
+    }
+
     final folderPath = 'assets/audio/actions/$actionPath';
 
     final fileList = List.generate(total, (i) => '${i + 1}.mp3');
@@ -158,8 +168,8 @@ class AiRecordings {
     return '$folderPath/$randomFile';
   }
 
-  static Future<String> getWalkThroughTutorial() async {
-    return 'assets/audio/walk_through/first_open_walk_through.mp3';
+  static Future<String> getTutorialRecording(int tutorialNumber) async {
+    return 'assets/audio/tutorials/tutorial_$tutorialNumber.mp3';
   }
 
 
@@ -167,5 +177,19 @@ class AiRecordings {
   /// Stops any currently playing audio
   static Future<void> stop() async {
     await _player.stop();
+  }
+
+
+  static bool _hasUpcomingEvent() {
+    final now = DateTime.now();
+    final upcoming = events
+        .where((e) =>
+    e.selectedDate != null &&
+        e.selectedDate!.isAfter(now) &&
+        e.status == "UPCOMING")
+        .toList()
+      ..sort((a, b) => a.selectedDate!.compareTo(b.selectedDate!));
+
+    return upcoming.isNotEmpty;
   }
 }

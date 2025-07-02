@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/scroll_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
@@ -53,7 +54,7 @@ class AiNavigator {
       return;
     }
 
-    // Simulate the icon tap for the correct target screen
+    // simulate the icon tap for the correct target screen
     if (menuGlobalKey.currentState != null) {
       menuGlobalKey.currentState!.simulateTap(target);
     } else {
@@ -62,7 +63,7 @@ class AiNavigator {
       return;
     }
 
-    await Future.delayed(const Duration(milliseconds: 1000)); // Let the beam animation play
+    await Future.delayed(const Duration(milliseconds: 1000)); // let the beam animation play
 
 
     if (screenScaleNotifier.value == 0.4) {
@@ -79,10 +80,10 @@ class AiNavigator {
   static Future<void> navigateToWidget({
     required BuildContext context,
     required String intentId,
+
     bool shouldScroll = false,
-    ScrollController? scrollController,
-    Duration scrollDelay = const Duration(milliseconds: 400),
-    double scrollOffset = 0,
+    bool shouldScrollToPage = false,
+    ScrollData scrollData = const ScrollData(offset: 0.0),
   }) async
   {
     final screen = screenFromIntent(intentId);
@@ -101,14 +102,17 @@ class AiNavigator {
     isTouchActive.value = false;
     await Future.delayed(const Duration(milliseconds: 300));
 
-    if (shouldScroll && scrollController != null) {
-      scrollController.animateTo(
-        scrollOffset,
-        duration: scrollDelay,
-        curve: Curves.easeInOut,
-      );
-      await Future.delayed(scrollDelay + const Duration(milliseconds: 200));
+
+
+    if (shouldScroll) {
+      await scrollTo(scrollData: scrollData);
+      await Future.delayed(const Duration(milliseconds: 200));
+    } else if (shouldScrollToPage) {
+      await scrollToPage(scrollData: scrollData);
+      await Future.delayed(const Duration(milliseconds: 200));
     }
+
+
 
     final state = targetKey.currentState;
     if (state != null && state is Triggerable) {
@@ -121,8 +125,49 @@ class AiNavigator {
     isTouchActive.value = true;
   }
 
+  static Future<void> scrollTo({required ScrollData scrollData}) async {
+    final screen = selectedScreenNotifier.value;
+    final controller = ScrollRegistry.get(screen);
 
-  static Future<void> walkthroughTour(BuildContext context) async {
+    if (controller == null || scrollData.offset == null) { return; }
+
+    try {
+      await controller.animateTo(
+        scrollData.offset!,
+        duration: scrollData.duration,
+        curve: scrollData.curve,
+      );
+    } catch (e) {}
+  }
+
+  static Future<void> scrollToPage({required ScrollData scrollData}) async {
+    final screen = selectedScreenNotifier.value;
+    final controller = PageRegistry.get(screen);
+
+    if (controller == null || scrollData.index == null) { return; }
+
+    try {
+      await controller.animateToPage(
+          scrollData.index!,
+          duration: scrollData.duration,
+          curve: scrollData.curve);
+    } catch (e) {}
+  }
+
+
+
+
+  static Future<void> showTutorial(BuildContext context, int tutorialNumber) async {
+    switch (tutorialNumber) {
+      case 1:
+        await tutorial1(context);
+        break;
+      default:
+        break;
+    }
+  }
+
+  static Future<void> tutorial1(BuildContext context) async {
     custom_menu.MenuController.instance.selectSource(DashboardScreen);
     isTouchActive.value = false;
 
@@ -194,7 +239,6 @@ class AiNavigator {
 
 
 
-
   static ScreenType? screenFromIntent(String intentId) {
     if (intentId.contains("events")) return ScreenType.events;
     if (intentId.contains("settings")) return ScreenType.settings;
@@ -208,9 +252,24 @@ class AiNavigator {
 
   static GlobalKey? keyFromIntent(String intentId) {
     if (intentId.endsWith("/add_event")) return createEventButtonKey;
+
     if (intentId.endsWith("/show_credits")) return showCreditsTileKey;
     if (intentId.endsWith("/show_sessions")) return showSessionsTileKey;
     if (intentId.endsWith("/show_notifications")) return showNotificationsKey;
+    if (intentId.endsWith("/show_upcoming_event")) return showUpcomingEventCardKey;
+
+    if (intentId.endsWith("/contact/phone")) return phoneTriggerKey;
+    if (intentId.endsWith("/contact/email")) return emailTriggerKey;
+    if (intentId.endsWith("/contact/website")) return websiteTriggerKey;
+
+    if (intentId.startsWith("tap_widget/contact/tutorial_")) {
+      final index = int.tryParse(intentId.split("_").last);
+      if (index != null && index >= 1 && index <= tutorialCardKeys.length) {
+        return tutorialCardKeys[index - 1];
+      }
+    }
+
+
     return null;
   }
 

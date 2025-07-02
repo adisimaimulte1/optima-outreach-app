@@ -113,6 +113,7 @@ Change Log
     * added a date and proper time formatting for the messages + pin indicator + made text bigger
     * make delete + pin buttons & search bar disappear on: outside tap, screen scale change, menu enter
 
+
 0.1.4 (28/06/2024)
 ------------------
 - update pinned messages to the database
@@ -120,7 +121,21 @@ Change Log
 - make the search bar highlight the searched text live
 - fixed AI messages getting cut off
 
+
 0.1.42 (30/06/2024)
 ------------------
 - cache more than 20 messages at once in AI Chat
 - make the search bar arrows work
+
+
+0.1.5 (02/07/2024)
+------------------
+- AI Assistant updates:
+    * now it can travel to all 6 screens
+    * added scroll access - for showing sessions and credits
+    * added jokes
+    * it can open the contact platforms (email, phone, website)
+    * can open the upcoming event (and drink a Mai Tai in Hawaii)
+    * can open any tutorial from the Contact screen
+- now the Contact screen rebuilds naturally on AI theme change
+- now the AI Chat screen also rebuilds naturally on AI theme change

@@ -53,8 +53,6 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-
-
   Future<void> deleteChatMessage({required String messageId}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || currentEvent == null) return;
@@ -125,6 +123,19 @@ class ChatController extends ChangeNotifier {
 
       if (_isScrollDisabled) {
         focusNode.unfocus();
+
+        // Scroll to bottom when minimized
+        if (currentEvent != null && currentEvent!.aiChatMessages.isNotEmpty) {
+          // Wait a frame to ensure the layout settles after scaling
+          Future.delayed(Duration(milliseconds: 50), () {
+            itemScrollController.scrollTo(
+              index: 0,
+              duration: Duration(milliseconds: 400),
+              curve: Curves.easeOut,
+              alignment: 0.0,
+            );
+          });
+        }
       }
     }
   }

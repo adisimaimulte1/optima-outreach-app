@@ -40,7 +40,7 @@ class ReminderStatusCardState extends State<ReminderStatusCard> {
           .collection('public_data')
           .doc(uid)
           .collection('notifications')
-          .where('read', isEqualTo: false) // 🔥 filter only unread
+          .where('read', isEqualTo: false)
           .orderBy('timestamp', descending: true)
           .limit(1)
           .get();

@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/scroll_registry.dart';
+import 'package:optima/ai/navigator/trigger_proxy.dart';
 
 import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
@@ -72,6 +74,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _profileAvatarKey.currentState?.dispose();
     _scrollController.dispose();
 
+    ScrollRegistry.unregister(ScreenType.settings);
+
     notificationsPermissionNotifier.removeListener(_updatePermissions);
     locationPermissionNotifier.removeListener(_updatePermissions);
     jamieEnabledNotifier.removeListener(_updatePermissions);
@@ -90,6 +94,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scrollController.addListener(() {
       ScrollPersistence.offset = _scrollController.offset;
     });
+
+    ScrollRegistry.register(ScreenType.settings, _scrollController);
 
     notificationsPermissionNotifier.addListener(_updatePermissions);
     locationPermissionNotifier.addListener(_updatePermissions);
@@ -517,7 +523,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
           Tiles.tile(
-            key: showSessionsTileKey,
             context: context,
             icon: Icons.devices,
             title: "Session Management",
@@ -525,16 +530,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
+          TriggerProxy(
+            key: showSessionsTileKey,
+            onTriggered: () => SessionManagementDialog.show(context),
+          ),
         ]),
         _buildSection("Credits & Billing", [
           Tiles.tile(
-            key: showCreditsTileKey,
             context: context,
             icon: Icons.credit_score,
             title: "My Credits",
             onTap: () => CreditDialog.show(context),
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
+          ),
+          TriggerProxy(
+            key: showCreditsTileKey,
+            onTriggered: () => CreditDialog.show(context),
           ),
           Tiles.tile(
             context: context,

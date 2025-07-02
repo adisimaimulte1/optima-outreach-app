@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:optima/ai/ai_recordings.dart';
 import 'package:optima/ai/navigator/ai_navigator.dart';
+import 'package:optima/ai/navigator/scroll_registry.dart';
 import 'package:optima/ai/processor/intent_processor.dart';
 import 'package:optima/services/credits/credit_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
@@ -28,8 +29,9 @@ class AIVoiceAssistant {
   bool wakeWordDetected = false;
   bool _hasAttachedListener = false;
 
+
   Timer? _cooldownTimer;
-  bool _cooldownActive = false;
+  bool cooldownActive = false;
   bool _loopRunning = false;
 
   Completer<void>? _listeningCompleter;
@@ -89,7 +91,7 @@ class AIVoiceAssistant {
 
   void stopLoop({settingsStop = false}) {
     _loopRunning = false;
-    _cooldownActive = false;
+    cooldownActive = false;
     wakeWordDetected = false;
     isListening = false;
 
@@ -131,7 +133,7 @@ class AIVoiceAssistant {
       }
 
       try {
-        if (!_cooldownActive && !wakeWordDetected) { await _detectWakeWord(); }
+        if (!cooldownActive && !wakeWordDetected) { await _detectWakeWord(); }
         if (wakeWordDetected && !aiSpeaking && !isListening) { await _captureAndRespond(context, userId); }
 
       } catch (e) {
@@ -359,7 +361,7 @@ class AIVoiceAssistant {
     }
     else {
       assistantState.value = JamieState.idle;
-      _cooldownActive = false;
+      cooldownActive = false;
       _cooldownTimer?.cancel();
       wakeWordDetected = false;
     }
@@ -445,12 +447,17 @@ class AIVoiceAssistant {
 
 
   void startCooldown() {
-    _cooldownActive = true;
+    cooldownActive = true;
     _cooldownTimer?.cancel();
     debugPrint("🧊 Cooldown started. Assistant will listen for 50 seconds.");
 
     _cooldownTimer = Timer(const Duration(seconds: 50), () {
-      _cooldownActive = false;
+      if (aiSpeaking || assistantState.value == JamieState.speaking) {
+        debugPrint("🕒 Cooldown skipped — Jamie still busy.");
+        return;
+      }
+
+      cooldownActive = false;
       wakeWordDetected = false;
       isListening = false;
       aiSpeaking = false;
@@ -476,7 +483,14 @@ class AIVoiceAssistant {
     _completeListening();
   }
 
-
+  void logStatus() {
+    debugPrint("📡 AI Voice Status:");
+    debugPrint("• _loopRunning: $_loopRunning");
+    debugPrint("• aiSpeaking: $aiSpeaking");
+    debugPrint("• isListening: $isListening");
+    debugPrint("• cooldownActive: $cooldownActive");
+    debugPrint("• wakeWordDetected: $wakeWordDetected");
+  }
 
 
 
@@ -490,7 +504,14 @@ class AIVoiceAssistant {
     }
 
     else if (intentId.startsWith("tap_widget/")) {
-      AiNavigator.navigateToWidget(context: context, intentId: intentId);
+      final scrollData = getScrollDataForIntent(intentId);
+
+      AiNavigator.navigateToWidget(
+          context: context,
+          intentId: intentId,
+          shouldScroll: scrollData != null && scrollData.offset != null,
+          shouldScrollToPage: scrollData != null && scrollData.index != null,
+          scrollData: scrollData ?? const ScrollData(offset: 0.0));
     }
   }
 
@@ -589,6 +610,7 @@ class AIVoiceAssistant {
     }
   }
 
+
   int _getIntentAudioCount(String intentId) {
     switch (intentId) {
       case "navigate/dashboard":
@@ -603,10 +625,44 @@ class AIVoiceAssistant {
       case "change_setting/disable_jamie":
         return 6;
 
+      case "just_talk/joke":
+        return 12;
+
       default:
         return 3; // fallback
     }
   }
 
+  ScrollData? getScrollDataForIntent(String intentId) {
+    switch (intentId) {
+      case "tap_widget/settings/show_credits":
+        return const ScrollData(offset: 650);
+
+      case "tap_widget/settings/show_sessions":
+        return const ScrollData(offset: 450);
+
+
+
+      case "tap_widget/contact/tutorial_1":
+        return const ScrollData(index: 0);
+
+      case "tap_widget/contact/tutorial_2":
+        return const ScrollData(index: 1);
+
+      case "tap_widget/contact/tutorial_3":
+        return const ScrollData(index: 2);
+
+      case "tap_widget/contact/tutorial_4":
+        return const ScrollData(index: 3);
+
+      case "tap_widget/contact/tutorial_5":
+        return const ScrollData(index: 4);
+
+
+
+      default:
+        return null; // No scroll needed
+    }
+  }
 
 }

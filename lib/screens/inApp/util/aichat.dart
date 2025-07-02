@@ -20,48 +20,43 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
-  late final ChatController chat;
-
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
-    chat = ChatController();
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    chat.disposeAll();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
-      value: chat,
+      value: chatController,
       child: AbsScreen(
         sourceType: ChatScreen,
         builder: (context, isMinimized, scale) {
-          chat.handleScaleChange(scale);
+          chatController.handleScaleChange(scale);
 
-          if (chat.isScrollDisabled) {
+          if (chatController.isScrollDisabled) {
             FocusScope.of(context).unfocus();
-            chat.focusNode.unfocus();
+            chatController.focusNode.unfocus();
           }
 
-          if (scale < 0.99 && chat.isSearchBarVisible.value) {
+          if (scale < 0.99 && chatController.isSearchBarVisible.value) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              chat.toggleSearchBar(false);
+              chatController.toggleSearchBar(false);
             });
           }
 
 
 
           return ValueListenableBuilder<bool>(
-            valueListenable: chat.isSearchBarVisible,
+            valueListenable: chatController.isSearchBarVisible,
             builder: (context, isSearchVisible, _) {
               return Consumer<ChatController>(
                 builder: (context, chat, _) {
@@ -71,16 +66,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                     valueListenable: screenScaleNotifier,
                     builder: (context, scale, _) {
                       // Close drawer automatically if scale drops
-                      if (scale < 0.99 && _scaffoldKey.currentState?.isDrawerOpen == true) {
+                      if (scale < 0.99 && aiChatScaffoldKey.currentState?.isDrawerOpen == true) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _scaffoldKey.currentState?.closeDrawer();
+                          aiChatScaffoldKey.currentState?.closeDrawer();
                         });
                       }
 
                       return Stack(
                         children: [
                           Scaffold(
-                            key: _scaffoldKey,
+                            key: aiChatScaffoldKey,
                             drawer: ChatDrawer(onSelect: chat.setEvent),
                             drawerEnableOpenDragGesture: scale >= 0.99,
                             backgroundColor: Colors.transparent,
@@ -95,8 +90,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                                 child: GestureDetector(
                                   behavior: HitTestBehavior.opaque,
                                   onPanDown: (_) {
-                                    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-                                      _scaffoldKey.currentState?.closeDrawer();
+                                    if (aiChatScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                                      aiChatScaffoldKey.currentState?.closeDrawer();
                                     }
                                   },
                                   child: const SizedBox.expand(),
@@ -122,7 +117,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Widget _buildChatBody(ChatController chat, EventData? currentEvent) {
     return Column(
       children: [
-        ChatTopBar(scaffoldKey: _scaffoldKey),
+        ChatTopBar(scaffoldKey: aiChatScaffoldKey),
         if (currentEvent == null)
           _buildNoEventMessage()
         else ...[
@@ -158,9 +153,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onTapDown: (details) => chat.handleOutsideTap(details, context),
+        onTapDown: (details) => chatController.handleOutsideTap(details, context),
         child: ValueListenableBuilder<bool>(
-          valueListenable: chat.showPinnedOnly,
+          valueListenable: chatController.showPinnedOnly,
           builder: (context, showPinnedOnly, _) {
             final allMessages = event.aiChatMessages;
             final filteredMessages = showPinnedOnly
@@ -184,14 +179,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             return ScrollablePositionedList.builder(
               key: ValueKey(showPinnedOnly),
               itemCount: filteredMessages.length,
-              itemScrollController: chat.itemScrollController,
-              itemPositionsListener: chat.itemPositionsListener,
+              itemScrollController: chatController.itemScrollController,
+              itemPositionsListener: chatController.itemPositionsListener,
               reverse: true,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               itemBuilder: (context, index) {
                 final msg = filteredMessages[filteredMessages.length - 1 - index];
                 return ChatMessageBubble(
-                  key: chat.getBubbleKey(msg.id),
+                  key: chatController.getBubbleKey(msg.id),
                   msg: msg,
                   event: event,
                 );
@@ -221,10 +216,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       left: 20,
       right: 20,
       child: FloatingSearchBar(
-        controller: chat.searchTextController,
-        onClose: () => chat.toggleSearchBar(false),
-        onNext: chat.goToNextMatch,
-        onPrevious: chat.goToPreviousMatch,
+        controller: chatController.searchTextController,
+        onClose: () => chatController.toggleSearchBar(false),
+        onNext: chatController.goToNextMatch,
+        onPrevious: chatController.goToPreviousMatch,
       ),
     );
   }
