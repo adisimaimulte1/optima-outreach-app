@@ -61,11 +61,13 @@ class LocalStorageService {
 
   Future<void> setNotificationsEnabled(bool enabled, {bool update = true}) async {
     notifications = enabled;
+    notificationsPermissionNotifier.value = enabled;
     if (update) await _settingsBox.put('notifications_enabled', enabled);
   }
 
   Future<void> setLocationAccess(bool enabled, {bool update = true}) async {
     locationAccess = enabled;
+    locationPermissionNotifier.value = enabled;
     if (update) return _settingsBox.put('location_access', enabled);
   }
 

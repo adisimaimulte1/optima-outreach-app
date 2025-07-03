@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
@@ -122,6 +123,30 @@ class _AbsScreenState extends State<AbsScreen> {
               ),
             ),
           ),
+
+        ValueListenableBuilder2<double, bool>(
+          first: screenScaleNotifier,
+          second: isTouchActive,
+          builder: (context, scale, isActive, _) {
+            if (isActive) return const SizedBox.shrink();
+
+            final cornerRadius = 120.0 * (1 - scale); // reuse same logic
+
+            return IgnorePointer(
+              child: Center(
+                child: ClipRRect(
+                    borderRadius: BorderRadius.circular(cornerRadius),
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width,
+                      height: MediaQuery.of(context).size.height,
+                      child: _frozenOverlay(),
+                    ),
+                  ),
+              ),
+            );
+          },
+        ),
+
       ],
     );
   }
@@ -172,10 +197,60 @@ class _AbsScreenState extends State<AbsScreen> {
 
     widget.onScaleEnd?.call(details);
   }
+
+
+  Widget _frozenOverlay() {
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.2,
+            colors: [
+              Color(0xFFdcf3ff).withOpacity(0.02),
+              Color(0xFFdcf3ff).withOpacity(0.2),
+            ],
+            stops: [0.8, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+
 
 class _AlwaysWinScaleGestureRecognizer extends ScaleGestureRecognizer {
   _AlwaysWinScaleGestureRecognizer({super.debugOwner});
   @override
   void rejectGesture(int pointer) => acceptGesture(pointer);
 }
+
+class ValueListenableBuilder2<A, B> extends StatelessWidget {
+  final ValueListenable<A> first;
+  final ValueListenable<B> second;
+  final Widget Function(BuildContext, A, B, Widget?) builder;
+
+  const ValueListenableBuilder2({
+    super.key,
+    required this.first,
+    required this.second,
+    required this.builder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<A>(
+      valueListenable: first,
+      builder: (context, a, _) {
+        return ValueListenableBuilder<B>(
+          valueListenable: second,
+          builder: (context, b, _) {
+            return builder(context, a, b, null);
+          },
+        );
+      },
+    );
+  }
+}
+

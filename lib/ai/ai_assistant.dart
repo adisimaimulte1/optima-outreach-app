@@ -10,7 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:optima/ai/ai_recordings.dart';
 import 'package:optima/ai/navigator/ai_navigator.dart';
-import 'package:optima/ai/navigator/scroll_registry.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/ai/processor/intent_processor.dart';
 import 'package:optima/services/credits/credit_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
@@ -292,35 +292,38 @@ class AIVoiceAssistant {
     aiSpeaking = true;
 
     // Detect local action intent
-    final intentId = IntentProcessor.detectIntent(message);
-    if (intentId != null) {
-      debugPrint("✅ Detected local Jamie intent: $intentId");
+    final detectedIntents = IntentProcessor.detectIntents(message);
 
-      final bytes = await rootBundle.load(
-          await AiRecordings.getActionResponse(intentId, _getIntentAudioCount(intentId))
-      );
+    if (detectedIntents.isNotEmpty) {
+      debugPrint("✅ Detected local Jamie intents: $detectedIntents");
 
-
-      final delayMs = 400 + Random().nextInt(100);
-      await Future.delayed(Duration(milliseconds: delayMs));
+      for (int i = 0; i < detectedIntents.length; i++) {
+        final intentId = detectedIntents[i];
 
 
+        // delay between responses
+        assistantState.value = JamieState.thinking;
+        await Future.delayed(const Duration(milliseconds: 800));
 
-      while (appPaused) {
-        await Future.delayed(const Duration(milliseconds: 30));
+
+        while (appPaused) {
+          await Future.delayed(const Duration(milliseconds: 30));
+        }
+
+        // execute local action
+        await execute(context, intentId, message);
+
+        // play local audio for that intent
+        final bytes = await rootBundle.load(
+          await AiRecordings.getActionResponse(intentId, _getIntentAudioCount(intentId)),
+        );
+
+        assistantState.value = JamieState.speaking;
+        await playResponseFile(bytes.buffer.asUint8List(), detectedIntents.length - i - 1);
       }
 
-
-      await execute(context, intentId, message);
-
-
-      assistantState.value = JamieState.speaking;
-      await playResponseFile(bytes.buffer.asUint8List());
       _finishInteraction();
-
       return;
-    } else {
-      debugPrint("🚫 No local intent detected");
     }
 
     // Fallback to GPT response if no local intent
@@ -332,7 +335,7 @@ class AIVoiceAssistant {
       final delayMs = 400 + Random().nextInt(100);
       await Future.delayed(Duration(milliseconds: delayMs));
 
-      await playResponseFile(bytes.buffer.asUint8List());
+      await playResponseFile(bytes.buffer.asUint8List(), 0);
       _finishInteraction();
       return;
     }
@@ -343,7 +346,7 @@ class AIVoiceAssistant {
     }
 
     assistantState.value = JamieState.speaking;
-    await playResponseFile(response);
+    await playResponseFile(response, 0);
     _finishInteraction();
 
     credits = (await CreditService.getCredits())!;
@@ -370,7 +373,7 @@ class AIVoiceAssistant {
 
 
 
-  Future<void> playResponseFile(List<int> bytes) async {
+  Future<void> playResponseFile(List<int> bytes, int queued) async {
     aiSpeaking = true;
     final tempDir = await getTemporaryDirectory();
     final file = File("${tempDir.path}/jamie_response.mp3");
@@ -401,7 +404,7 @@ class AIVoiceAssistant {
       debugPrint("🔇 Playback failed or timed out: $e");
     }
 
-    aiSpeaking = false;
+    if (queued == 0) { aiSpeaking = false; }
   }
 
 
@@ -412,6 +415,16 @@ class AIVoiceAssistant {
       debugPrint("🛑 Immediate forced pause due to lifecycle");
     }
   }
+
+  void cancelPlayback() {
+    debugPrint("❌ Jamie playback cancelled");
+    try {
+      _player.stop();
+    } catch (_) {}
+
+    _playbackCompleter?.complete();
+  }
+
 
 
 
@@ -538,22 +551,18 @@ class AIVoiceAssistant {
         if (message.contains("turn off") || message.contains("disable")
               || message.contains("notifications off") || message.contains("stop")) {
           notificationsPermissionNotifier.value = false;
-          LocalStorageService().setNotificationsEnabled(false);
+          CloudStorageService().saveUserSetting('jamieReminders', false);
         } else {
           notificationsPermissionNotifier.value = true;
-          LocalStorageService().setNotificationsEnabled(true);
+          CloudStorageService().saveUserSetting('jamieReminders', true);
         }
         break;
 
       case "change_setting/toggle_location":
         if (message.contains("turn off") || message.contains("disable")
               || message.contains("location off") || message.contains("stop")) {
-          locationPermissionNotifier.value = false;
           LocalStorageService().setLocationAccess(false);
-        } else {
-          locationPermissionNotifier.value = true;
-          LocalStorageService().setLocationAccess(true);
-        }
+        } else { LocalStorageService().setLocationAccess(true); }
         break;
 
       case "change_setting/disable_jamie":
@@ -636,10 +645,10 @@ class AIVoiceAssistant {
   ScrollData? getScrollDataForIntent(String intentId) {
     switch (intentId) {
       case "tap_widget/settings/show_credits":
-        return const ScrollData(offset: 650);
+        return const ScrollData(offset: 690);
 
       case "tap_widget/settings/show_sessions":
-        return const ScrollData(offset: 450);
+        return const ScrollData(offset: 540);
 
 
 

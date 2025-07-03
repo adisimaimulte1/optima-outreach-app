@@ -5,6 +5,7 @@ import 'package:optima/globals.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
+import 'package:optima/services/livesync/credit_history_live_sync.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 import 'package:optima/services/storage/cloud_storage_service.dart';
@@ -268,6 +269,7 @@ class AccountDeleteDialogs {
 
       LocalNotificationService().stopListening();
       EventLiveSyncService().stopAll();
+      CreditHistoryLiveSyncService().stop();
       await LocalCache().deleteAll();
       await CloudStorageService().deleteAll();
 

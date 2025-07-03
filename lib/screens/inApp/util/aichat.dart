@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
@@ -16,20 +17,25 @@ class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<ChatScreen> createState() => ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
+class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScreenRegistry.register<ChatScreenState>(ScreenType.chat, widget.key as GlobalKey<ChatScreenState>);
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    ScreenRegistry.unregister(ScreenType.chat);
     super.dispose();
   }
 

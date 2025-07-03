@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:optima/ai/navigator/scroll_registry.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/util/contact.dart';
 import 'package:optima/screens/inApp/util/dashboard.dart';
+import 'package:optima/screens/inApp/util/events.dart';
+import 'package:optima/screens/inApp/util/settings.dart';
+import 'package:optima/screens/inApp/util/users.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
+import 'package:optima/screens/inApp/widgets/tutorial/touch_blocker.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 
 abstract class Triggerable {
@@ -16,10 +23,7 @@ class AiNavigator {
     final target = screenFromIntent(intentId);
     if (selectedScreenNotifier.value == target || target == null) {
       if (selectedScreenNotifier.value == target && screenScaleNotifier.value > 0.99) {
-        while (popupStackCount.value > 0) {
-          Navigator.of(context).pop();
-          await Future.delayed(const Duration(milliseconds: 200));
-        }
+        await exitPopUps(context);
 
         if (screenScaleNotifier.value == 0.4) {
             pinchAnimationTime = 600;
@@ -34,11 +38,7 @@ class AiNavigator {
       return;
     }
 
-    while (popupStackCount.value > 0) {
-      Navigator.of(context).pop();
-      await Future.delayed(const Duration(milliseconds: 200));
-    }
-
+    await exitPopUps(context);
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (screenScaleNotifier.value >= 0.99) {
@@ -154,6 +154,13 @@ class AiNavigator {
     } catch (e) {}
   }
 
+  static Future<void> exitPopUps(BuildContext context) async {
+    while (popupStackCount.value > 0) {
+      Navigator.of(context).pop();
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+  }
+
 
 
 
@@ -161,9 +168,17 @@ class AiNavigator {
     switch (tutorialNumber) {
       case 1:
         await tutorial1(context);
-        break;
+      case 2:
+        await tutorial2(context);
+      case 3:
+        await tutorial3(context);
+      case 4:
+        await tutorial4(context);
+      case 5:
+        await tutorial5(context);
+
       default:
-        break;
+        await tutorial1(context);
     }
   }
 
@@ -171,14 +186,14 @@ class AiNavigator {
     custom_menu.MenuController.instance.selectSource(DashboardScreen);
     isTouchActive.value = false;
 
-    // Step 1: Show Dashboard and wait 5 seconds
-    await Future.delayed(const Duration(seconds: 16));
+    // Step 1: Show Dashboard and wait
+    await cancellableDelay(const Duration(seconds: 16));
 
-    // Step 2: Enter menu and stay 4 seconds
+    // Step 2: Enter menu and stay seconds
     await navigateToScreen(context, "navigate/menu");
     isTouchActive.value = false;
 
-    await Future.delayed(const Duration(seconds: 10));
+    await cancellableDelay(const Duration(seconds: 10));
 
     // Step 3: Go to Settings
     await navigateToScreen(context, "navigate/settings");
@@ -186,55 +201,212 @@ class AiNavigator {
 
 
     // Modify some settings because why not
-    await Future.delayed(const Duration(seconds: 3));
+    await cancellableDelay(const Duration(seconds: 3));
     jamieRemindersNotifier.value = !jamieReminders;
     jamieReminders = !jamieReminders;
 
-    await Future.delayed(const Duration(milliseconds: 600));
+    await cancellableDelay(const Duration(milliseconds: 600));
     wakeWordEnabledNotifier.value = !wakeWordEnabled;
     wakeWordEnabled = !wakeWordEnabled;
 
-    await Future.delayed(const Duration(milliseconds: 200));
-    LocalStorageService().setThemeMode(ThemeMode.light);
+    await cancellableDelay(const Duration(milliseconds: 200));
+    LocalStorageService().setThemeMode(selectedThemeNotifier.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light);
 
-    await Future.delayed(const Duration(milliseconds: 700));
+    await cancellableDelay(const Duration(milliseconds: 700));
     jamieRemindersNotifier.value = !jamieReminders;
     jamieReminders = !jamieReminders;
 
-    await Future.delayed(const Duration(milliseconds: 600));
-    LocalStorageService().setThemeMode(ThemeMode.dark);
-
-    await Future.delayed(const Duration(milliseconds: 300));
+    await cancellableDelay(const Duration(milliseconds: 900));
     wakeWordEnabledNotifier.value = !wakeWordEnabled;
     wakeWordEnabled = !wakeWordEnabled;
 
-    await Future.delayed(const Duration(milliseconds: 400));
-    LocalStorageService().setThemeMode(ThemeMode.system);
+    await cancellableDelay(const Duration(milliseconds: 400));
+    LocalStorageService().setThemeMode(selectedThemeNotifier.value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark);
 
-    await Future.delayed(const Duration(seconds: 1));
+    await cancellableDelay(const Duration(seconds: 1));
 
     // Step 4: Navigate to Events
     isTouchActive.value = false;
     await navigateToScreen(context, "navigate/events");
     isTouchActive.value = false;
-    await Future.delayed(const Duration(milliseconds: 7400));
+    await cancellableDelay(const Duration(milliseconds: 7400));
 
     // Step 5: Open Add Event form
     await navigateToWidget(context: context, intentId: "tap_widget/events/add_event");
     isTouchActive.value = false;
 
     // Wait a bit to simulate form usage
-    await Future.delayed(const Duration(milliseconds: 4400));
+    await cancellableDelay(const Duration(milliseconds: 4400));
 
     // Step 6: Return to Dashboard
     await navigateToWidget(context: context, intentId: "tap_widget/dashboard/show_notifications");
     isTouchActive.value = false;
-    await Future.delayed(const Duration(milliseconds: 5600));
+    await cancellableDelay(const Duration(milliseconds: 5600));
 
     await navigateToScreen(context, "navigate/dashboard");
+    isTouchActive.value = false;
+    await cancellableDelay(const Duration(milliseconds: 7500));
 
     isTouchActive.value = true;
-    debugPrint("🎬 Jamie walkthrough complete");
+    debugPrint("🎬 Jamie tutorial 1 complete");
+  }
+
+  static Future<void> tutorial2(BuildContext context) async {
+    custom_menu.MenuController.instance.selectSource(EventsScreen);
+    isTouchActive.value = false;
+
+    tutorialEventData = EventData(
+      eventName: 'Tutorial Event',
+      organizationType: 'Custom',
+      customOrg: 'Optima Team',
+      selectedDate: DateTime.now().add(const Duration(days: 3)),
+      selectedTime: const TimeOfDay(hour: 14, minute: 30),
+      locationAddress: 'Palatul Copiilor, Bucharest',
+      locationLatLng: const LatLng(44.4268, 26.1025),
+      eventMembers: [
+        {'email': 'adrian.contras@sincaibm.ro', 'status': 'pending', 'invitedAt': DateTime.now().toIso8601String()},
+      ],
+      eventGoals: ['Recruit 10 members', 'Promote STEM'],
+      audienceTags: ['Students', 'Custom:Robotics fans'],
+      isPublic: true,
+      isPaid: false,
+      jamieEnabled: true,
+      eventManagers: [email],
+      status: 'UPCOMING',
+      createdBy: email,
+      eventPrice: null,
+      eventCurrency: 'RON',
+    );
+    preloadTutorialEvent = true;
+
+    // step 1
+    await cancellableDelay(const Duration(seconds: 11));
+    await navigateToWidget(context: context, intentId: "tap_widget/events/add_event");
+    isTouchActive.value = false;
+
+    // step 2
+    await cancellableDelay(const Duration(seconds: 10));
+    addEventKey.currentState?.scrollToStep(1);
+
+    // step 3
+    await cancellableDelay(const Duration(seconds: 4));
+    addEventKey.currentState?.scrollToStep(2);
+
+    // step 4
+    await cancellableDelay(const Duration(seconds: 5));
+    addEventKey.currentState?.scrollToStep(3);
+
+    // step 5
+    await cancellableDelay(const Duration(seconds: 10));
+    addEventKey.currentState?.scrollToStep(4);
+
+    // step 6
+    await cancellableDelay(const Duration(seconds: 11));
+    addEventKey.currentState?.scrollToStep(5);
+
+    // step 7
+    await cancellableDelay(const Duration(seconds: 15));
+    addEventKey.currentState?.scrollToStep(6);
+
+    await cancellableDelay(const Duration(seconds: 15));
+    await exitPopUps(context);
+
+    await cancellableDelay(const Duration(milliseconds: 4500));
+
+    isTouchActive.value = true;
+    debugPrint("🎬 Jamie tutorial 2 complete");
+  }
+
+  static Future<void> tutorial3(BuildContext context) async {
+    custom_menu.MenuController.instance.selectSource(UsersScreen);
+    isTouchActive.value = false;
+
+    await cancellableDelay(const Duration(seconds: 3));
+
+    isTouchActive.value = true;
+  }
+
+  static Future<void> tutorial4(BuildContext context) async {
+    custom_menu.MenuController.instance.selectSource(ContactScreen);
+    isTouchActive.value = false;
+
+    await cancellableDelay(const Duration(seconds: 3));
+
+    isTouchActive.value = true;
+  }
+
+  static Future<void> tutorial5(BuildContext context) async {
+    custom_menu.MenuController.instance.selectSource(SettingsScreen);
+    isTouchActive.value = false;
+
+    // account
+    await cancellableDelay(const Duration(seconds: 29));
+
+    // appearance
+    await scrollTo(scrollData: const ScrollData(offset: 60));
+    ThemeMode themeMode = selectedThemeNotifier.value;
+    LocalStorageService().setThemeMode(themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light);
+    await cancellableDelay(const Duration(seconds: 4));
+    LocalStorageService().setThemeMode(themeMode == ThemeMode.light ? ThemeMode.light : ThemeMode.dark);
+    await cancellableDelay(const Duration(seconds: 4));
+    debugPrint(ScrollRegistry.get(ScreenType.settings)?.toString());
+
+
+    // jamie assistant
+    await scrollTo(scrollData: const ScrollData(offset: 200));
+    wakeWordEnabledNotifier.value = !wakeWordEnabled;
+    wakeWordEnabled = !wakeWordEnabled;
+    await cancellableDelay(const Duration(seconds: 7));
+    jamieRemindersNotifier.value = !jamieReminders;
+    jamieReminders = !jamieReminders;
+    await cancellableDelay(const Duration(seconds: 7));
+    wakeWordEnabledNotifier.value = !wakeWordEnabled;
+    wakeWordEnabled = !wakeWordEnabled;
+    jamieRemindersNotifier.value = !jamieReminders;
+    jamieReminders = !jamieReminders;
+
+
+    // notifications
+    await scrollTo(scrollData: const ScrollData(offset: 400));
+    bool notificationsOn = notificationsPermissionNotifier.value;
+    notificationsPermissionNotifier.value = !notificationsOn;
+    LocalStorageService().setNotificationsEnabled(!notificationsOn);
+    await cancellableDelay(const Duration(seconds: 9));
+    notificationsPermissionNotifier.value = notificationsOn;
+    LocalStorageService().setNotificationsEnabled(notificationsOn);
+
+    // privacy & security
+    await scrollTo(scrollData: const ScrollData(offset: 540));
+    LocalStorageService().setLocationAccess(!locationAccess);
+    await cancellableDelay(const Duration(seconds: 5));
+    navigateToWidget(context: context, intentId: "tap_widget/settings/show_sessions")
+        .whenComplete(() async { isTouchActive.value = false; });
+    await cancellableDelay(const Duration(seconds: 2));
+    LocalStorageService().setLocationAccess(!locationAccess);
+    exitPopUps(context);
+
+    // credits & billing
+    await scrollTo(scrollData: const ScrollData(offset: 690));
+    navigateToWidget(context: context, intentId: "tap_widget/settings/show_credits")
+        .whenComplete(() async { isTouchActive.value = false; });
+    await cancellableDelay(const Duration(seconds: 7));
+    exitPopUps(context);
+    await cancellableDelay(const Duration(seconds: 18));
+    ScreenRegistry
+        .get<SettingsScreenState>(ScreenType.settings)
+        ?.currentState
+        ?.simulateVersionTap();
+    await cancellableDelay(const Duration(seconds: 2));
+    ScreenRegistry
+        .get<SettingsScreenState>(ScreenType.settings)
+        ?.currentState
+        ?.reverseVersionTap();
+    await cancellableDelay(const Duration(seconds: 6));
+    await scrollTo(scrollData: const ScrollData(offset: 0));
+    await cancellableDelay(const Duration(milliseconds: 8500));
+
+    isTouchActive.value = true;
+    debugPrint("🎬 Jamie tutorial 5 complete");
   }
 
 
@@ -273,4 +445,21 @@ class AiNavigator {
     return null;
   }
 
+
+
+  static Future<void> cancellableDelay(Duration duration) async {
+    const interval = Duration(milliseconds: 100);
+    int elapsed = 0;
+
+    while (elapsed < duration.inMilliseconds) {
+      if (tutorialCancelled.value) {
+        tutorialCancelled.value = false;
+        aiVoice.pauseImmediately();
+        throw TutorialCancelledException();
+      }
+
+      await Future.delayed(interval);
+      elapsed += interval.inMilliseconds;
+    }
+  }
 }

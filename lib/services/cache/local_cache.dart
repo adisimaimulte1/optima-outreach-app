@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/credits/credit_service.dart';
+import 'package:optima/services/livesync/credit_history_live_sync.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -89,7 +89,9 @@ class LocalCache {
     wakeWordEnabled = settings['wakeWordEnabled'] ?? true;
     jamieReminders = settings['jamieReminders'] ?? true;
 
+
     jamieEnabledNotifier.value = jamieEnabled;
+    jamieRemindersNotifier.value = jamieReminders;
     wakeWordEnabledNotifier.value = wakeWordEnabled;
 
 
@@ -304,6 +306,7 @@ class LocalCache {
 
     events = relevantEvents;
     await EventLiveSyncService().startAll();
+    await CreditHistoryLiveSyncService().start();
   }
 
 

@@ -29,6 +29,26 @@ class PageRegistry {
   }
 }
 
+class ScreenRegistry {
+  static final Map<ScreenType, GlobalKey<State>> _keys = {};
+
+  static void register<T extends State>(ScreenType screen, GlobalKey<T> key) {
+    _keys[screen] = key;
+  }
+
+  static GlobalKey<T>? get<T extends State>(ScreenType screen) {
+    final key = _keys[screen];
+    if (key is GlobalKey<T>) return key;
+    return null;
+  }
+
+  static void unregister(ScreenType screen) {
+    _keys.remove(screen);
+  }
+}
+
+
+
 
 
 

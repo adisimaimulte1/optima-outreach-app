@@ -113,7 +113,7 @@ class AiRecordings {
     final response = _intros[_random.nextInt(_intros.length)];
     final bytes = await rootBundle.load('assets/audio/intro/${response['file']}');
 
-    await aiVoice.playResponseFile(bytes.buffer.asUint8List());
+    await aiVoice.playResponseFile(bytes.buffer.asUint8List(), 0);
     assistantState.value = JamieState.idle;
 
     return response['text']!;
@@ -133,7 +133,7 @@ class AiRecordings {
 
     final bytes = await rootBundle.load('assets/audio/wake/${response['file']}');
 
-    await aiVoice.playResponseFile(bytes.buffer.asUint8List());
+    await aiVoice.playResponseFile(bytes.buffer.asUint8List(), 0);
     assistantState.value = JamieState.idle;
 
     return response['text']!;

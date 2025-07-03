@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/main.dart';
 import 'package:optima/screens/beforeApp/no_internet_screen.dart';
+import 'package:optima/screens/inApp/widgets/tutorial/touch_blocker.dart';
 import 'package:optima/screens/startup_wrapper.dart';
 import 'package:optima/services/cache/local_cache.dart';
 
@@ -69,27 +70,8 @@ class App extends StatelessWidget {
                   );
                 },
               ),
-              _TouchBlocker(),
+              TouchBlocker(),
             ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _TouchBlocker extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: isTouchActive,
-      builder: (context, active, _) {
-        return active
-            ? const SizedBox.shrink()
-            : Positioned.fill(
-          child: AbsorbPointer(
-            absorbing: true,
-            child: Container(color: Colors.transparent),
           ),
         );
       },

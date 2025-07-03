@@ -22,11 +22,11 @@ class AddEventForm extends StatefulWidget {
   const AddEventForm({super.key, this.initialData});
 
   @override
-  State<AddEventForm> createState() => _AddEventFormState();
+  State<AddEventForm> createState() => AddEventFormState();
 }
 
 
-class _AddEventFormState extends State<AddEventForm> {
+class AddEventFormState extends State<AddEventForm> {
   final PageController _pageController = PageController();
 
   final GlobalKey<EventMembersStepState> _membersKey = GlobalKey<EventMembersStepState>();
@@ -74,6 +74,29 @@ class _AddEventFormState extends State<AddEventForm> {
     super.initState();
     popupStackCount.value++;
 
+    if (preloadTutorialEvent) {
+      final data = tutorialEventData;
+
+      _eventName = data.eventName;
+      _organizationType = data.organizationType;
+      _customOrg = data.customOrg;
+      _selectedDate = data.selectedDate;
+      _selectedTime = data.selectedTime;
+      _locationAddress = data.locationAddress;
+      _locationLatLng = data.locationLatLng;
+      _eventMembers = List<String>.from(
+          data.eventMembers.map((m) => m['email'].toString())
+      );
+      _eventGoals = List.from(data.eventGoals);
+      _audienceTags = List.from(data.audienceTags);
+      _isPublic = data.isPublic;
+      _isPaid = data.isPaid;
+      _eventPrice = data.eventPrice;
+      _eventCurrency = data.eventCurrency;
+      _jamieEnabled = data.jamieEnabled;
+
+      preloadTutorialEvent = false;
+    }
     if (widget.initialData != null) {
       final data = widget.initialData!;
       _eventName = data.eventName;
@@ -692,5 +715,14 @@ class _AddEventFormState extends State<AddEventForm> {
   void dispose() {
     popupStackCount.value--;
     super.dispose();
+  }
+
+
+
+  void scrollToStep(int stepIndex) {
+    if (stepIndex >= 0 && stepIndex < _totalSteps) {
+      setState(() => _currentStep = stepIndex);
+      _pageController.jumpToPage(stepIndex);
+    }
   }
 }

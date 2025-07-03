@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter/material.dart';
-import 'package:optima/ai/navigator/scroll_registry.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/ai/navigator/trigger_proxy.dart';
 
 import 'package:optima/screens/choose_screen.dart';
@@ -28,6 +28,7 @@ import 'package:optima/screens/inApp/widgets/settings/tiles.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
+import 'package:optima/services/livesync/credit_history_live_sync.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 
 import 'package:optima/services/storage/local_storage_service.dart';
@@ -37,6 +38,7 @@ import 'package:optima/services/notifications/push_notification_service.dart';
 import 'package:optima/services/sessions/session_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+
 class ScrollPersistence {
   static double offset = 0.0;
 }
@@ -44,10 +46,10 @@ class ScrollPersistence {
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  State<SettingsScreen> createState() => SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class SettingsScreenState extends State<SettingsScreen> {
   final GlobalKey<ProfileAvatarState> _profileAvatarKey = GlobalKey<ProfileAvatarState>();
   late final ScrollController _scrollController;
 
@@ -75,6 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scrollController.dispose();
 
     ScrollRegistry.unregister(ScreenType.settings);
+    ScreenRegistry.unregister(ScreenType.settings);
 
     notificationsPermissionNotifier.removeListener(_updatePermissions);
     locationPermissionNotifier.removeListener(_updatePermissions);
@@ -87,6 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
 
+
     _scrollController = ScrollController(
       initialScrollOffset: ScrollPersistence.offset,
     );
@@ -95,7 +99,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScrollPersistence.offset = _scrollController.offset;
     });
 
-    ScrollRegistry.register(ScreenType.settings, _scrollController);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScrollRegistry.register(ScreenType.settings, _scrollController);
+      ScreenRegistry.register<SettingsScreenState>(ScreenType.settings, widget.key as GlobalKey<SettingsScreenState>);
+    });
 
     notificationsPermissionNotifier.addListener(_updatePermissions);
     locationPermissionNotifier.addListener(_updatePermissions);
@@ -592,17 +599,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : (_versionTapCount == 2)
                 ? 2 / 3
                 : 1.0,
-            onTap: () {
-              _versionTapCount++;
-              if (_versionTapCount >= 3) {
-                setState(() {
-                  _easterEggMode = !_easterEggMode;
-                  _versionTapCount = 0;
-                });
-              } else {
-                setState(() {}); // to trigger icon reveal
-              }
-            },
+            onTap: simulateVersionTap,
             easterEggMode: _easterEggMode,
             getNextEasterEggIcon: _getNextEasterEggIcon,
           ),
@@ -653,6 +650,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             EventLiveSyncService().stopAll();
             LocalNotificationService().stopListening();
+            CreditHistoryLiveSyncService().stop();
             await LocalCache().logout();
             await SessionService().deleteCurrentSession();
 
@@ -680,5 +678,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+
+
+  void simulateVersionTap() {
+    _versionTapCount++;
+    if (_versionTapCount >= 3) {
+      setState(() {
+        _easterEggMode = !_easterEggMode;
+        _versionTapCount = 0;
+      });
+    } else {
+      setState(() {}); // to trigger icon reveal }
+    }
+  }
+
+  void reverseVersionTap() {
+    _versionTapCount--;
+    if (_versionTapCount < 0) {
+      setState(() {
+        _easterEggMode = !_easterEggMode;
+        _versionTapCount = 3;
+      });
+    } else {
+      setState(() {}); // to trigger icon reveal }
+    }
+  }
 }
+
 

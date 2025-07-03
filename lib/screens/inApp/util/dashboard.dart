@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/ai/ai_recordings.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/tutorial/tutorial_screen.dart';
 
@@ -24,10 +25,10 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() => DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void initState() {
@@ -35,6 +36,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _handleFirstLaunch();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScreenRegistry.register<DashboardScreenState>(ScreenType.dashboard, widget.key as GlobalKey<DashboardScreenState>);
+
       final nextEvent = events
           .where((e) =>
       e.selectedDate != null &&
@@ -52,6 +55,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
   }
+
+  @override
+  void dispose() {
+    ScreenRegistry.unregister(ScreenType.dashboard);
+    super.dispose();
+  }
+
+
 
   void _handleFirstLaunch() async {
     debugPrint("isFirstDashboardLaunch: $isFirstDashboardLaunch");
@@ -97,6 +108,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return AbsScreen(
@@ -111,11 +124,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.only(bottom: 30),
             child: Column(
               children: [
-                const SizedBox(height: 50),
-                _buildHeader(context),
-                const SizedBox(height: 30),
-                const LineChartCard(),
                 const SizedBox(height: 60),
+                _buildHeader(context),
+                const SizedBox(height: 10),
+                const LineChartCard(),
+                const SizedBox(height: 15),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: textDimColor.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20), // round corners
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 15),
                 _buildDashboardRow(context),
               ],
             ),

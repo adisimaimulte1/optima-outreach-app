@@ -1,8 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
+import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 
-class UsersScreen extends StatelessWidget {
+class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
+
+  @override
+  State<UsersScreen> createState() => UsersScreenState();
+}
+
+class UsersScreenState extends State<UsersScreen> {
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScreenRegistry.register<UsersScreenState>(ScreenType.users, widget.key as GlobalKey<UsersScreenState>);
+    });
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    ScreenRegistry.unregister(ScreenType.users);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -104,24 +104,24 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
               switch (selectedScreen) {
                 case ScreenType.dashboard:
                   custom_menu.MenuController.instance.selectSource(DashboardScreen);
-                  return const DashboardScreen();
+                  return DashboardScreen(key: dashboardKey);
                 case ScreenType.settings:
                   custom_menu.MenuController.instance.selectSource(SettingsScreen);
-                  return const SettingsScreen();
+                  return SettingsScreen(key: settingsKey);
                 case ScreenType.chat:
                   custom_menu.MenuController.instance.selectSource(ChatScreen);
-                  return const ChatScreen();
+                  return ChatScreen(key: chatKey);
                 case ScreenType.events:
                   custom_menu.MenuController.instance.selectSource(EventsScreen);
-                  return const EventsScreen();
+                  return EventsScreen(key: eventsKey);
                 case ScreenType.users:
                   custom_menu.MenuController.instance.selectSource(UsersScreen);
-                  return const UsersScreen();
+                  return UsersScreen(key: usersKey);
                 case ScreenType.contact:
                   custom_menu.MenuController.instance.selectSource(ContactScreen);
-                  return const ContactScreen();
+                  return ContactScreen(key: contactKey);
                 case ScreenType.menu:
-                  return const DashboardScreen();
+                  return DashboardScreen(key: dashboardKey);
               }
             },
           ),

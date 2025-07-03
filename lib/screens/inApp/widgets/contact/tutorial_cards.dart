@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:optima/ai/navigator/scroll_registry.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/contact/tutorial_card_item.dart';
 
@@ -30,7 +30,9 @@ class _TutorialCardsState extends State<TutorialCards> {
     super.initState();
 
     _pageController = PageController(viewportFraction: 0.6, initialPage: currentTutorialPage.round());
-    PageRegistry.register(ScreenType.contact, _pageController);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PageRegistry.register(ScreenType.contact, _pageController);
+    });
 
     _pageController.addListener(() {
       setState(() {

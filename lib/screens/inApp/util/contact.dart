@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/ai/navigator/trigger_proxy.dart';
 import 'package:optima/screens/inApp/widgets/contact/bouncy_contact_info.dart';
 import 'package:optima/screens/inApp/widgets/contact/tutorial_cards.dart';
@@ -7,8 +8,29 @@ import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/globals.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ContactScreen extends StatelessWidget {
+class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
+
+  @override
+  State<ContactScreen> createState() => ContactScreenState();
+}
+
+class ContactScreenState extends State<ContactScreen> {
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScreenRegistry.register<ContactScreenState>(ScreenType.contact, widget.key as GlobalKey<ContactScreenState>);
+    });
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    ScreenRegistry.unregister(ScreenType.contact);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +55,6 @@ class ContactScreen extends StatelessWidget {
       },
     );
   }
-
 
   Widget _buildAboutSection(BuildContext context) {
     return Container(
@@ -99,8 +120,6 @@ class ContactScreen extends StatelessWidget {
     );
   }
 
-
-
   Widget _buildContactSection(BuildContext context) {
     return Column(
       children: [
@@ -130,6 +149,8 @@ class ContactScreen extends StatelessWidget {
     );
   }
 
+
+
   Widget _title(String text) {
     return Column(
       children: [
@@ -148,5 +169,6 @@ class ContactScreen extends StatelessWidget {
     );
   }
 }
+
 
 

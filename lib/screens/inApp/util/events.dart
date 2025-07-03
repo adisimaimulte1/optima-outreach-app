@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:optima/ai/navigator/scroll_registry.dart';
+import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
@@ -19,10 +19,10 @@ class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
 
   @override
-  State<EventsScreen> createState() => _EventsScreenState();
+  State<EventsScreen> createState() => EventsScreenState();
 }
 
-class _EventsScreenState extends State<EventsScreen> {
+class EventsScreenState extends State<EventsScreen> {
   final PageStorageBucket _bucket = PageStorageBucket();
   final PageStorageKey<String> _filterKey = const PageStorageKey('eventFilter');
 
@@ -35,7 +35,6 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   void initState() {
     super.initState();
-    ScrollRegistry.register(ScreenType.events, _scrollController);
 
     final allEmails = events
         .expand((e) => e.eventMembers.map((m) => m['email']))
@@ -47,6 +46,9 @@ class _EventsScreenState extends State<EventsScreen> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScrollRegistry.register(ScreenType.events, _scrollController);
+      ScreenRegistry.register<EventsScreenState>(ScreenType.events, widget.key as GlobalKey<EventsScreenState>);
+
       if (showAddEventOnLaunch) {
         _showAddEventForm(context);
         showAddEventOnLaunch = false;
@@ -70,6 +72,8 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   void dispose() {
     ScrollRegistry.unregister(ScreenType.events);
+    ScreenRegistry.unregister(ScreenType.events);
+
     _scrollController.dispose();
     super.dispose();
   }
@@ -354,7 +358,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       scale: Tween<double>(begin: 0.95, end: 1.0).animate(
                         CurvedAnimation(parent: animation1, curve: Curves.easeOutBack),
                       ),
-                      child: const AddEventForm(),
+                      child: AddEventForm(key: addEventKey),
                     ),
                   ),
                 ],
@@ -398,7 +402,7 @@ class _EventsScreenState extends State<EventsScreen> {
                     scale: Tween<double>(begin: 0.95, end: 1.0).animate(
                       CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
                     ),
-                    child: AddEventForm(initialData: initial),
+                    child: AddEventForm(key: addEventKey, initialData: initial),
                   ),
                 ),
               ],

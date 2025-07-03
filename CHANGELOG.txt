@@ -139,3 +139,18 @@ Change Log
     * can open any tutorial from the Contact screen
 - now the Contact screen rebuilds naturally on AI theme change
 - now the AI Chat screen also rebuilds naturally on AI theme change
+
+
+0.1.6 (03/07/2024)
+------------------
+- AI now detects, queue and execute multiple actions in the same input speech
+    (with the help of connector words e.g.: "then", "next", "also" etc.)
+- AI is capable of referencing the order of actions
+    (with connectors like: "before", "but first" etc.)
+- now tutorials can be canceled by holding your finger on the screen
+- added a visual border "freeze" effect while the tutorial is active & user can't use the app
+- added the settings tutorial, create event tutorial
+- now the cancel tutorial button follows your finger
+- dashboard UI changed
+- implemented the graph from dashboard, with 3 graphed options (2/3 working)
+
