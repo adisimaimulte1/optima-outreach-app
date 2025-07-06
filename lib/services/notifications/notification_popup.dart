@@ -8,6 +8,8 @@ import 'package:optima/screens/inApp/widgets/events/steps/event_audience_step.da
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
+import 'package:optima/services/notifications/dialogs/event_invite_dialog.dart';
+import 'package:optima/services/notifications/dialogs/event_join_request_dialog.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 
 class NotificationPopup extends StatelessWidget {
@@ -80,20 +82,69 @@ class NotificationPopup extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
+        final user = FirebaseAuth.instance.currentUser!;
+        final email = user.email!;
+        final eventId = data['eventId'] ?? docId;
+
         if (!read) {
           await LocalNotificationService().markAsRead(
-            userId: FirebaseAuth.instance.currentUser!.uid,
+            userId: user.uid,
             notificationId: docId,
           );
         }
-        _showEventConfirmationDialog(
-          context,
-          notificationId: docId,
-          eventId: docId,
-          userEmail: FirebaseAuth.instance.currentUser!.email!,
-        );
 
+        // Delay the dialog to after this frame to avoid StreamBuilder rebuild conflict
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          popupStackCount.value++;
 
+          switch (type) {
+            case 'event_invite':
+              showDialog(
+                context: context,
+                barrierColor: Colors.black.withOpacity(0.5),
+                builder: (_) => EventInviteDialog(
+                  onAccept: () async {
+                    final nav = Navigator.of(context, rootNavigator: true);
+
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      barrierColor: Colors.black.withOpacity(0.5),
+                      useRootNavigator: true,
+                      builder: (_) => const Center(child: CircularProgressIndicator()),
+                    );
+
+                    await _handleEventInvitationAccept(eventId, docId, email);
+                    nav.pop(); // loading
+                    nav.pop(); // dialog
+                    nav.pop(); // notification popup
+                    selectedScreenNotifier.value = ScreenType.events;
+                  },
+                  onDecline: () async {
+                    final nav = Navigator.of(context, rootNavigator: true);
+                    _handleEventInvitationDecline(eventId, docId, email);
+                    nav.pop();
+                  },
+                ),
+              ).whenComplete(() => popupStackCount.value--);
+              break;
+
+            case 'event_join_request':
+              showDialog(
+                context: context,
+                barrierColor: Colors.black.withOpacity(0.5),
+                builder: (_) => EventJoinRequestDialog(
+                  requesterEmail: sender,
+                  onApprove: () async { await _handleJoinRequestApprove(context, eventId, docId, sender); },
+                  onDecline: () async { await _handleJoinRequestDecline(context, eventId, docId, sender); },
+                ),
+              ).whenComplete(() => popupStackCount.value--);
+              break;
+
+            default:
+              break;
+          }
+        });
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -110,7 +161,9 @@ class NotificationPopup extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              type == 'event_invite' ? Icons.calendar_month_rounded : Icons.notifications_none_rounded,
+              type == 'event_invite'
+                  ? Icons.calendar_month_rounded
+                  : Icons.notifications_none_rounded,
               color: read ? Colors.white24 : textHighlightedColor,
               size: 28,
             ),
@@ -150,127 +203,16 @@ class NotificationPopup extends StatelessWidget {
 
 
 
-  void _showEventConfirmationDialog(
-      BuildContext context, {
-        required String notificationId,
-        required String eventId,
-        required String userEmail,
-      }) {
-    popupStackCount.value++;
 
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
-      builder: (_) => AlertDialog(
-        backgroundColor: inAppForegroundColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titlePadding: const EdgeInsets.only(top: 24),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        title: _buildDialogTitle(),
-        content: _buildDialogContent(),
-        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        actionsAlignment: MainAxisAlignment.spaceEvenly,
-        actions: [
-          _buildDeclineButton(context, notificationId, eventId, userEmail),
-          _buildEnterButton(context, notificationId, eventId, userEmail),
-        ],
-      ),
-    ).whenComplete(() => popupStackCount.value--);
-  }
+  Future<void> _handleEventInvitationDecline(String eventId, String notificationId, String email) async {
+    final event = upcomingPublicEvents.firstWhere((e) => e.id == eventId);
 
-  Widget _buildDialogTitle() {
-    return Column(
-      children: [
-        Icon(Icons.calendar_month_rounded, color: textHighlightedColor, size: 48),
-        const SizedBox(height: 16),
-        Text(
-          "Enter Event?",
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-      ],
-    );
-  }
+    event.eventMembers = event.eventMembers
+        .where((m) => (m['email'] as String?)?.toLowerCase() != email.toLowerCase())
+        .toList();
 
-  Widget _buildDialogContent() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 260, maxWidth: 420),
-      child: Text(
-        getRandomInviteMessage(),
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: textColor.withOpacity(0.85),
-          fontSize: 14.5,
-        ),
-      ),
-    );
-  }
+    rebuildUI();
 
-  Widget _buildDeclineButton(
-      BuildContext context,
-      String notificationId,
-      String eventId,
-      String userEmail,
-      ) {
-    return TextButtonWithoutIcon(
-      label: "Decline",
-      onPressed: () async {
-        Navigator.pop(context); // close dialog
-
-        await _handleDecline(eventId, notificationId, userEmail);
-      },
-      foregroundColor: Colors.white70,
-      fontSize: 16,
-      borderColor: Colors.white70,
-      borderWidth: 1,
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-    );
-  }
-
-  Widget _buildEnterButton(
-      BuildContext context,
-      String notificationId,
-      String eventId,
-      String userEmail,
-      ) {
-    return TextButtonWithoutIcon(
-      label: "Enter",
-      onPressed: () async {
-        final rootNavigator = Navigator.of(context, rootNavigator: true);
-
-        // show loading dialog using root navigator
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          barrierColor: Colors.black.withOpacity(0.5),
-          useRootNavigator: true,
-          builder: (_) => const Center(child: CircularProgressIndicator()),
-        );
-
-        await _handleAccept(eventId, notificationId, userEmail);
-
-        rootNavigator.pop(); // pop loading
-        rootNavigator.pop(); // pop confirmation dialog
-        rootNavigator.pop(); // pop notifications popup
-
-        selectedScreenNotifier.value = ScreenType.events;
-      },
-      foregroundColor: inAppBackgroundColor,
-      backgroundColor: textHighlightedColor,
-      fontSize: 16,
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-    );
-  }
-
-
-
-
-
-
-  Future<void> _handleDecline(String eventId, String notificationId, String email) async {
     await LocalNotificationService().deleteNotification(
       userId: userId,
       notificationId: notificationId,
@@ -298,7 +240,7 @@ class NotificationPopup extends StatelessWidget {
     await memberDocRef.delete();
   }
 
-  Future<void> _handleAccept(String eventId, String notificationId, String email) async {
+  Future<void> _handleEventInvitationAccept(String eventId, String notificationId, String email) async {
     // Step 1: Delete notification
     await LocalNotificationService().deleteNotification(
       userId: userId,
@@ -329,7 +271,129 @@ class NotificationPopup extends StatelessWidget {
 
     // Step 5: Cache the updated event
     await LocalCache().cacheUserEventsFromFirestore();
+    EventLiveSyncService().listenToEvent(eventId);
+  }
 
+
+
+  Future<void> _handleJoinRequestApprove(BuildContext context, String eventId, String notificationId, String senderEmail) async {
+    final nav = Navigator.of(context, rootNavigator: true);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      useRootNavigator: true,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final eventRef = FirebaseFirestore.instance.collection('events').doc(eventId);
+
+    final publicQuery = await FirebaseFirestore.instance
+        .collection('public_data')
+        .where('email', isEqualTo: senderEmail)
+        .limit(1)
+        .get();
+
+    if (publicQuery.docs.isEmpty) {
+      nav.pop(); // close loading
+      return;
+    }
+
+    final memberId = publicQuery.docs.first.id;
+
+    // 1. Accept the member
+    await eventRef.collection('members').doc(memberId).update({
+      'status': 'accepted',
+    });
+
+    // 2. Get event data (for name)
+    final eventSnap = await eventRef.get();
+    final eventData = eventSnap.data();
+    final eventName = eventData?['eventName'] ?? 'an event';
+
+    // 3. Send notification
+    await LocalNotificationService().addNotification(
+      userId: memberId,
+      message: 'You were accepted to join "$eventName"!',
+      eventId: eventId,
+      sender: FirebaseAuth.instance.currentUser!.email!,
+      type: 'event_join_request_accepted',
+    );
+
+    // 4. Clean up
+    _deleteNotificationFromManagers(eventId, notificationId);
+
+    nav.pop(); // loading
+    nav.pop(); // dialog
+    nav.pop(); // notification popup
+
+    showCardOnLaunch = MapEntry(
+      true,
+      MapEntry(events.firstWhere((e) => e.id == eventId), 'ALL'),
+    );
+    selectedScreenNotifier.value = ScreenType.events;
+  }
+
+  Future<void> _handleJoinRequestDecline(BuildContext context, String eventId, String notificationId, String senderEmail) async {
+    final membersRef = FirebaseFirestore.instance
+        .collection('events')
+        .doc(eventId)
+        .collection('members');
+
+    final memberQuery = await membersRef
+        .where('email', isEqualTo: senderEmail)
+        .limit(1)
+        .get();
+
+    if (memberQuery.docs.isNotEmpty) {
+      final memberDoc = memberQuery.docs.first;
+      final memberDocId = memberDoc.id;
+
+      // Delete the membership request
+      await membersRef.doc(memberDocId).delete();
+
+      // Send rejection notification
+      final eventSnap = await FirebaseFirestore.instance
+          .collection('events')
+          .doc(eventId)
+          .get();
+
+      final eventName = eventSnap.data()?['eventName'] ?? 'an event';
+
+      await LocalNotificationService().addNotification(
+        userId: memberDocId,
+        message: 'You were declined from joining "$eventName".',
+        eventId: eventId,
+        sender: FirebaseAuth.instance.currentUser!.email!,
+        type: 'event_join_request_declined',
+      );
+    }
+
+    _deleteNotificationFromManagers(eventId, notificationId);
+
+    Navigator.pop(context);
+  }
+
+  Future<void> _deleteNotificationFromManagers(String eventId, String notificationId) async {
+    final List<String> managers = events.firstWhere((event) => event.id == eventId).eventManagers;
+
+    for (final managerEmail in managers) {
+      final managerQuery = await FirebaseFirestore.instance
+          .collection('public_data')
+          .where('email', isEqualTo: managerEmail)
+          .limit(1)
+          .get();
+
+      if (managerQuery.docs.isNotEmpty) {
+        final managerUid = managerQuery.docs.first.id;
+
+        await LocalNotificationService().deleteNotification(
+          userId: managerUid,
+          notificationId: notificationId,
+        );
+      }
+    }
   }
 
 

@@ -323,8 +323,10 @@ class AddEventFormState extends State<AddEventForm> {
       createdBy: email,
     );
 
-    Navigator.of(context).pop(eventData);
+
     await CloudStorageService().saveEvent(eventData);
+    Navigator.of(context).pop(eventData);
+
 
     for (final email in _eventMembers) {
       final query = await FirebaseFirestore.instance
@@ -466,7 +468,7 @@ class AddEventFormState extends State<AddEventForm> {
         AnimatedScaleButton(
           onPressed: canProceed ? _nextStep : () {},
           icon: isLastStep ? Icons.check : Icons.chevron_right,
-          label: isLastStep ? "Create" : "Next",
+          label: isLastStep ? (widget.initialData == null ? "Create" : "Update") : "Next",
           backgroundGradient: canProceed
               ? LinearGradient(
             colors: [

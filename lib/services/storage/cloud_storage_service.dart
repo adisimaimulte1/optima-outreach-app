@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/cache/local_cache.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 
 class CloudStorageService {
   static final CloudStorageService _instance = CloudStorageService._internal();
@@ -92,6 +93,8 @@ class CloudStorageService {
 
     if (event.id == null) {
       event.id = docRef.id;
+      events.insert(0, event);
+      EventLiveSyncService().listenToEvent(docRef.id);
     } else {
       await docRef.set(event.toMap());
     }

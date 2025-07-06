@@ -154,3 +154,23 @@ Change Log
 - dashboard UI changed
 - implemented the graph from dashboard, with 3 graphed options (2/3 working)
 
+
+0.1.7 (06/07/2024)
+------------------
+- new dashboard widgets (finished):
+    * the event shortcut selector
+    * the card to see how many credits users have
+    * settings button for easier navigation
+- added the structure for the Users screen
+- now you can request invitations to any upcoming & public events
+- public events can be filtered by pre-defined criteria (e.g.: tech, local, sports etc.)
+- pinching the screen on Users is now synced with the rest of the app (data preserving 'till entering another screen)
+- new in app notifications:
+    * event join request
+    * event join request accepted
+    * event join request declined
+- UI sync - live event entry & more feedback through notifications
+- FIXED BUG: event members did visually pop upon hold indicating them leaving, without leaving (now they can't pop)
+
+
+

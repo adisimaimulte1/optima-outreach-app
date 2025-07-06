@@ -31,8 +31,8 @@ class EventLiveSyncService {
     if (_eventListeners.containsKey(eventId)) return;
 
     final ref = FirebaseFirestore.instance.collection('events').doc(eventId);
-    final notifier =
-    eventNotifiers[eventId] ??= ValueNotifier(events.firstWhere((e) => e.id == eventId));
+    final notifier = eventNotifiers[eventId] ??= ValueNotifier(events.firstWhere((e) => e.id == eventId));
+    combinedEventsListenable.add(notifier);
 
     // 🔁 Listener 1: Event metadata
     final eventSub = ref.snapshots().listen((doc) {
@@ -115,9 +115,12 @@ class EventLiveSyncService {
     );
   }
 
+
+
   void stopListeningToEvent(String eventId) {
     _eventListeners[eventId]?.cancel();
     _eventListeners.remove(eventId);
+    combinedEventsListenable.remove(eventNotifiers[eventId]!);
     eventNotifiers.remove(eventId);
   }
 
@@ -128,6 +131,8 @@ class EventLiveSyncService {
     _eventListeners.clear();
     eventNotifiers.clear();
   }
+
+
 
   TimeOfDay? _parseTime(dynamic raw) {
     if (raw == null) return null;

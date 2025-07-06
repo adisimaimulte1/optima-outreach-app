@@ -1,21 +1,52 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 
-class CombinedListenable extends Listenable {
-  final List<Listenable> listenables;
+class CombinedListenable extends ChangeNotifier {
+  final Set<Listenable> _listenables = {};
+  final Map<Listenable, VoidCallback> _callbacks = {};
 
-  CombinedListenable(this.listenables);
-
-  @override
-  void addListener(VoidCallback listener) {
-    for (final l in listenables) {
-      l.addListener(listener);
+  CombinedListenable([List<Listenable>? initial]) {
+    if (initial != null) {
+      addAll(initial);
     }
   }
 
-  @override
-  void removeListener(VoidCallback listener) {
-    for (final l in listenables) {
-      l.removeListener(listener);
+  void add(Listenable listenable) {
+    if (_listenables.contains(listenable)) return;
+
+    final callback = () => notifyListeners();
+    _listenables.add(listenable);
+    _callbacks[listenable] = callback;
+    listenable.addListener(callback);
+    notifyListeners(); // fire once on new addition
+  }
+
+  void remove(Listenable listenable) {
+    if (!_listenables.contains(listenable)) return;
+
+    listenable.removeListener(_callbacks[listenable]!);
+    _callbacks.remove(listenable);
+    _listenables.remove(listenable);
+    notifyListeners(); // fire once on removal
+  }
+
+  void addAll(Iterable<Listenable> list) {
+    for (final l in list) {
+      add(l);
     }
+  }
+
+  void clear() {
+    for (final l in _listenables) {
+      l.removeListener(_callbacks[l]!);
+    }
+    _listenables.clear();
+    _callbacks.clear();
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    clear();
+    super.dispose();
   }
 }

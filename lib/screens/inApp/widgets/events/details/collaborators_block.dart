@@ -65,6 +65,7 @@ class CollaboratorsBlock extends StatelessWidget {
                         member: member,
                         size: 55,
                         showCrown: member.id == creatorId,
+                        isAbleToPop: false,
                       );
                     },
                   ),
@@ -77,12 +78,13 @@ class CollaboratorsBlock extends StatelessWidget {
                       member: member,
                       size: 55,
                       showCrown: member.id == creatorId,
+                      isAbleToPop: false,
                     ),
                   )).toList()
                 )
                     : Center(
                   child: Text(
-                    "No collaborators yet.",
+                    "no collaborators yet",
                     style: TextStyle(
                       color: textColor.withOpacity(0.6),
                       fontSize: 14,

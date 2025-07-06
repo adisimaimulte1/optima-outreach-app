@@ -11,6 +11,7 @@ import 'package:optima/screens/inApp/widgets/menu/selection_beam.dart';
 import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/users/users_controller.dart';
 
 
 class Menu extends StatefulWidget {
@@ -143,6 +144,9 @@ class MenuState extends State<Menu> {
       }
       if (selectedScreenNotifier.value != ScreenType.contact) {
         currentTutorialPage = 2.0;
+      }
+      if (selectedScreenNotifier.value != ScreenType.users) {
+        usersController = UsersController();
       }
 
       _handleIncomingSource();

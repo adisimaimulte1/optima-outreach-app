@@ -90,7 +90,7 @@ class CreditDialog {
                             children: [
                               LinearProgressIndicator(
                                 value: value,
-                                backgroundColor: Colors.white12,
+                                backgroundColor: textDimColor.withOpacity(0.3),
                                 valueColor: AlwaysStoppedAnimation<Color>(textHighlightedColor),
                                 minHeight: 10,
                                 borderRadius: BorderRadius.circular(8),

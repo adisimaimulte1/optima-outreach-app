@@ -11,9 +11,15 @@ import 'package:optima/services/storage/cloud_storage_service.dart';
 
 class EventDetails extends StatefulWidget {
   final String eventId;
+  final bool publicDisplay;
   final void Function(EventData newEvent)? onStatusChange;
 
-  const EventDetails({super.key, required this.eventId, this.onStatusChange});
+  const EventDetails({
+    super.key,
+    required this.eventId,
+    this.onStatusChange,
+    this.publicDisplay = false,
+  });
 
   @override
   State<EventDetails> createState() => _EventDetailsState();
@@ -31,9 +37,12 @@ class _EventDetailsState extends State<EventDetails> {
     super.initState();
     popupStackCount.value++;
 
-    final eventData = EventLiveSyncService().getNotifier(widget.eventId)!.value;
-    selectedStatus = eventData.status;
+    EventData eventData;
+    if (widget.publicDisplay) {
+      eventData = upcomingPublicEvents.firstWhere((e) => e.id == widget.eventId);
+    } else { eventData = EventLiveSyncService().getNotifier(widget.eventId)!.value; }
 
+    selectedStatus = eventData.status;
     _loadResolvedMembers(eventData);
   }
 
@@ -104,9 +113,10 @@ class _EventDetailsState extends State<EventDetails> {
   }
 
   String getGlobalMemberStatus(String email, String eventId) {
-    final event = events.firstWhere(
-          (e) => e.id == eventId,
-    );
+    EventData event;
+
+    if (widget.publicDisplay) { event = upcomingPublicEvents.firstWhere((e) => e.id == eventId); }
+    else { event = EventLiveSyncService().getNotifier(eventId)!.value; }
 
     final member = event.eventMembers.firstWhere(
           (m) => (m['email'] as String?)?.toLowerCase() == email.toLowerCase(),
@@ -122,52 +132,68 @@ class _EventDetailsState extends State<EventDetails> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.publicDisplay) {
+      final event = upcomingPublicEvents.firstWhere((e) => e.id == widget.eventId);
+
+      hasPermission = event.hasPermission(FirebaseAuth.instance.currentUser!.email!);
+      color = hasPermission ? textHighlightedColor : textSecondaryHighlightedColor;
+      selectedStatus = event.status;
+
+      return _buildContent(context, event);
+    }
+
+
     final notifier = EventLiveSyncService().getNotifier(widget.eventId);
 
     return ValueListenableBuilder<EventData>(
       valueListenable: notifier!,
       builder: (context, liveEvent, _) {
         hasPermission = liveEvent.hasPermission(FirebaseAuth.instance.currentUser!.email!);
-        color = hasPermission ?  textHighlightedColor : textSecondaryHighlightedColor;
+        color = hasPermission ? textHighlightedColor : textSecondaryHighlightedColor;
         selectedStatus = liveEvent.status;
 
-        return Container(
-          constraints: const BoxConstraints(maxWidth: 700),
-          height: 650,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF24324A), Color(0xFF2F445E)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 24,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatusSelector(context, liveEvent),
-              const SizedBox(height: 16),
-              _buildTitleBlock(context, liveEvent),
-              LocationBlock(address: liveEvent.locationAddress!, color: color),
-              CollaboratorsBlock(members: _resolvedMembers, creatorId: liveEvent.createdBy),
-              _buildGoalsBlock(liveEvent),
-              _buildVisibilityAudienceBlock(liveEvent),
-              const Spacer(),
-            ],
-          ),
-        );
+        return _buildContent(context, liveEvent);
       },
     );
   }
+
+  Widget _buildContent(BuildContext context, EventData event) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 700),
+      height: 650,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF24324A), Color(0xFF2F445E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatusSelector(context, event),
+          const SizedBox(height: 16),
+          _buildTitleBlock(context, event),
+          LocationBlock(address: event.locationAddress!, color: color),
+          CollaboratorsBlock(members: _resolvedMembers, creatorId: event.createdBy),
+          _buildGoalsBlock(event),
+          _buildVisibilityAudienceBlock(event),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
 
 
 

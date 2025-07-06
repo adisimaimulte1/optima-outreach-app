@@ -35,11 +35,14 @@ class CreditHistoryLiveSyncService {
       }
       creditHistoryMap.value = {...newMap};
     });
+
+    combinedEventsListenable.add(creditHistoryMap);
   }
 
   void stop() {
     _subscription?.cancel();
     _subscription = null;
+    combinedEventsListenable.remove(creditHistoryMap);
     creditHistoryMap.value = {};
   }
 }

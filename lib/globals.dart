@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:optima/ai/ai_assistant.dart';
@@ -21,10 +24,12 @@ import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_but
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/events/add_event_form.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/screens/inApp/widgets/users/users_controller.dart';
 import 'package:optima/services/ads/ad_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
 import 'package:optima/services/credits/plan_notifier.dart';
 import 'package:optima/services/credits/sub_credit_notifier.dart';
+import 'package:optima/services/livesync/combined_listenable.dart';
 import 'package:optima/services/livesync/credit_history_live_sync.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 
@@ -120,14 +125,19 @@ int credits = 0; // teapa ca daca schimbi asta nu primesti credite in plus
 String plan = ""; // teapa ca daca schimbi asta nu ai alt plan ;)
 double subCredits = 0;
 
+
+List<EventData> upcomingPublicEvents = [];
 List<EventData> events = [];
 final Map<String, ValueNotifier<EventData>> eventNotifiers = {};
-
+final CombinedListenable combinedEventsListenable = CombinedListenable();
 
 
 double currentTutorialPage = 2.0;
 ChatController chatController = ChatController();
 bool hasResetAiChat = true;
+
+UsersController usersController = UsersController();
+
 
 
 
@@ -246,7 +256,39 @@ Color black = Colors.black;
 
 
 
+final List<String> charityKeys = [
+  "charity", "donation", "fundraise", "help", "volunteer",
+  "support", "aid", "relief", "nonprofit", "give", "humanitarian",
+  "benefit", "drive", "good cause", "community service",
+  "fund raise"
+];
+final List<String> techKeys = [
+  "tech", "robot", "ai", "machine learning", "ml", "coding", "robotics",
+  "programming", "developer", "software", "hardware",
+  "innovation", "startup", "iot", "cloud", "cyber", "blockchain", "engineering",
+  "flutter", "python", "arduino", "electronics", "hack", "code"
+];
+final List<String> sportsKeys = [
+  "sport", "football", "soccer", "basketball", "volleyball", "tennis", "cricket",
+  "athletics", "race", "run", "marathon", "tournament", "league", "competition",
+  "match", "game", "fitness", "gym", "training", "track", "field", "swimming"
+];
 
+
+
+
+
+
+
+void rebuildUI() {
+  SchedulerBinding.instance.addPostFrameCallback((_) {
+    final old = screenScaleNotifier.value;
+    screenScaleNotifier.value = old == 1.0 ? 0.99 : 1.0;
+    Future.delayed(Duration(milliseconds: 10), () {
+      screenScaleNotifier.value = old;
+    });
+  });
+}
 
 void setupGlobalListeners() {
   screenScaleNotifier.addListener(() {
@@ -263,6 +305,17 @@ void setIsDarkModeNotifier(bool isDarkSystem) {
   textHighlightedColor = isDarkModeNotifier.value ? darkColorPrimary : lightColorPrimary;
   textSecondaryHighlightedColor = isDarkModeNotifier.value ? darkColorSecondary : lightColorSecondary;
 }
+
+bool isEventNearby(Position userPos, LatLng eventPos, {double radiusKm = 50}) {
+  final distance = Geolocator.distanceBetween(
+    userPos.latitude, userPos.longitude,
+    eventPos.latitude, eventPos.longitude,
+  );
+  return distance <= radiusKm * 1000;
+}
+
+
+
 
 Widget responsiveText(
     BuildContext context,
@@ -320,6 +373,8 @@ InputDecoration standardInputDecoration({
   );
 }
 
+
+
 Future<String> convertImageUrlToBase64(String url) async {
   try {
     final response = await http.get(Uri.parse(url));
@@ -333,6 +388,51 @@ Future<String> convertImageUrlToBase64(String url) async {
   return '';
 }
 
+Future<Position?> getCurrentLocation() async {
+  final permission = await Geolocator.requestPermission();
+  if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+    return null;
+  }
+
+  return await Geolocator.getCurrentPosition();
+}
+
+Future<LatLng?> getEventCoordinates(String address) async {
+  try {
+    final locations = await locationFromAddress(address);
+    if (locations.isNotEmpty) {
+      final loc = locations.first;
+      return LatLng(loc.latitude, loc.longitude);
+    }
+  } catch (_) {}
+  return null;
+}
+
+
+
+Future<List<String>> getTagsForEvent(EventData event, Position? userLocation) async {
+  final tags = <String>[];
+
+  final name = event.eventName.toLowerCase();
+  final goals = event.eventGoals.map((g) => g.toLowerCase()).toList();
+
+  bool match(List<String> keys) => keys.any(
+        (k) => name.contains(k) || goals.any((g) => g.contains(k)),
+  );
+
+  if (match(charityKeys)) tags.add("Charity");
+  if (match(techKeys)) tags.add("Tech");
+  if (match(sportsKeys)) tags.add("Sports");
+
+  if (userLocation != null) {
+    final eventCoords = await getEventCoordinates(event.locationAddress ?? '');
+    if (eventCoords != null && isEventNearby(userLocation, eventCoords)) {
+      tags.add("Local");
+    }
+  }
+
+  return tags;
+}
 
 
 

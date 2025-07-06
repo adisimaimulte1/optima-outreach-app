@@ -26,6 +26,8 @@ class EventData {
   String createdBy;
 
   List<AiChatMessage> aiChatMessages = [];
+  List<String>? tags;
+  String? chatImage;
 
 
   EventData({

@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/credits/credit_service.dart';
@@ -257,56 +259,93 @@ class LocalCache {
     final userEmail = user.email?.toLowerCase();
     if (userEmail == null) return;
 
+    final now = DateTime.now();
+    final currentLocation = await getCurrentLocation();
+
     final snapshot = await FirebaseFirestore.instance
         .collection('events')
         .orderBy('selectedDate')
         .get();
 
+    final List<Future<void>> eventTasks = [];
     final List<EventData> relevantEvents = [];
+    final List<EventData> upcomingAndNotMemberEvents = [];
 
     for (final doc in snapshot.docs) {
-      final membersSnap = await doc.reference.collection('members').get();
-      final aiChatSnap = await doc.reference.collection("aichat")
-          .orderBy("timestamp", descending: true)
-          .get();
-
-
-      final memberList = membersSnap.docs.map((doc) => doc.data()).toList(); // extract member maps
-
-
-      // caching the event itself
-      final event = EventData.fromMap(
-        doc.data(),
-        memberDocs: membersSnap.docs,
-        aiChatDocs: aiChatSnap.docs,
-      )..id = doc.id;
-
-
-
-      // caching member photos
-
-      final isManager = event.eventManagers.contains(userEmail);
-      final memberEntry = memberList.firstWhere(
-            (member) => (member['email'] as String?)?.toLowerCase() == userEmail,
-        orElse: () => {},
-      );
-      final hasAccepted = memberEntry['status'] == 'accepted';
-
-      if (!isManager && !hasAccepted) continue;
-
-      for (final member in memberList) {
-        final email = member['email'];
-        if (email != null && email.toString().isNotEmpty) {
-          await LocalCache().recacheMemberPhoto(email);
-        }
-      }
-
-      relevantEvents.add(event);
+      eventTasks.add(_processEvent(doc, userEmail, now, relevantEvents, upcomingAndNotMemberEvents, currentLocation));
     }
 
+    await Future.wait(eventTasks);
+
     events = relevantEvents;
+    upcomingPublicEvents = upcomingAndNotMemberEvents;
+
     await EventLiveSyncService().startAll();
     await CreditHistoryLiveSyncService().start();
+  }
+
+  Future<void> _processEvent(
+      QueryDocumentSnapshot<Map<String, dynamic>> doc,
+      String userEmail,
+      DateTime now,
+      List<EventData> relevantEvents,
+      List<EventData> upcomingAndNotMemberEvents,
+      Position? currentLocation,
+      ) async {
+    final data = doc.data();
+    final selectedDate = DateTime.tryParse(data['selectedDate'] ?? '');
+    final isPublic = data['isPublic'];
+
+    if (selectedDate == null) return;
+
+    final eventManagers = List<String>.from(data['eventManagers'] ?? []);
+    final isManager = eventManagers.contains(userEmail);
+
+    final membersSnap = await doc.reference.collection('members').get();
+    final memberList = membersSnap.docs.map((m) => m.data()).toList();
+
+    final memberEntry = memberList.firstWhere(
+          (m) => (m['email'] as String?)?.toLowerCase() == userEmail,
+      orElse: () => {},
+    );
+
+    final hasAccepted = memberEntry['status'] == 'accepted';
+    final isMemberOrManager = isManager || hasAccepted;
+
+    if (!isMemberOrManager) {
+      if (selectedDate.isAfter(now) && isPublic) {
+        final event = EventData.fromMap(
+          data,
+          memberDocs: membersSnap.docs,
+          aiChatDocs: [],
+        )..id = doc.id;
+
+        event.tags = await getTagsForEvent(event, currentLocation);
+        upcomingAndNotMemberEvents.add(event);
+      }
+      return;
+    }
+
+    final aiChatSnap = await doc.reference
+        .collection("aichat")
+        .orderBy("timestamp", descending: true)
+        .get();
+
+    final event = EventData.fromMap(
+      data,
+      memberDocs: membersSnap.docs,
+      aiChatDocs: aiChatSnap.docs,
+    )..id = doc.id;
+
+    // Run all member photo caching in parallel
+    await Future.wait(memberList.map((member) async {
+      final email = member['email'];
+      if (email != null && email.toString().isNotEmpty) {
+        await LocalCache().recacheMemberPhoto(email);
+      }
+    }));
+
+    relevantEvents.add(event);
   }
 
 

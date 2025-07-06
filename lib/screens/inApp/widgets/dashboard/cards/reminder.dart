@@ -29,12 +29,7 @@ class ReminderStatusCardState extends State<ReminderStatusCard> {
 
     Future.microtask(() async {
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) {
-        debugPrint("[ReminderStatusCard] No user UID found.");
-        return;
-      }
-
-      debugPrint("[ReminderStatusCard] Fetching UNREAD notifications for UID: $uid");
+      if (uid == null) { return; }
 
       final snapshot = await FirebaseFirestore.instance
           .collection('public_data')
@@ -45,20 +40,14 @@ class ReminderStatusCardState extends State<ReminderStatusCard> {
           .limit(1)
           .get();
 
-      debugPrint("[ReminderStatusCard] Unread fetched: ${snapshot.docs.length}");
-
       if (snapshot.docs.isNotEmpty) {
         final data = snapshot.docs.first.data();
-        debugPrint("[ReminderStatusCard] Latest unread notification: ${data.toString()}");
         updateFromNotification(data);
-      } else {
-        debugPrint("[ReminderStatusCard] No unread notifications found.");
       }
     });
   }
 
   void update({required String text, required bool hasReminder}) {
-    debugPrint("[ReminderStatusCard] update() called with text='$text', hasReminder=$hasReminder");
     setState(() {
       _text = text;
       _hasReminder = hasReminder;
@@ -69,20 +58,18 @@ class ReminderStatusCardState extends State<ReminderStatusCard> {
     final String type = notification['type'] ?? '';
     String message = "notification received";
 
-    debugPrint("[ReminderStatusCard] updateFromNotification() type='$type'");
-
     switch (type) {
       case 'event_invite':
         message = "new event invitation";
         break;
-      case 'event_cancelled':
-        message = "event cancelled";
+      case 'event_join_request':
+        message = "new join request";
         break;
-      case 'event_reminder':
-        message = "event starting soon";
+      case 'event_join_request_accepted':
+        message = "join request accepted";
         break;
-      case 'event_update':
-        message = "event updated";
+      case 'event_join_request_declined':
+        message = "join request declined";
         break;
     }
 
@@ -120,9 +107,9 @@ class ReminderStatusCardState extends State<ReminderStatusCard> {
         final String type = data['type'] ?? '';
         String message = switch (type) {
           'event_invite' => "new event invitation",
-          'event_cancelled' => "event cancelled",
-          'event_reminder' => "event starting soon",
-          'event_update' => "event updated",
+          'event_join_request' => "new join request",
+          'event_join_request_accepted' => "join request accepted",
+          'event_join_request_declined' => "join request declined",
           _ => "notification received",
         };
 

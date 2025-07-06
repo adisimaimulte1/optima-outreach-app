@@ -14,7 +14,6 @@ class LineChartCard extends StatefulWidget {
 
 class _LineChartCardState extends State<LineChartCard> {
   ChartMode currentMode = ChartMode.eventHistory;
-  late CombinedListenable combined;
 
   final Map<ChartMode, List<double>> chartData = {
     ChartMode.eventHistory: [],
@@ -26,12 +25,6 @@ class _LineChartCardState extends State<LineChartCard> {
   void initState() {
     super.initState();
     _populateChartData();
-
-    combined = CombinedListenable([
-      creditHistoryMap,
-      ...eventNotifiers.values,
-    ]);
-
   }
 
   void _populateChartData() {
@@ -70,7 +63,7 @@ class _LineChartCardState extends State<LineChartCard> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: combined,
+      animation: combinedEventsListenable,
       builder: (context, _) {
         _populateChartData();
 
@@ -108,6 +101,9 @@ class _LineChartCardState extends State<LineChartCard> {
 
 
   Widget _buildTabs() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final scale = (screenWidth / 455).clamp(0.10, 1.0);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: ChartMode.values.map((mode) {
@@ -122,21 +118,24 @@ class _LineChartCardState extends State<LineChartCard> {
           onTap: () => setState(() => currentMode = mode),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: EdgeInsets.symmetric(
+              horizontal: 14 * scale,
+              vertical: 6 * scale,
+            ),
             decoration: BoxDecoration(
               color: isActive ? textHighlightedColor.withOpacity(0.2) : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10 * scale),
               border: Border.all(
                 color: isActive ? textHighlightedColor : Colors.transparent,
-                width: 2,
+                width: 2 * scale,
               ),
             ),
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 14 * scale,
                 fontWeight: FontWeight.bold,
-                color: isActive ? textHighlightedColor : textColor.withOpacity(0.6),
+                color: isActive ? textHighlightedColor : textColor,
               ),
             ),
           ),

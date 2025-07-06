@@ -293,16 +293,17 @@ class EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  void _handleDelete(EventData eventToDelete, bool hasPermission) async {
+  void _handleDelete(EventData eventToDelete, bool hasPermission) {
     setState(() {
-
       if (hasPermission) {
         CloudStorageService().deleteEvent(eventToDelete);
       } else {
         CloudStorageService().removeMemberFromEvent(
           event: eventToDelete,
           email: FirebaseAuth.instance.currentUser!.email!,
-        );
+        ).whenComplete(() {
+          upcomingPublicEvents.add(eventToDelete);
+        });
       }
 
       EventLiveSyncService().stopListeningToEvent(eventToDelete.id!);
@@ -373,9 +374,7 @@ class EventsScreenState extends State<EventsScreen> {
     );
 
     if (result != null) {
-      setState(() {
-        events.insert(0, result);
-      });
+      setState(() {});
     }
   }
 

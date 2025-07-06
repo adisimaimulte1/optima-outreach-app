@@ -95,6 +95,7 @@ class AvatarSlot extends StatefulWidget {
   final VoidCallback onLong;
   final bool dimmed;
   final bool isCreator;
+  final bool isAbleToPop;
 
   const AvatarSlot({
     required this.member,
@@ -103,6 +104,7 @@ class AvatarSlot extends StatefulWidget {
     required this.onLong,
     this.dimmed = false,
     this.isCreator = false,
+    this.isAbleToPop = true,
     super.key,
   });
 
@@ -178,7 +180,7 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
   }
 
   void _startHold() {
-    if (widget.isCreator) return;
+    if (widget.isCreator || widget.isAbleToPop == false) return;
 
     _shouldDelete = false;
     _pressController.repeat(reverse: true);
@@ -327,12 +329,14 @@ class ContributorAvatar extends StatelessWidget {
   final Member member;
   final double size;
   final bool showCrown;
+  final bool isAbleToPop;
 
   const ContributorAvatar({
     super.key,
     required this.member,
     this.size = 56,
     this.showCrown = false,
+    this.isAbleToPop = true,
   });
 
   @override
@@ -348,6 +352,7 @@ class ContributorAvatar extends StatelessWidget {
           color: showCrown ? textHighlightedColor : textSecondaryHighlightedColor,
           dimmed: member.isPending,
           isCreator: showCrown,
+          isAbleToPop: isAbleToPop,
           onLong: () {}, // no-op
         ),
         if (showCrown)

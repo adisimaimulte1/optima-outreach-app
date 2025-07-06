@@ -14,6 +14,9 @@ class EventCard extends StatefulWidget {
   final void Function(EventData event)? onEdit;
   final void Function(EventData event, bool isMember)? onDelete;
 
+  final bool publicDisplay;
+  final void Function(EventData event)? onJoin;
+
 
   const EventCard({
     super.key,
@@ -21,8 +24,11 @@ class EventCard extends StatefulWidget {
     this.onReplace,
     this.onEdit,
     this.onDelete,
-    this.onStatusChange
+    this.onStatusChange,
+    this.onJoin,
+    this.publicDisplay = false,
   });
+
 
   static const TextStyle statusTextStyle = TextStyle(
     fontSize: 13,
@@ -56,6 +62,8 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
   }
 
   void _handleDragUpdate(DragUpdateDetails details, BoxConstraints constraints) {
+    if (widget.publicDisplay) return ;
+
     setState(() {
       _dragOffset += details.primaryDelta!;
       final limit = constraints.maxWidth * _threshold;
@@ -65,6 +73,8 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
 
 
   Future<void> _handleDragEnd(BoxConstraints constraints, EventData eventData) async {
+    if (widget.publicDisplay) return ;
+
     final width = constraints.maxWidth;
     final progress = _dragOffset.abs() / width;
 
@@ -97,39 +107,56 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
     _controller.forward(from: 0);
   }
 
+
   @override
   Widget build(BuildContext context) {
+    // if it's a public event card, build once without listenable
+    if (widget.publicDisplay) {
+      final event = upcomingPublicEvents.firstWhere((e) => e.id == widget.eventId);
+      hasPermission = event.hasPermission(FirebaseAuth.instance.currentUser!.email!);
+      color = hasPermission ? textHighlightedColor : textSecondaryHighlightedColor;
+
+      return _buildCard(event);
+    }
+
+    // otherwise, use ValueListenableBuilder for real-time updates
     final notifier = EventLiveSyncService().getNotifier(widget.eventId)!;
 
     return ValueListenableBuilder<EventData>(
       valueListenable: notifier,
       builder: (context, liveEvent, _) {
         hasPermission = liveEvent.hasPermission(FirebaseAuth.instance.currentUser!.email!);
-        color = hasPermission ?  textHighlightedColor : textSecondaryHighlightedColor;
+        color = hasPermission ? textHighlightedColor : textSecondaryHighlightedColor;
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: LayoutBuilder(
-            builder: (context, constraints) => GestureDetector(
-              onTap: () {
-                if (_dragOffset.abs() < 5) {
-                  _showEventDetailsPopup(context, liveEvent);
-                }
-              },
-              onHorizontalDragUpdate: (d) => _handleDragUpdate(d, constraints),
-              onHorizontalDragEnd: (_) => _handleDragEnd(constraints, liveEvent),
-              child: Stack(
-                children: [
-                  if (_dragOffset != 0) _buildBackground(constraints, liveEvent),
-                  _buildForeground(liveEvent),
-                ],
-              ),
-            ),
-          ),
-        );
+        return _buildCard(liveEvent);
       },
     );
   }
+
+  Widget _buildCard(EventData event) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: LayoutBuilder(
+        builder: (context, constraints) => GestureDetector(
+          onTap: () {
+            if (_dragOffset.abs() < 5) {
+              _showEventDetailsPopup(context, event);
+            }
+          },
+          onHorizontalDragUpdate: (d) => _handleDragUpdate(d, constraints),
+          onHorizontalDragEnd: (_) => _handleDragEnd(constraints, event),
+          child: Stack(
+            children: [
+              if (_dragOffset != 0) _buildBackground(constraints, event),
+              _buildForeground(event),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
 
 
   Widget _buildBackground(BoxConstraints constraints, EventData eventData) {
@@ -238,8 +265,60 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
           ),
         ),
         const SizedBox(width: 8),
-        _buildStatusLabel(event),
+        _buildStatusOrJoin(event),
       ],
+    );
+  }
+
+  Widget _buildStatusOrJoin(EventData event) {
+    if (!widget.publicDisplay) {
+      return _buildStatusLabel(event);
+    }
+
+    final currentEmail = FirebaseAuth.instance.currentUser?.email?.toLowerCase();
+    final member = event.eventMembers.firstWhere(
+          (m) => (m['email'] as String?)?.toLowerCase() == currentEmail,
+      orElse: () => {},
+    );
+
+    final status = (member['status'] ?? '').toLowerCase();
+
+    if (status == 'pending') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.7), width: 2),
+        ),
+        child: Text(
+          "PENDING",
+          style: EventCard.statusTextStyle.copyWith(
+            color: color,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    return ElevatedButton(
+      onPressed: () => widget.onJoin?.call(event),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: inAppForegroundColor,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 0,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ).copyWith(
+        overlayColor: MaterialStateProperty.all(Colors.transparent),
+        splashFactory: NoSplash.splashFactory,
+      ),
+      child: const Text(
+        "JOIN",
+        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+      ),
     );
   }
 
@@ -392,20 +471,21 @@ class _EventCardState extends State<EventCard> with SingleTickerProviderStateMix
       barrierLabel: "EventDetails",
       barrierColor: Colors.black.withOpacity(0.5),
       transitionDuration: const Duration(milliseconds: 150),
-      pageBuilder: (dialogContext, __, ___) { // <- use this context instead
+      pageBuilder: (dialogContext, __, ___) {
         return GestureDetector(
-          onTap: () => Navigator.of(dialogContext).pop(), // use dialogContext here!
+          onTap: () => Navigator.of(dialogContext).pop(),
           child: Scaffold(
             backgroundColor: Colors.transparent,
             body: Center(
               child: GestureDetector(
-                onTap: () {}, // Absorb inside
+                onTap: () {},
                 child: EventDetails(
                   eventId: widget.eventId,
                   onStatusChange: (_) {
                     widget.onStatusChange?.call(eventData);
                     if (mounted) setState(() {});
                   },
+                  publicDisplay: widget.publicDisplay,
                 ),
               ),
             ),

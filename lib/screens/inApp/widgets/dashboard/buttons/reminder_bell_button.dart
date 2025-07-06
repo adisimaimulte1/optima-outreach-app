@@ -65,7 +65,7 @@ class ReminderBellButtonState extends State<ReminderBellButton> implements Trigg
   Color get _backgroundColor =>
       _hasReminder ? textHighlightedColor : inAppForegroundColor;
   Color get _iconColor =>
-      _hasReminder ? inAppBackgroundColor : textColor.withOpacity(0.6);
+      _hasReminder ? inAppBackgroundColor : textColor.withOpacity(0.4);
   Color get _badgeBackground =>
       _hasReminder ? inAppBackgroundColor : Colors.transparent;
   Color get _badgeTextColor =>
@@ -165,6 +165,7 @@ class ReminderBellButtonState extends State<ReminderBellButton> implements Trigg
   @override
   void triggerFromAI() {
     if (screenScaleNotifier.value >= 0.99) {
+      widget.onTap!();
       widget.onTap!();
     } else {
       debugPrint("🔒 Screen not ready, ignoring AI trigger");

@@ -8,6 +8,7 @@ import 'package:optima/ai/ai_recordings.dart';
 import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/tutorial/tutorial_screen.dart';
+import 'package:optima/screens/inApp/widgets/dashboard/cards/credits_left.dart';
 
 import 'package:optima/screens/inApp/widgets/dashboard/chart.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
@@ -15,6 +16,7 @@ import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_but
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/reminder.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
+import 'package:optima/screens/inApp/widgets/dashboard/event_action_selector.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/location/location_processor.dart';
@@ -115,39 +117,59 @@ class DashboardScreenState extends State<DashboardScreen> {
     return AbsScreen(
       sourceType: DashboardScreen,
       builder: (context, isMinimized, scale) {
-        final size = MediaQuery.of(context).size;
-
-        return SizedBox(
-          width: size.width,
-          height: size.height,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 30),
-            child: Column(
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final content = Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 60),
                 _buildHeader(context),
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
                 const LineChartCard(),
-                const SizedBox(height: 15),
+                const SizedBox(height: 30),
+                _buildLine(context),
+                const SizedBox(height: 30),
+                _buildDashboardRow(context),
+                const SizedBox(height: 10),
+                const EventActionSelectorWheel(),
+                const SizedBox(height: 10),
+                CreditsLeftCard(),
+                const SizedBox(height: 30),
+                _buildLine(context),
+              ],
+            );
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: textDimColor.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20), // round corners
-                    ),
+            return SizedBox(
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+              child: Center(
+                child: SingleChildScrollView(
+                  physics: contentHeight(content) < constraints.maxHeight
+                      ? const NeverScrollableScrollPhysics()
+                      : const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(child: content),
                   ),
                 ),
-
-                const SizedBox(height: 15),
-                _buildDashboardRow(context),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildLine(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        height: 4,
+        decoration: BoxDecoration(
+          color: textDimColor.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
     );
   }
 
@@ -280,5 +302,14 @@ class DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+
+  double contentHeight(Widget widget) {
+    final renderBox = widget.key != null && widget.key is GlobalKey
+        ? (widget.key as GlobalKey).currentContext?.findRenderObject() as RenderBox?
+        : null;
+
+    return renderBox?.size.height ?? 0;
   }
 }
