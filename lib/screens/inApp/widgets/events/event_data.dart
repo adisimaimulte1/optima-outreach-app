@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_message.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_message.dart';
+import 'package:optima/screens/inApp/widgets/users/members_chat/members_chat_message.dart';
 
 class EventData {
   String eventName;
@@ -26,6 +27,8 @@ class EventData {
   String createdBy;
 
   List<AiChatMessage> aiChatMessages = [];
+  List<MembersChatMessage> membersChatMessages = [];
+
   List<String>? tags;
   String? chatImage;
 
@@ -49,6 +52,9 @@ class EventData {
     required this.jamieEnabled,
     required this.status,
     required this.createdBy,
+
+    this.tags,
+    this.chatImage,
   });
 
   Map<String, dynamic> toMap() {
@@ -74,6 +80,8 @@ class EventData {
       'eventManagers': eventManagers,
       'createdBy': createdBy,
       'createdAt': DateTime.now().toIso8601String(),
+
+      'chatImage': chatImage,
     };
   }
 
@@ -81,7 +89,8 @@ class EventData {
       Map<String, dynamic> map, {
         required List<QueryDocumentSnapshot<Map<String, dynamic>>> memberDocs,
         required List<QueryDocumentSnapshot<Map<String, dynamic>>> aiChatDocs,
-      }) {
+        required List<QueryDocumentSnapshot<Map<String, dynamic>>> membersChatDocs,
+      }){
     final timeParts = (map['selectedTime'] as String?)?.split(':') ?? ['0', '0'];
 
     final List<Map<String, dynamic>> members = memberDocs.map((doc) {
@@ -95,6 +104,12 @@ class EventData {
 
     final List<AiChatMessage> aiMessages = aiChatDocs
         .map((doc) => AiChatMessage.fromFirestore(doc.data(), doc.id))
+        .toList()
+        .reversed
+        .toList();
+
+    final List<MembersChatMessage> membersChatMessages = membersChatDocs
+        .map((doc) => MembersChatMessage.fromFirestore(doc.data(), doc.id))
         .toList()
         .reversed
         .toList();
@@ -130,9 +145,11 @@ class EventData {
       jamieEnabled: map['jamieEnabled'] ?? false,
       status: map['status'] ?? "UPCOMING",
       createdBy: map['createdBy'] ?? "",
+      chatImage: map['chatImage'] ?? "",
     );
 
     event.aiChatMessages = aiMessages;
+    event.membersChatMessages = membersChatMessages;
     return event;
   }
 
@@ -157,6 +174,9 @@ class EventData {
     String? id,
     String? createdBy,
     List<AiChatMessage>? aiChatMessages,
+    List<MembersChatMessage>? membersChatMessages,
+    List<String>? tags,
+    String? chatImage,
   }) {
     return EventData(
       eventName: eventName ?? this.eventName,
@@ -177,11 +197,15 @@ class EventData {
       jamieEnabled: jamieEnabled ?? this.jamieEnabled,
       status: status ?? this.status,
       createdBy: createdBy ?? this.createdBy,
+
+      chatImage: chatImage ?? this.chatImage,
+      tags: tags ?? this.tags,
     )..id = id ?? this.id
-      ..aiChatMessages = aiChatMessages ?? this.aiChatMessages;
+      ..aiChatMessages = aiChatMessages ?? this.aiChatMessages
+      ..membersChatMessages = membersChatMessages ?? this.membersChatMessages;
   }
 
   bool hasPermission(String email) {
-    return email == createdBy;
+    return eventManagers.contains(email);
   }
 }

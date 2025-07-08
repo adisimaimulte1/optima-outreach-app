@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_message.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_message.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
-class ChatController extends ChangeNotifier {
+class AiChatController extends ChangeNotifier {
   ItemScrollController itemScrollController = ItemScrollController();
   ItemPositionsListener itemPositionsListener = ItemPositionsListener.create();
 
@@ -47,7 +47,9 @@ class ChatController extends ChangeNotifier {
 
   bool get isScrollDisabled => _isScrollDisabled;
 
-  ChatController() {
+  final Map<String, int> animatedCharCount = {};
+
+  AiChatController() {
     if (events.isNotEmpty) {
       setEvent(events.first);
     }
@@ -124,17 +126,21 @@ class ChatController extends ChangeNotifier {
       if (_isScrollDisabled) {
         focusNode.unfocus();
 
-        // Scroll to bottom when minimized
         if (currentEvent != null && currentEvent!.aiChatMessages.isNotEmpty) {
-          // Wait a frame to ensure the layout settles after scaling
-          Future.delayed(Duration(milliseconds: 50), () {
-            itemScrollController.scrollTo(
-              index: 0,
-              duration: Duration(milliseconds: 400),
-              curve: Curves.easeOut,
-              alignment: 0.0,
-            );
-          });
+          // Check if index 0 is already visible
+          final positions = itemPositionsListener.itemPositions.value;
+          final isAtTop = positions.any((pos) => pos.index == 0 && pos.itemLeadingEdge >= 0);
+
+          if (!isAtTop) {
+            Future.delayed(const Duration(milliseconds: 50), () {
+              itemScrollController.scrollTo(
+                index: 0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+                alignment: 0.0,
+              );
+            });
+          }
         }
       }
     }
@@ -303,12 +309,14 @@ class ChatController extends ChangeNotifier {
     currentEvent!.aiChatMessages.add(thinkingMsg);
     isLoading = true;
 
-    itemScrollController.scrollTo(
-      index: 0,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-      alignment: 0.0,
-    );
+    if (itemScrollController.isAttached) {
+      itemScrollController.scrollTo(
+        index: 0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        alignment: 0.0,
+      );
+    }
 
 
     notifyListeners();
@@ -331,11 +339,11 @@ class ChatController extends ChangeNotifier {
         }),
       );
 
-      currentEvent!.aiChatMessages.remove(thinkingMsg);
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final reply = data['reply'] ?? '[No response]';
+
+        currentEvent!.aiChatMessages.remove(thinkingMsg);
         currentEvent!.aiChatMessages.add(
           AiChatMessage(
             id: UniqueKey().toString(),
@@ -346,6 +354,8 @@ class ChatController extends ChangeNotifier {
         );
       } else {
         final error = jsonDecode(response.body)['error'] ?? 'Unknown error';
+
+        currentEvent!.aiChatMessages.remove(thinkingMsg);
         currentEvent!.aiChatMessages.add(
           AiChatMessage(
             id: UniqueKey().toString(),

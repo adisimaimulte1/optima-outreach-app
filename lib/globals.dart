@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -17,7 +18,7 @@ import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
 import 'package:optima/screens/inApp/util/users.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_controller.dart';
 import 'package:optima/screens/inApp/widgets/contact/tutorial_card_item.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_button.dart';
@@ -61,7 +62,7 @@ enum UserState {
 
 
 // keys
-final GlobalKey<MenuState> menuGlobalKey = GlobalKey<MenuState>();
+GlobalKey<MenuState> menuGlobalKey = GlobalKey<MenuState>();
 final GlobalKey<NewEventButtonState> createEventButtonKey = GlobalKey<NewEventButtonState>();
 final GlobalKey<ReminderBellButtonState> showNotificationsKey = GlobalKey<ReminderBellButtonState>();
 final GlobalKey<UpcomingEventCardState> showUpcomingEventCardKey = GlobalKey<UpcomingEventCardState>();
@@ -106,6 +107,18 @@ int pinchAnimationTime = 300;
 
 
 
+const Map<String, IconData> reactions = {
+  'like': Icons.thumb_up_alt_outlined,
+  'love': Icons.favorite_border,
+  'laugh': Icons.emoji_emotions_outlined,
+  'fire': Icons.whatshot_outlined,
+  'sad': Icons.sentiment_dissatisfied_outlined,
+};
+
+
+
+
+
 // local storage data
 ThemeMode selectedTheme = ThemeMode.system;
 ValueNotifier<ThemeMode> selectedThemeNotifier = ValueNotifier(selectedTheme);
@@ -133,7 +146,7 @@ final CombinedListenable combinedEventsListenable = CombinedListenable();
 
 
 double currentTutorialPage = 2.0;
-ChatController chatController = ChatController();
+AiChatController chatController = AiChatController();
 bool hasResetAiChat = true;
 
 UsersController usersController = UsersController();
@@ -212,6 +225,7 @@ final adService = AdService();
 
 bool showAddEventOnLaunch = false;
 MapEntry<bool, MapEntry<EventData?, String?>> showCardOnLaunch = MapEntry(false, MapEntry(null, null));
+MapEntry<bool, EventData?> showEventChatOnLaunch = MapEntry(false, null);
 
 
 
@@ -276,6 +290,9 @@ final List<String> sportsKeys = [
 
 
 
+final Set<String> cachedPhotosForEmail = {};
+Map<String, dynamic>? emailToNameMap;
+QuerySnapshot<Map<String, dynamic>>? allPublicData;
 
 
 
@@ -408,6 +425,17 @@ Future<LatLng?> getEventCoordinates(String address) async {
   return null;
 }
 
+Future<void> getPublicData() async {
+  allPublicData = await FirebaseFirestore.instance
+      .collection('public_data')
+      .get();
+
+  emailToNameMap = {
+    for (var doc in allPublicData!.docs)
+      doc.data()['email'].toString().toLowerCase(): doc.data()['name'],
+  };
+
+}
 
 
 Future<List<String>> getTagsForEvent(EventData event, Position? userLocation) async {

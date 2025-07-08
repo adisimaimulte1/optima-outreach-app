@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/credits/credit_service.dart';
@@ -119,18 +120,44 @@ class LocalCache {
 
     if (!docSnapshot.exists) {
       final photoUrl = authUser.photoURL ?? '';
+      String? photoBase64;
+
+      if (photoUrl.isNotEmpty) {
+        final response = await http.get(Uri.parse(photoUrl));
+        if (response.statusCode == 200) {
+          final bytes = response.bodyBytes;
+          photoBase64 = base64Encode(bytes);
+        }
+      }
+
       CreditService.initializeCredits();
+
       await docRef.set({
         'name': authUser.displayName ?? 'Unknown User',
         'email': authUser.email ?? '',
-        'photoUrl': photoUrl,
+        'photo': photoBase64 ?? '',
         'settings': {
-          'jamieEnabled': true,
+          'jamieEnabled': false,
           'wakeWordEnabled': true,
           'jamieReminders': true,
         },
-
       }, SetOptions(merge: true));
+
+      final publicDataRef = FirebaseFirestore.instance.collection('public_data').doc(authUser.uid);
+
+      await publicDataRef.set({
+        'name': authUser.displayName ?? 'Unknown User',
+        'email': authUser.email ?? '',
+        'photo': photoBase64 ?? '',
+      });
+
+      // create placeholders
+      try {
+        await docRef.collection('creditHistory').doc('placeholder').set({'placeholder': true});
+        await docRef.collection('sessions').doc('placeholder').set({'placeholder': true});
+      } catch (e) {
+        debugPrint("🔥 Failed to create placeholders: $e");
+      }
     }
 
     await loadAndCacheUserData();
@@ -204,7 +231,9 @@ class LocalCache {
         .collection('members')
         .get();
 
-    final memberList = membersSnap.docs.map((doc) => doc.data()).toList();
+    final filteredMemberDocs = membersSnap.docs.where((m) => m.id != 'placeholder').toList();
+    final memberList = filteredMemberDocs.map((m) => m.data()).toList();
+
     event.eventMembers = memberList; // attach members for cache
   }
 
@@ -291,7 +320,8 @@ class LocalCache {
       List<EventData> relevantEvents,
       List<EventData> upcomingAndNotMemberEvents,
       Position? currentLocation,
-      ) async {
+      ) async
+  {
     final data = doc.data();
     final selectedDate = DateTime.tryParse(data['selectedDate'] ?? '');
     final isPublic = data['isPublic'];
@@ -302,7 +332,8 @@ class LocalCache {
     final isManager = eventManagers.contains(userEmail);
 
     final membersSnap = await doc.reference.collection('members').get();
-    final memberList = membersSnap.docs.map((m) => m.data()).toList();
+    final filteredMemberDocs = membersSnap.docs.where((m) => m.id != 'placeholder').toList();
+    final memberList = filteredMemberDocs.map((m) => m.data()).toList();
 
     final memberEntry = memberList.firstWhere(
           (m) => (m['email'] as String?)?.toLowerCase() == userEmail,
@@ -316,8 +347,9 @@ class LocalCache {
       if (selectedDate.isAfter(now) && isPublic) {
         final event = EventData.fromMap(
           data,
-          memberDocs: membersSnap.docs,
+          memberDocs: filteredMemberDocs,
           aiChatDocs: [],
+          membersChatDocs: [],
         )..id = doc.id;
 
         event.tags = await getTagsForEvent(event, currentLocation);
@@ -330,11 +362,20 @@ class LocalCache {
         .collection("aichat")
         .orderBy("timestamp", descending: true)
         .get();
+    final filteredAiChatDocs = aiChatSnap.docs.where((d) => d.id != 'placeholder').toList();
+
+
+    final membersChatSnap = await doc.reference
+        .collection("memberschat")
+        .orderBy("timestamp", descending: true)
+        .get();
+    final filteredMembersChatDocs = membersChatSnap.docs.where((d) => d.id != 'placeholder').toList();
 
     final event = EventData.fromMap(
       data,
-      memberDocs: membersSnap.docs,
-      aiChatDocs: aiChatSnap.docs,
+      memberDocs: filteredMemberDocs,
+      aiChatDocs: filteredAiChatDocs,
+      membersChatDocs: filteredMembersChatDocs,
     )..id = doc.id;
 
     // Run all member photo caching in parallel

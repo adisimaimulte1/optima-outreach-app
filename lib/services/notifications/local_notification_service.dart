@@ -158,18 +158,31 @@ class LocalNotificationService {
     final memberDocs = await eventRef
         .collection('members')
         .get()
-        .then((snapshot) => snapshot.docs);
+        .then((snapshot) => snapshot.docs
+        .where((doc) => doc.id != 'placeholder')
+        .toList());
 
     final aiChatDocs = await eventRef
         .collection('aichat')
         .orderBy('timestamp', descending: false)
         .get()
-        .then((snapshot) => snapshot.docs);
+        .then((snapshot) => snapshot.docs
+        .where((doc) => doc.id != 'placeholder')
+        .toList());
+
+    final membersChatDocs = await eventRef
+        .collection('memberschat')
+        .orderBy('timestamp', descending: false)
+        .get()
+        .then((snapshot) => snapshot.docs
+        .where((doc) => doc.id != 'placeholder')
+        .toList());
 
     final newEvent = EventData.fromMap(
       eventData,
       memberDocs: memberDocs,
       aiChatDocs: aiChatDocs,
+      membersChatDocs: membersChatDocs,
     )..id = eventId;
 
     events.add(newEvent);

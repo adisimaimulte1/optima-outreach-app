@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_card.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
-import 'package:optima/screens/inApp/widgets/users/join_event_confirmation_dialog.dart';
+import 'package:optima/screens/inApp/widgets/users/dialogs/join_event_confirmation_dialog.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 
 class PublicEventsTab extends StatefulWidget {
@@ -137,9 +137,7 @@ class _PublicEventsTabState extends State<PublicEventsTab> {
   Widget _buildTagFilterBar() {
     final tags = ['All', 'Charity', 'Local', 'Tech', 'Sports'];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0),
-      child: Wrap(
+    return Wrap(
         spacing: 8,
         runSpacing: 8,
         children: tags.map((tag) {
@@ -148,7 +146,7 @@ class _PublicEventsTabState extends State<PublicEventsTab> {
             onTap: () => setState(() => _selectedTag = tag),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 16 * screenScaleNotifier.value, vertical: 8),
               decoration: BoxDecoration(
                 color: selected ? textHighlightedColor : inAppForegroundColor,
                 borderRadius: BorderRadius.circular(14),
@@ -168,7 +166,6 @@ class _PublicEventsTabState extends State<PublicEventsTab> {
             ),
           );
         }).toList(),
-      ),
     );
   }
 

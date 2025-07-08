@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -53,17 +55,35 @@ class _StartupWrapperState extends State<StartupWrapper> with SingleTickerProvid
 
     await _animateTo(0.4, "Initializing Firebase...");
     await LocalStorageService().init();
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug, // .debug for dev
+      appleProvider: AppleProvider.debug, // .debug for dev
+    );
     await Firebase.initializeApp();
 
     await _animateTo(0.6, "Starting AdMob...");
     await MobileAds.instance.initialize();
 
-    await _animateTo(0.7, "Caching user data...");
+    await _animateTo(0.7, "Getting public data...");
+    await getPublicData();
+
+    bool done = false;
+    double progress = 0.7;
+
+    final timer = Timer.periodic(const Duration(milliseconds: 300), (t) {
+      if (done) return t.cancel();
+      if (progress < 0.79) {
+        progress += 0.02;
+        _animateTo(progress, "Caching user data...");
+      }
+    });
+
     await LocalCache().initializeAndCacheUserData();
+    done = true;
 
     await _animateTo(1.0, "Finalizing...");
     setupGlobalListeners();
-    await Future.delayed(const Duration(milliseconds: 50));
+    await Future.delayed(const Duration(milliseconds: 200));
 
     return const Optima();
   }

@@ -4,12 +4,14 @@ import 'package:optima/screens/inApp/widgets/events/details/member_avatar.dart';
 
 class CollaboratorsBlock extends StatelessWidget {
   final List<Member> members;
+  final List<String> managerIds;
   final String creatorId;
 
   const CollaboratorsBlock({
     super.key,
     required this.members,
     required this.creatorId,
+    required this.managerIds,
   });
 
 
@@ -78,6 +80,7 @@ class CollaboratorsBlock extends StatelessWidget {
                       member: member,
                       size: 55,
                       showCrown: member.id == creatorId,
+                      isManager: managerIds.contains(member.id),
                       isAbleToPop: false,
                     ),
                   )).toList()

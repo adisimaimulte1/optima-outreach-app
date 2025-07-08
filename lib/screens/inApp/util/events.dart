@@ -36,15 +36,6 @@ class EventsScreenState extends State<EventsScreen> {
   void initState() {
     super.initState();
 
-    final allEmails = events
-        .expand((e) => e.eventMembers.map((m) => m['email']))
-        .whereType<String>()
-        .toSet();
-
-    for (final email in allEmails) {
-      LocalCache().recacheMemberPhoto(email);
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScrollRegistry.register(ScreenType.events, _scrollController);
       ScreenRegistry.register<EventsScreenState>(ScreenType.events, widget.key as GlobalKey<EventsScreenState>);
@@ -301,7 +292,11 @@ class EventsScreenState extends State<EventsScreen> {
         CloudStorageService().removeMemberFromEvent(
           event: eventToDelete,
           email: FirebaseAuth.instance.currentUser!.email!,
-        ).whenComplete(() {
+        ).whenComplete(() async {
+          if (eventToDelete.tags == null || eventToDelete.tags!.isEmpty) {
+            eventToDelete.tags = await getTagsForEvent(eventToDelete, await getCurrentLocation());
+          }
+
           upcomingPublicEvents.add(eventToDelete);
         });
       }

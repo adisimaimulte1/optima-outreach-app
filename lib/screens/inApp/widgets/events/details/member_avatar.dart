@@ -237,7 +237,7 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: dashed ? Colors.transparent : textHighlightedColor,
-            border: Border.all(color: widget.color, width: dashed ? 2 : 3),
+            border: Border.all(color: widget.color, width: dashed ? 3 : 4),
           ),
           child: ClipOval(child: content),
         ),
@@ -277,16 +277,6 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
 
   Widget _buildImage(String photo, String fallback) {
     try {
-      if (photo.startsWith('http')) {
-        return Image.network(
-          photo,
-          fit: BoxFit.cover,
-          width: widget.size,
-          height: widget.size,
-          errorBuilder: (_, __, ___) => _buildInitials(fallback),
-        );
-      }
-
       final bytes = base64Decode(photo.split(',').last);
       return Image.memory(
         bytes,
@@ -307,14 +297,18 @@ class _AvatarSlotState extends State<AvatarSlot> with TickerProviderStateMixin {
         .toList();
 
     final initials = parts.isEmpty
-        ? '+'
+        ? '+' // fallback char
         : parts.take(2).map((e) => e[0].toUpperCase()).join();
 
-    return Center(
+    return Container(
+      width: widget.size,
+      height: widget.size,
+      alignment: Alignment.center,
       child: Text(
         initials,
+        textAlign: TextAlign.center,
         style: TextStyle(
-          fontSize: 36,
+          fontSize: widget.size * 0.44, // scalable font
           fontWeight: FontWeight.bold,
           color: widget.color,
         ),
@@ -329,6 +323,7 @@ class ContributorAvatar extends StatelessWidget {
   final Member member;
   final double size;
   final bool showCrown;
+  final bool isManager;
   final bool isAbleToPop;
 
   const ContributorAvatar({
@@ -336,6 +331,7 @@ class ContributorAvatar extends StatelessWidget {
     required this.member,
     this.size = 56,
     this.showCrown = false,
+    this.isManager = false,
     this.isAbleToPop = true,
   });
 
@@ -349,7 +345,7 @@ class ContributorAvatar extends StatelessWidget {
           key: ValueKey(member.id),
           member: member,
           size: size,
-          color: showCrown ? textHighlightedColor : textSecondaryHighlightedColor,
+          color: isManager ? textHighlightedColor : textSecondaryHighlightedColor,
           dimmed: member.isPending,
           isCreator: showCrown,
           isAbleToPop: isAbleToPop,

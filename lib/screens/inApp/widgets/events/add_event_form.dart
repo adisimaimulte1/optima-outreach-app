@@ -219,6 +219,24 @@ class AddEventFormState extends State<AddEventForm> {
 
 
   Future<void> _updateExistingEvent(EventData data) async {
+    final now = DateTime.now().toIso8601String();
+
+    // fetch existing members from Firestore
+    final membersSnap = await FirebaseFirestore.instance
+        .collection('events')
+        .doc(data.id)
+        .collection('members')
+        .where(FieldPath.documentId, isNotEqualTo: 'placeholder')
+        .get();
+
+    final existingMembersMap = {
+      for (final doc in membersSnap.docs)
+        (doc.data()['email'] as String).toLowerCase(): doc.data()
+    };
+
+    final lowercasedEmails = _eventMembers.map((e) => e.toLowerCase()).toSet();
+
+    // build final member list: preserve existing status/invitedAt
     data
       ..eventName = _eventName
       ..organizationType = _organizationType
@@ -227,10 +245,13 @@ class AddEventFormState extends State<AddEventForm> {
       ..selectedTime = _selectedTime
       ..locationAddress = _locationAddress
       ..locationLatLng = _locationLatLng
-      ..eventMembers = _eventMembers.map((email) => {
-        'email': email,
-        'status': 'pending',
-        'invitedAt': DateTime.now().toIso8601String(),
+      ..eventMembers = lowercasedEmails.map((email) {
+        final existing = existingMembersMap[email];
+        return {
+          'email': email,
+          'status': existing?['status'] ?? 'pending',
+          'invitedAt': existing?['invitedAt'] ?? now,
+        };
       }).toList()
       ..eventGoals = _eventGoals
       ..audienceTags = _audienceTags
@@ -247,12 +268,6 @@ class AddEventFormState extends State<AddEventForm> {
 
 
     final Set<String> newEmails = _eventMembers.map((e) => e.toLowerCase()).toSet();
-    final membersSnap = await FirebaseFirestore.instance
-        .collection('events')
-        .doc(data.id)
-        .collection('members')
-        .get();
-
     for (final doc in membersSnap.docs) {
       final memberEmail = (doc.data()['email'] as String?)?.toLowerCase();
 
@@ -262,30 +277,32 @@ class AddEventFormState extends State<AddEventForm> {
       }
     }
 
+
+
     // send invites to current members
-    for (final email in _eventMembers) {
-      final query = await FirebaseFirestore.instance
-          .collection('public_data')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
+    final memberMap = {
+      for (var doc in membersSnap.docs)
+        doc.id: doc.data()
+    };
 
-      if (query.docs.isEmpty) continue;
+    // Build a single public_data query for all emails
+    final lwc = _eventMembers.map((e) => e.toLowerCase()).toSet();
+    final publicDataQuery = await FirebaseFirestore.instance
+        .collection('public_data')
+        .where('email', whereIn: lwc.toList())
+        .get();
 
-      final uid = query.docs.first.id;
+    for (final userDoc in publicDataQuery.docs) {
+      final uid = userDoc.id;
+      final email = (userDoc.data()['email'] as String?)?.toLowerCase();
+      if (email == null) continue;
 
-      // check if this user is already accepted
-      final memberDoc = await FirebaseFirestore.instance
-          .collection('events')
-          .doc(data.id)
-          .collection('members')
-          .doc(uid)
-          .get();
+      final wasManager = data.eventManagers.contains(email);
+      final status = (memberMap[uid]?['status'] ?? '').toString().toLowerCase();
 
-      final status = (memberDoc.data()?['status'] ?? '').toString().toLowerCase();
-      final alreadyAccepted = status == 'accepted';
+      final alreadyInEvent = wasManager || status == 'pending' || status == 'accepted';
 
-      if (!alreadyAccepted) {
+      if (!alreadyInEvent) {
         await LocalNotificationService().addNotification(
           userId: uid,
           message: 'You were invited to join "$_eventName".',
@@ -294,7 +311,6 @@ class AddEventFormState extends State<AddEventForm> {
         );
       }
     }
-
   }
 
   Future<void> _createNewEvent() async {
@@ -324,8 +340,16 @@ class AddEventFormState extends State<AddEventForm> {
     );
 
 
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
     await CloudStorageService().saveEvent(eventData);
-    Navigator.of(context).pop(eventData);
+
+    if (mounted) Navigator.of(context).pop();
+    if (mounted) Navigator.of(context).pop(eventData);
 
 
     for (final email in _eventMembers) {

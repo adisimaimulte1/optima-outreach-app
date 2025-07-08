@@ -51,44 +51,52 @@ class _EventDetailsState extends State<EventDetails> {
 
   Future<void> _loadResolvedMembers(EventData eventData) async {
     final rawMembers = eventData.eventMembers;
+    final rawManagers = eventData.eventManagers;
     final creatorEmail = eventData.createdBy.toLowerCase();
 
-    final List<Member> initial = [];
+    final List<Member> resolved = [];
 
-    // Add creator explicitly first
-    if (creatorEmail.isNotEmpty) {
-      final photo = await LocalCache().getCachedMemberPhoto(creatorEmail);
-      initial.add(Member(
-        id: creatorEmail,
-        displayName: creatorEmail,
+    // creator first
+    final creatorPhoto = await LocalCache().getCachedMemberPhoto(creatorEmail);
+    resolved.add(Member(
+      id: creatorEmail,
+      displayName: emailToNameMap![creatorEmail] ?? creatorEmail,
+      resolvedPhoto: creatorPhoto,
+      isPending: false,
+    ));
+
+    // managers (excluding creator)
+    for (final m in rawManagers) {
+      if (m.toLowerCase() == creatorEmail) continue;
+      final photo = await LocalCache().getCachedMemberPhoto(m);
+      resolved.add(Member(
+        id: m,
+        displayName: emailToNameMap![m] ?? m,
         resolvedPhoto: photo,
         isPending: false,
       ));
     }
 
-    // Build initial members with full opacity (assume accepted)
-    for (final member in rawMembers) {
-      final email = member['email'] ?? '';
+    // mebers (may include pending)
+    for (final m in rawMembers) {
+      final email = (m['email'] ?? '').toLowerCase();
+      final status = m['status'] ?? 'pending';
       final photo = await LocalCache().getCachedMemberPhoto(email);
 
-      initial.add(Member(
+      resolved.add(Member(
         id: email,
-        displayName: email,
+        displayName: emailToNameMap![email] ?? email,
         resolvedPhoto: photo,
-        isPending: false,
+        isPending: status != 'accepted',
       ));
     }
 
-    // Set them immediately to render full opacity first
-    if (mounted) setState(() => _resolvedMembers = initial);
+    resolved.sort((a, b) {
+      if (a.isPending == b.isPending) return 0;
+      return a.isPending ? 1 : -1; // pending last
+    });
 
-    // Recache statuses (this will also update global events)
-    for (final member in rawMembers) {
-      final email = member['email'];
-      if (email != null) {
-        await LocalCache().recacheMemberStatus(email, widget.eventId);
-      }
-    }
+    if (mounted) setState(() => _resolvedMembers = resolved);
 
     // Update the isPending flag *only* on the existing members
     if (mounted) {
@@ -96,7 +104,8 @@ class _EventDetailsState extends State<EventDetails> {
         _resolvedMembers = _resolvedMembers.map((member) {
           final status = getGlobalMemberStatus(member.id, widget.eventId);
           final isCreator = member.id.toLowerCase() == creatorEmail;
-          final isPending = isCreator ? false : status == 'pending';
+          final isManager = rawManagers.map((e) => e.toLowerCase()).contains(member.id.toLowerCase());
+          final isPending = (isCreator || isManager) ? false : status == 'pending';
 
           return member.isPending == isPending
               ? member
@@ -152,6 +161,23 @@ class _EventDetailsState extends State<EventDetails> {
         color = hasPermission ? textHighlightedColor : textSecondaryHighlightedColor;
         selectedStatus = liveEvent.status;
 
+        // update member list live
+        final currentKeys = _resolvedMembers.map((m) {
+          final status = getGlobalMemberStatus(m.id, widget.eventId);
+          return "${m.id.toLowerCase()}|$status";
+        }).toSet();
+
+        final updatedKeys = liveEvent.eventMembers.map((m) {
+          final email = (m['email'] ?? '').toLowerCase();
+          final status = (m['status'] ?? 'pending').toLowerCase();
+          return "$email|$status";
+        }).toSet();
+
+        if (currentKeys.length != updatedKeys.length || !currentKeys.containsAll(updatedKeys)) {
+          _loadResolvedMembers(liveEvent);
+        }
+
+
         return _buildContent(context, liveEvent);
       },
     );
@@ -185,7 +211,12 @@ class _EventDetailsState extends State<EventDetails> {
           const SizedBox(height: 16),
           _buildTitleBlock(context, event),
           LocationBlock(address: event.locationAddress!, color: color),
-          CollaboratorsBlock(members: _resolvedMembers, creatorId: event.createdBy),
+          CollaboratorsBlock(
+            members: _resolvedMembers,
+            creatorId: event.createdBy,
+            managerIds: event.eventManagers,
+          ),
+
           _buildGoalsBlock(event),
           _buildVisibilityAudienceBlock(event),
           const Spacer(),

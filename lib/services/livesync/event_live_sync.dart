@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_message.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_message.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/screens/inApp/widgets/users/members_chat/members_chat_message.dart';
+import 'package:optima/services/cache/local_cache.dart';
 
 class EventLiveSyncService {
   static final EventLiveSyncService _instance =
@@ -66,9 +69,29 @@ class EventLiveSyncService {
         status: data['status'] ?? "UPCOMING",
         eventManagers: List<String>.from(data['eventManagers'] ?? []),
         createdBy: data['createdBy'] ?? '',
+        chatImage: data['chatImage'] ?? '',
       );
 
       notifier.value = updated;
+
+      // check if the user is still in the event
+      final currentUserEmail = FirebaseAuth.instance.currentUser?.email;
+      final isStillManager = updated.eventManagers.contains(currentUserEmail);
+
+      if (!isStillManager) {
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          // Check again after delay
+          final latest = notifier.value;
+          final stillOut = !latest.eventManagers.contains(currentUserEmail) &&
+              !(latest.eventMembers.any((m) => m['email'] == currentUserEmail));
+
+          if (stillOut) {
+            stopListeningToEvent(eventId);
+            events.removeWhere((e) => e.id == eventId);
+          }
+        });
+      }
+
 
       final index = events.indexWhere((e) => e.id == eventId);
       if (index != -1) events[index] = updated;
@@ -78,18 +101,46 @@ class EventLiveSyncService {
     final membersSub = ref.collection('members').snapshots().listen((snapshot) {
       final current = notifier.value;
 
-      final updated = current.copyWith(
-        eventMembers: snapshot.docs.map((d) => d.data()).toList(),
-      );
+      final updatedMembers = snapshot.docs
+          .where((d) => d.id != 'placeholder')
+          .map((d) => d.data()).toList();
+      final updated = current.copyWith(eventMembers: updatedMembers);
 
       notifier.value = updated;
 
+      // check if the user is still in the event
+      final currentUserEmail = FirebaseAuth.instance.currentUser?.email;
+      final isStillMember = updated.eventMembers.any((m) => m['email'] == currentUserEmail);
+
+      if (!isStillMember) {
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          final latest = notifier.value;
+          final stillOut = !latest.eventManagers.contains(currentUserEmail) &&
+              !(latest.eventMembers.any((m) => m['email'] == currentUserEmail));
+
+          if (stillOut) {
+            stopListeningToEvent(eventId);
+            events.removeWhere((e) => e.id == eventId);
+          }
+        });
+      }
+
+
       final index = events.indexWhere((e) => e.id == eventId);
       if (index != -1) events[index] = updated;
+
+      // re-cache member photos
+      for (final member in updatedMembers) {
+        String? email = member['email'];
+        if (!cachedPhotosForEmail.contains(email)) {
+          LocalCache().recacheMemberPhoto(email!);
+        }
+      }
     });
 
+
     // 🔁 Listener 3: AI Chat
-    final chatSub = ref
+    final aiChatSub = ref
         .collection('aichat')
         .orderBy('timestamp', descending: false)
         .snapshots()
@@ -97,6 +148,7 @@ class EventLiveSyncService {
       final current = notifier.value;
 
       final aiMessages = snapshot.docs
+          .where((doc) => doc.id != 'placeholder')
           .map((doc) => AiChatMessage.fromFirestore(doc.data(), doc.id))
           .toList();
 
@@ -108,10 +160,34 @@ class EventLiveSyncService {
       if (index != -1) events[index] = updated;
     });
 
+
+    // 🔁 Listener 4: Members Chat
+    final membersChatSub = ref
+        .collection('memberschat')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      final current = notifier.value;
+
+      final membersMessages = snapshot.docs
+          .where((doc) => doc.id != 'placeholder')
+          .map((doc) => MembersChatMessage.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      final updated = current.copyWith(membersChatMessages: membersMessages);
+
+      notifier.value = updated;
+
+      final index = events.indexWhere((e) => e.id == eventId);
+      if (index != -1) events[index] = updated;
+    });
+
+
     _eventListeners[eventId] = _EventSubscriptions(
       eventSub,
       membersSub,
-      chatSub,
+      aiChatSub,
+      membersChatSub,
     );
   }
 
@@ -146,13 +222,15 @@ class EventLiveSyncService {
 class _EventSubscriptions {
   final StreamSubscription eventSub;
   final StreamSubscription membersSub;
-  final StreamSubscription chatSub;
+  final StreamSubscription aiChatSub;
+  final StreamSubscription membersChatSub;
 
-  _EventSubscriptions(this.eventSub, this.membersSub, this.chatSub);
+  _EventSubscriptions(this.eventSub, this.membersSub, this.aiChatSub, this.membersChatSub);
 
   void cancel() {
     eventSub.cancel();
     membersSub.cancel();
-    chatSub.cancel();
+    aiChatSub.cancel();
+    membersChatSub.cancel();
   }
 }

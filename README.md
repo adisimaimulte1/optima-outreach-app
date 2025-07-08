@@ -2,4 +2,4 @@
 
 Optimized outreach, maximum success.
 
-v0.1-alpha
+v2.0.0

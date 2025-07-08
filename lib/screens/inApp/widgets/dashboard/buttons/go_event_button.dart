@@ -68,7 +68,6 @@ class _GoEventButtonState extends State<GoEventButton> implements Triggerable {
               decoration: BoxDecoration(
                 color: textHighlightedColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: textDimColor, width: 1.2),
               ),
               child: Center(
                 child: FittedBox(

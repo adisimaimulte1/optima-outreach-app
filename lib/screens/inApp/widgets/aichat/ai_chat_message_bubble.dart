@@ -7,30 +7,30 @@ import 'package:optima/screens/inApp/widgets/aichat/typing_dots.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:provider/provider.dart';
 import 'package:markdown/markdown.dart' as md;
-import 'chat_controller.dart';
-import 'chat_message.dart';
+import 'ai_chat_controller.dart';
+import 'ai_chat_message.dart';
 import 'package:intl/intl.dart';
 
 
 import 'package:flutter_markdown/flutter_markdown.dart' show MarkdownBody, MarkdownElementBuilder, MarkdownStyleSheet;
 
 
-class ChatMessageBubble extends StatefulWidget {
+class AiChatMessageBubble extends StatefulWidget {
   final AiChatMessage msg;
   final EventData event;
 
-  const ChatMessageBubble({
+  const AiChatMessageBubble({
     super.key,
     required this.msg,
     required this.event,
   });
 
   @override
-  State<ChatMessageBubble> createState() => _ChatMessageBubbleState();
+  State<AiChatMessageBubble> createState() => _AiChatMessageBubbleState();
 }
 
-class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProviderStateMixin {
-  late ChatController chat;
+class _AiChatMessageBubbleState extends State<AiChatMessageBubble> with TickerProviderStateMixin {
+  late AiChatController chat;
   bool _startTyping = false;
   bool _showActions = false;
   bool _wasMinimized = false;
@@ -42,7 +42,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
   @override
   void initState() {
     super.initState();
-    chat = context.read<ChatController>();
+    chat = context.read<AiChatController>();
 
     chat.openMessageId.addListener(_syncActionVisibility);
     screenScaleNotifier.addListener(_handleScaleChange);
@@ -54,9 +54,9 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
 
     _buttonsController = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
 
-    if (widget.msg.content != "...thinking" && !widget.msg.hasAnimated) {
+    if (widget.msg.content != "...thinking" && !widget.msg.hasAnimatedOnce) {
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) setState(() => _startTyping = true);
+        if (mounted) { setState(() { _startTyping = true;}); }
       });
     } else {
       _startTyping = true;
@@ -220,10 +220,10 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> with TickerProvid
     );
   }
 
-  Widget _buildMessageContent(BuildContext context, bool isUser, ChatController chat) {
+  Widget _buildMessageContent(BuildContext context, bool isUser, AiChatController chat) {
     final highlight = chat.searchQuery.value;
     final msg = widget.msg;
-    final shouldAnimate = !_startTyping || msg.hasAnimated;
+    final shouldAnimate = !_startTyping || msg.hasAnimatedOnce;
     final textStyle = TextStyle(
       color: isUser ? inAppForegroundColor : textColor,
       fontWeight: FontWeight.w900,
@@ -336,12 +336,16 @@ class _AnimatedHighlightTextState extends State<AnimatedHighlightText> {
     if (_skipAnimation) {
       _visibleChars = widget.fullText.length;
     } else {
+      _visibleChars = chatController.animatedCharCount[widget.id] ?? 0;
       _timer = Timer.periodic(widget.durationPerChar, (timer) {
         if (_visibleChars >= widget.fullText.length) {
           timer.cancel();
           widget.onFinished();
         } else {
-          setState(() => _visibleChars++);
+          setState(() {
+            _visibleChars++;
+            chatController.animatedCharCount[widget.id] = _visibleChars;
+          });
         }
       });
     }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/aichat/buttons/mini_menu_button.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_controller.dart';
 import 'package:provider/provider.dart';
 
 class FloatingSearchBar extends StatefulWidget {
@@ -52,7 +52,7 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Consumer<ChatController>(
+        child: Consumer<AiChatController>(
           builder: (context, chat, _) {
             final matchText = '${chat.currentMatch} / ${chat.totalMatches}';
 
@@ -62,7 +62,7 @@ class _FloatingSearchBarState extends State<FloatingSearchBar> {
                   child: TextField(
                     focusNode: _focusNode,
                     controller: widget.controller,
-                    onChanged: (v) => context.read<ChatController>().updateSearchQuery(v),
+                    onChanged: (v) => context.read<AiChatController>().updateSearchQuery(v),
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
                       hintText: 'Search messages...',

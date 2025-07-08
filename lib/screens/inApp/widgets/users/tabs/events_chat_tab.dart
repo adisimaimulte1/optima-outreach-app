@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/screens/inApp/widgets/users/event_chat_preview_card.dart';
+import 'package:optima/screens/inApp/widgets/users/dialogs/members_chat_dialog.dart';
+import 'package:optima/screens/inApp/widgets/users/members_chat/event_chat_preview_card.dart';
 
 class EventsChatTab extends StatefulWidget {
   const EventsChatTab({super.key});
@@ -11,6 +12,34 @@ class EventsChatTab extends StatefulWidget {
 
 class _EventsChatTabState extends State<EventsChatTab> {
   bool _hasUnfocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (showEventChatOnLaunch.key && showEventChatOnLaunch.value != null) {
+        final event = showEventChatOnLaunch.value!;
+        showEventChatOnLaunch = const MapEntry(false, null);
+
+        showDialog(
+          context: context,
+          barrierColor: Colors.black.withOpacity(0.6),
+          builder: (_) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: MembersChatDialog(event: event),
+            ),
+          ),
+        ).whenComplete(() => popupStackCount.value--);
+
+        popupStackCount.value++;
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +80,22 @@ class _EventsChatTabState extends State<EventsChatTab> {
             final event = events[index];
             return EventChatPreviewCard(
               event: event,
-              previewText: 'No messages yet...',
               onTap: () {
-                // TODO: Navigate to chat screen with event.id
+                popupStackCount.value++;
+                showDialog(
+                  context: context,
+                  barrierColor: Colors.black.withOpacity(0.6),
+                  builder: (_) => Dialog(
+                    backgroundColor: Colors.transparent,
+                    insetPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: MembersChatDialog(event: event),
+                    ),
+                  ),
+                ).whenComplete(() => popupStackCount.value--);
               },
+
             );
           },
         );

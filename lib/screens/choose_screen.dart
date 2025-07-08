@@ -13,9 +13,9 @@ import 'package:optima/screens/inApp/util/dashboard.dart';
 import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/users.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
 import 'package:optima/screens/inApp/widgets/menu/menu_controller.dart' as custom_menu;
 import 'package:optima/screens/inApp/widgets/menu/menu_overlay.dart';
+import 'package:optima/services/internet/internet_monitor.dart';
 import 'package:optima/services/sessions/session_service.dart';
 
 
@@ -41,6 +41,11 @@ class _ChooseScreenState extends State<ChooseScreen> with WidgetsBindingObserver
 
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      InternetMonitor().init(context);
+    });
+
   }
 
   void _startImmersiveTimer() {

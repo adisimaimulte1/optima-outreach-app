@@ -18,11 +18,14 @@ class SessionService {
 
     final currentDevice = "${Platform.operatingSystem} • ${Platform.operatingSystemVersion}";
     final sessionsRef = _firestore.collection('users').doc(user.uid).collection('sessions');
-    final allSessions = await sessionsRef.get();
+    final allSessions = (await sessionsRef.get())
+        .docs
+        .where((doc) => doc.id != 'placeholder')
+        .toList();
 
     String? matchedSessionId;
 
-    for (var doc in allSessions.docs) {
+    for (var doc in allSessions) {
       final data = doc.data();
       if (data['device'] == currentDevice) {
         matchedSessionId = doc.id;
@@ -30,7 +33,7 @@ class SessionService {
       }
     }
 
-    for (var doc in allSessions.docs) {
+    for (var doc in allSessions) {
       await doc.reference.update({'isCurrent': false});
     }
 
@@ -111,9 +114,13 @@ class SessionService {
         .doc(user.uid)
         .collection('sessions');
 
-    final sessions = await sessionsRef.get();
+    final sessions = (await sessionsRef.get())
+        .docs
+        .where((doc) => doc.id != 'placeholder')
+        .toList();
 
-    for (var doc in sessions.docs) {
+
+    for (var doc in sessions) {
       if (doc.id != currentSessionId) {
         await doc.reference.delete();
       }
@@ -134,7 +141,9 @@ class SessionService {
         .orderBy('lastActive', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) {
+    return snapshot.docs
+        .where((doc) => doc.id != 'placeholder')
+        .map((doc) {
       final data = doc.data();
       return {
         ...data,

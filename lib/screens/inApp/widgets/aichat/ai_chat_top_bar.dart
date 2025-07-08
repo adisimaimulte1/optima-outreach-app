@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/aichat/buttons/menu_button.dart';
 import 'package:optima/screens/inApp/widgets/aichat/buttons/round_icon_button.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_controller.dart';
 import 'package:provider/provider.dart';
 
-class ChatTopBar extends StatelessWidget {
+class AiChatTopBar extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
 
-  const ChatTopBar({super.key, required this.scaffoldKey});
+  const AiChatTopBar({super.key, required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ChatController>(
+    return Consumer<AiChatController>(
       builder: (context, chat, _) {
         final event = chat.currentEvent;
         final isSearchActive = chat.isSearchBarVisible.value;

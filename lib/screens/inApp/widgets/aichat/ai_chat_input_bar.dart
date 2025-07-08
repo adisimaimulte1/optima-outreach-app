@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_controller.dart';
 import 'package:provider/provider.dart';
 
-class ChatInputBar extends StatefulWidget {
+class AiChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onSend;
 
-  const ChatInputBar({
+  const AiChatInputBar({
     super.key,
     required this.controller,
     required this.focusNode,
@@ -16,10 +16,10 @@ class ChatInputBar extends StatefulWidget {
   });
 
   @override
-  State<ChatInputBar> createState() => _ChatInputBarState();
+  State<AiChatInputBar> createState() => _AiChatInputBarState();
 }
 
-class _ChatInputBarState extends State<ChatInputBar> {
+class _AiChatInputBarState extends State<AiChatInputBar> {
   bool _hasText = false;
 
   @override
@@ -43,7 +43,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
-    final chat = context.watch<ChatController>();
+    final chat = context.watch<AiChatController>();
     if (chat.currentEvent == null) return const SizedBox.shrink();
 
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -82,19 +82,24 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   Widget _buildTextField(bool hasCredits) {
     return Expanded(
-      child: TextField(
-        controller: widget.controller,
-        focusNode: widget.focusNode,
-        enabled: hasCredits,
-        onSubmitted: (_) => hasCredits ? widget.onSend() : null,
-        style: TextStyle(color: textColor),
-        decoration: InputDecoration(
-          hintText: hasCredits
-              ? "Ask Jamie something..."
-              : "You need credits to ask Jamie.",
-          hintStyle: const TextStyle(color: Colors.white60),
-          border: InputBorder.none,
-          isDense: true,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 120),
+        child: TextField(
+          controller: widget.controller,
+          focusNode: widget.focusNode,
+          enabled: hasCredits,
+          keyboardType: TextInputType.multiline,
+          maxLines: null,
+          minLines: 1,
+          style: TextStyle(color: textColor),
+          decoration: InputDecoration(
+            hintText: hasCredits
+                ? "Ask Jamie something..."
+                : "You need credits to ask Jamie.",
+            hintStyle: const TextStyle(color: Colors.white60),
+            border: InputBorder.none,
+            isDense: true,
+          ),
         ),
       ),
     );

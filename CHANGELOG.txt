@@ -173,4 +173,15 @@ Change Log
 - FIXED BUG: event members did visually pop upon hold indicating them leaving, without leaving (now they can't pop)
 
 
-
+0.1.8 (09/07/2024)
+------------------
+- app now actively listens to internet connectivity and pops up the "no internet screen"
+- Public Data is now read once on app init. Profile photos & names (non relevant data) isn't live sync
+- now both event members and statuses are also visually live sync
+- now the "manager" role can be added / took away by the creator or managers to the members (in Users screen)
+- easier way to remove members from event through Users screen
+- dashboard shortcut widget now opens the Members option too
+- made live sync more reliable (99%)
+- fixed account creation and deletion & event creation
+- fixed A TON OF BUGS
+- Users screen fully added

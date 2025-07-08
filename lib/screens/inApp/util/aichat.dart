@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:optima/ai/navigator/key_registry.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/abstract_screen.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_drawer.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_input_bar.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_message_bubble.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_top_bar.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_controller.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_drawer.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_input_bar.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_message_bubble.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_top_bar.dart';
 import 'package:optima/screens/inApp/widgets/aichat/popups/floating_search_bar.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:provider/provider.dart';
@@ -64,7 +64,7 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           return ValueListenableBuilder<bool>(
             valueListenable: chatController.isSearchBarVisible,
             builder: (context, isSearchVisible, _) {
-              return Consumer<ChatController>(
+              return Consumer<AiChatController>(
                 builder: (context, chat, _) {
                   final currentEvent = chat.currentEvent;
 
@@ -82,7 +82,7 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                         children: [
                           Scaffold(
                             key: aiChatScaffoldKey,
-                            drawer: ChatDrawer(onSelect: chat.setEvent),
+                            drawer: AiChatDrawer(onSelect: chat.setEvent),
                             drawerEnableOpenDragGesture: scale >= 0.99,
                             backgroundColor: Colors.transparent,
                             resizeToAvoidBottomInset: true,
@@ -120,10 +120,10 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildChatBody(ChatController chat, EventData? currentEvent) {
+  Widget _buildChatBody(AiChatController chat, EventData? currentEvent) {
     return Column(
       children: [
-        ChatTopBar(scaffoldKey: aiChatScaffoldKey),
+        AiChatTopBar(scaffoldKey: aiChatScaffoldKey),
         if (currentEvent == null)
           _buildNoEventMessage()
         else ...[
@@ -191,7 +191,7 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               itemBuilder: (context, index) {
                 final msg = filteredMessages[filteredMessages.length - 1 - index];
-                return ChatMessageBubble(
+                return AiChatMessageBubble(
                   key: chatController.getBubbleKey(msg.id),
                   msg: msg,
                   event: event,
@@ -204,12 +204,12 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildChatInput(ChatController chat) {
+  Widget _buildChatInput(AiChatController chat) {
     final event = chat.currentEvent;
 
     if (!event!.hasPermission(FirebaseAuth.instance.currentUser!.email!)) return const SizedBox.shrink();
 
-    return ChatInputBar(
+    return AiChatInputBar(
       controller: chat.inputController,
       focusNode: chat.focusNode,
       onSend: chat.sendMessage,

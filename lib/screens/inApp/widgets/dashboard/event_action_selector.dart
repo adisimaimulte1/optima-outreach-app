@@ -169,6 +169,9 @@ class _EventActionSelectorWheelState extends State<EventActionSelectorWheel> {
   void _handleGo() {
     if (events.isEmpty) return;
 
+    final selectedEventIndex = eventScroll.selectedItem;
+    final selectedActionIndex = actionScroll.selectedItem;
+
     final selectedEvent = events[selectedEventIndex];
     final selectedAction = actions[selectedActionIndex];
 
@@ -183,6 +186,7 @@ class _EventActionSelectorWheelState extends State<EventActionSelectorWheel> {
         break;
       case "Members":
         selectedScreenNotifier.value = ScreenType.users;
+        showEventChatOnLaunch = MapEntry(true, selectedEvent);
         break;
     }
   }

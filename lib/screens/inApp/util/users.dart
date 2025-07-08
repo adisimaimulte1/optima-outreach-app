@@ -48,6 +48,10 @@ class UsersScreenState extends State<UsersScreen> with TickerProviderStateMixin 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScreenRegistry.register<UsersScreenState>(
           ScreenType.users, widget.key as GlobalKey<UsersScreenState>);
+
+      if (showEventChatOnLaunch.key && showEventChatOnLaunch.value != null) {
+        usersController.tabController.animateTo(0);
+      }
     });
   }
 
@@ -66,29 +70,33 @@ class UsersScreenState extends State<UsersScreen> with TickerProviderStateMixin 
       sourceType: UsersScreen,
       builder: (context, isMinimized, scale) {
 
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Column(
-            children: [
-              const SizedBox(height: 85),
-              _buildTabBar(context),
-              _buildDivider(),
-              const SizedBox(height: 10),
-              Expanded(
-                child: TabBarView(
-                  controller: usersController.tabController,
-                  physics: scale < 0.99
-                      ? const NeverScrollableScrollPhysics()
-                      : const BouncingScrollPhysics(),
-                  children: [
-                    EventsChatTab(),
-                    PublicEventsTab(),
-                  ],
-                ),
+        return AnimatedBuilder(
+          animation: combinedEventsListenable,
+          builder: (context, _) {
+            return Scaffold(
+              backgroundColor: Colors.transparent,
+              body: Column(
+                children: [
+                  const SizedBox(height: 85),
+                  _buildTabBar(context),
+                  _buildDivider(),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: TabBarView(
+                      controller: usersController.tabController,
+                      physics: scale < 0.99
+                          ? const NeverScrollableScrollPhysics()
+                          : const BouncingScrollPhysics(),
+                      children: [
+                        EventsChatTab(),
+                        PublicEventsTab(),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -140,7 +148,9 @@ class UsersScreenState extends State<UsersScreen> with TickerProviderStateMixin 
                 ),
                 child: TabBar(
                   controller: usersController.tabController,
-                  onTap: (_) => setState(() {}),
+                  onTap: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() {});
+                  }),
                   indicator: BoxDecoration(
                     color: textHighlightedColor,
                     borderRadius: BorderRadius.circular(18),
@@ -148,7 +158,7 @@ class UsersScreenState extends State<UsersScreen> with TickerProviderStateMixin 
                   labelColor: inAppBackgroundColor,
                   unselectedLabelColor: Colors.white,
                   labelStyle: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
                   dividerColor: Colors.transparent,
@@ -182,7 +192,6 @@ class UsersScreenState extends State<UsersScreen> with TickerProviderStateMixin 
       ),
     );
   }
-
 
   Widget _buildDivider() {
     return Padding(

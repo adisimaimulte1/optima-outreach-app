@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/menu.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/screens/choose_screen.dart';
 import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
@@ -279,14 +280,17 @@ class AccountDeleteDialogs {
       Navigator.of(context, rootNavigator: true).pop();
       await Future.delayed(const Duration(milliseconds: 100));
 
-      Navigator.of(context).pushAndRemoveUntil(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const ChooseScreen(),
-          transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
-          transitionDuration: const Duration(milliseconds: 600),
-        ),
-            (route) => false,
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const ChooseScreen(),
+            transitionsBuilder: (_, animation, __, child) =>
+                FadeTransition(opacity: animation, child: child),
+            transitionDuration: const Duration(milliseconds: 600),
+          ),
+              (route) => false,
+        );
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

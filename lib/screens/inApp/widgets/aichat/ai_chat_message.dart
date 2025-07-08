@@ -8,6 +8,8 @@ class AiChatMessage {
   final DateTime timestamp;
   bool isPinned;
 
+  bool get hasAnimatedOnce => DateTime.now().difference(timestamp).inSeconds >= 3 || role == 'user';
+
   AiChatMessage({
     required this.id,
     required this.role,
@@ -17,11 +19,6 @@ class AiChatMessage {
     this.isPinned = false,
   });
 
-  // Runtime-only
-  bool get hasAnimated {
-    final now = DateTime.now();
-    return now.difference(timestamp).inSeconds >= 10;
-  }
 
   factory AiChatMessage.fromFirestore(Map<String, dynamic> map, String id) {
     return AiChatMessage(

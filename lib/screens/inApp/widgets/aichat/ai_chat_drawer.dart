@@ -1,14 +1,13 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
-import 'package:optima/screens/inApp/widgets/aichat/chat_controller.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_controller.dart';
 import 'package:provider/provider.dart';
 
-class ChatDrawer extends StatelessWidget {
+class AiChatDrawer extends StatelessWidget {
   final Function(EventData) onSelect;
 
-  const ChatDrawer({super.key, required this.onSelect});
+  const AiChatDrawer({super.key, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +69,7 @@ class ChatDrawer extends StatelessWidget {
   Widget _buildEventList(BuildContext context) {
     return Container(
       color: inAppForegroundColor,
-      child: Consumer<ChatController>(
+      child: Consumer<AiChatController>(
         builder: (context, chat, _) {
           return ListView.separated(
             padding: const EdgeInsets.only(top: 0, bottom: 6),

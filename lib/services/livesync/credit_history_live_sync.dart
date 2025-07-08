@@ -29,6 +29,8 @@ class CreditHistoryLiveSyncService {
       final Map<String, CreditHistory> newMap = {};
       for (final doc in snapshot.docs) {
         final dateKey = doc.id;
+
+        if (dateKey == 'placeholder') continue;
         if (dateKey.compareTo(startKey) >= 0) {
           newMap[dateKey] = CreditHistory.fromMap(doc.data());
         }

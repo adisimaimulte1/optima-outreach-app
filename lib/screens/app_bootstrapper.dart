@@ -109,12 +109,10 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
       return;
     }
 
-    // Initialize Firebase if it's not already initialized
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
 
-    // Wait for Firebase to restore the auth state
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {

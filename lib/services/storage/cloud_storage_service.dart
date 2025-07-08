@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as http;
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/cache/local_cache.dart';
@@ -94,39 +98,64 @@ class CloudStorageService {
     if (event.id == null) {
       event.id = docRef.id;
       events.insert(0, event);
-      EventLiveSyncService().listenToEvent(docRef.id);
+
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      if (token == null) return;
+
+      await http.post(
+        Uri.parse('https://optima-livekit-token-server.onrender.com/event/initSubcollections'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'eventId': event.id}),
+      );
+
+      await EventLiveSyncService().listenToEvent(docRef.id);
     } else {
       await docRef.set(event.toMap());
     }
 
     final members = event.eventMembers;
+    if (members.isEmpty) return;
+
+    // Step 1: Collect emails
+    final emails = members.map((m) => m['email'] as String?).whereType<String>().toList();
+
+    // Step 2: Query all matching UIDs at once
+    final userQuery = await _firestore
+        .collection('public_data')
+        .where('email', whereIn: emails)
+        .get();
+
+    // Step 3: Build map of email -> uid
+    final emailToUid = {
+      for (final doc in userQuery.docs)
+        doc['email'].toString().toLowerCase(): doc.id,
+    };
+
+    // Step 4: Update each member doc directly
+    final batch = _firestore.batch();
+
     for (final member in members) {
-      final email = member['email'];
-      if (email == null) continue;
+      final email = member['email']?.toString().toLowerCase();
+      if (email == null || !emailToUid.containsKey(email)) continue;
 
-      final query = await _firestore
-          .collection('public_data')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
+      final uid = emailToUid[email]!;
+      final memberRef = docRef.collection('members').doc(uid);
 
-      if (query.docs.isNotEmpty) {
-        final uid = query.docs.first.id;
+      final status = (member['status'] ?? 'pending').toString().toLowerCase();
 
-        final memberDoc = await docRef.collection('members').doc(uid).get();
-        final existingStatus = (memberDoc.data()?['status'] ?? '').toString().toLowerCase();
-
-        final updatedStatus = existingStatus == 'accepted'
-            ? 'accepted'
-            : (member['status'] ?? 'pending');
-
-        await docRef.collection('members').doc(uid).set({
-          'email': email,
-          'status': updatedStatus,
-          'invitedAt': member['invitedAt'] ?? DateTime.now().toIso8601String(),
-        }, SetOptions(merge: true));
-      }
+      batch.set(memberRef, {
+        'email': email,
+        'status': status,
+        'invitedAt': member['invitedAt'] ?? DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
     }
+
+    await batch.commit();
+    debugPrint('✅ Synced ${emailToUid.length} members to Firestore');
+
   }
 
   Future<void> deleteEvent(EventData event) async {
@@ -192,6 +221,8 @@ class CloudStorageService {
 
     final userRef = _firestore.collection('users').doc(uid);
 
+    _triggerBackendEventLeave();
+
     final subcollections = ['sessions'];
     for (final sub in subcollections) {
       final subRef = userRef.collection(sub);
@@ -204,5 +235,26 @@ class CloudStorageService {
     await userRef.delete();
     await _firestore.collection('public_data').doc(uid).delete();
   }
+
+  void _triggerBackendEventLeave() async {
+    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+    if (token == null) return;
+
+    try {
+      await http.post(
+        Uri.parse('https://optima-livekit-token-server.onrender.com/account/leaveEvents'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': FirebaseAuth.instance.currentUser?.email,
+        }),
+      );
+    } catch (e) {
+      debugPrint('⚠️ Failed to notify backend to leave events: $e');
+    }
+  }
+
 
 }
