@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://i.ibb.co/PvZszgyC/logo-foreground.png" width="100%" alt="Optima Banner"/>
+  <img src="https://i.ibb.co/PvZszgyC/logo-foreground.png" width="30%" alt="Optima Banner"/>
 </p>
 
 <h1 align="center">Optima</h1>
@@ -16,6 +16,12 @@ Designed for organizations, student teams, and community groups seeking a struct
 
 ---
 
+## Download the App
+
+You can download the latest version of Optima from the official site:
+     *[https://linktr.ee/optima_app](https://linktr.ee/optima_app)*
+
+---
 ## Features
 
 - AI assistant for strategic event planning and optimization
