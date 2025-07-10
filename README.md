@@ -2,7 +2,7 @@
   <img src="https://i.ibb.co/PvZszgyC/logo-foreground.png" width="30%" alt="Optima Banner"/>
 </p>
 
-<h1 align="center">Optima</h1>
+<h1 align="center">OPTIMA</h1>
 <p align="center"><em>Optimized outreach, maximum success.</em></p>
 <p align="center"><strong>v2.0.0</strong></p>
 
