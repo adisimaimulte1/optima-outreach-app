@@ -4,12 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/events/event_feedback.dart';
 import 'package:optima/screens/inApp/widgets/events/steps/event_audience_step.dart';
-import 'package:optima/screens/inApp/widgets/settings/buttons/text_button.dart';
 import 'package:optima/services/cache/local_cache.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/notifications/dialogs/event_invite_dialog.dart';
 import 'package:optima/services/notifications/dialogs/event_join_request_dialog.dart';
+import 'package:optima/services/notifications/dialogs/event_feedback_form_dialog.dart';
 import 'package:optima/services/notifications/local_notification_service.dart';
 
 class NotificationPopup extends StatelessWidget {
@@ -141,6 +142,23 @@ class NotificationPopup extends StatelessWidget {
               ).whenComplete(() => popupStackCount.value--);
               break;
 
+            case 'event_feedback_request':
+              showDialog(
+                context: context,
+                barrierColor: Colors.black.withOpacity(0.5),
+                builder: (_) => EventFeedbackFormDialog(
+                  onSubmit: (feedback) async {
+                    await _handleFeedbackSubmit(
+                      context: context,
+                      eventId: eventId,
+                      docId: docId,
+                      feedback: feedback,
+                    );
+                  },
+                ),
+              ).whenComplete(() => popupStackCount.value--);
+              break;
+
             default:
               break;
           }
@@ -200,7 +218,6 @@ class NotificationPopup extends StatelessWidget {
       ),
     );
   }
-
 
 
 
@@ -397,6 +414,47 @@ class NotificationPopup extends StatelessWidget {
   }
 
 
+
+  Future<void> _handleFeedbackSubmit({
+    required BuildContext context,
+    required String eventId,
+    required String docId,
+    required EventFeedback feedback,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser!;
+    final uid = user.uid;
+
+    final feedbackQuery = await FirebaseFirestore.instance
+        .collection('events')
+        .doc(eventId)
+        .collection('feedback')
+        .where('email', isEqualTo: feedback.email)
+        .limit(1)
+        .get();
+
+    if (feedbackQuery.docs.isNotEmpty) {
+      final feedbackDocId = feedbackQuery.docs.first.id;
+
+      await FirebaseFirestore.instance
+          .collection('events')
+          .doc(eventId)
+          .collection('feedback')
+          .doc(feedbackDocId)
+          .update(feedback.toMap());
+    }
+
+    final navigator = Navigator.of(context);
+
+    await LocalNotificationService().deleteNotification(
+      userId: uid,
+      notificationId: docId,
+    );
+
+    if (context.mounted) {
+      navigator.pop(); // Close dialog
+      navigator.pop(); // Close notification popup
+    }
+  }
 
 
 

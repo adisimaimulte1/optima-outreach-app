@@ -17,6 +17,7 @@ class IntentRegistry {
       id: "navigate/events",
       triggers: ["open", "go to", "enter", "launch", "access", "navigate to", "check", "go back to"],
       targets: ["event", "outreach list", "planning"],
+      notContains: ["ai", "chat", "all", "public"],
     ),
     Intent(
       id: "navigate/menu",
@@ -26,7 +27,7 @@ class IntentRegistry {
     Intent(
         id: "navigate/aichat",
         triggers: ["open", "go to", "enter", "launch", "access", "navigate to", "check", "go back to"],
-        targets: [" ai chat", " ai chart"]
+        targets: [" ai chat", "aichat"]
     ),
     Intent(
         id: "navigate/contact",
@@ -36,8 +37,8 @@ class IntentRegistry {
     Intent(
         id: "navigate/users",
         triggers: ["open", "go to", "enter", "launch", "access", "navigate to", "check", "go back to"],
-        targets: ["users", "members", "chat", "team chat"],
-        notContains: [" ai "],
+        targets: ["users", "members"],
+        notContains: ["ai", "chat"],
     ),
 
 
@@ -53,7 +54,6 @@ class IntentRegistry {
         triggers: ["change", "switch"],
         targets: ["dark", "light", "system"]
     ),
-
 
     Intent(
         id: "change_setting/disable_jamie",
@@ -142,8 +142,22 @@ class IntentRegistry {
 
     Intent(
       id: "tap_widget/contact/website",
-      triggers: ["open", "visit", "go to", "check"],
+      triggers: ["open", "visit", "go to", "check", "enter"],
       targets: ["site", "website", "page"],
+    ),
+
+
+
+    Intent(
+      id: "tap_widget/users/members",
+      triggers: ["open", "visit", "go to", "check", "enter", "show"],
+      targets: ["events chat", "chat for events", "members chat"],
+    ),
+
+    Intent(
+      id: "tap_widget/users/public",
+      triggers: ["open", "visit", "go to", "check", "enter", "show"],
+      targets: ["all events", "public events", "all the events"],
     ),
 
 
@@ -153,31 +167,32 @@ class IntentRegistry {
     Intent(
       id: "tap_widget/contact/tutorial_1",
       triggers: ["show", "open", "start", "view", "begin", "go through", "walk me through", "run"],
-      targets: ["getting started", "how to use", "start tutorial", "basics", "first time", "introduction", "onboarding"],
+      targets: ["getting started", "how to use the app", "start tutorial", "basics", "first time", "introduction", "onboarding"],
     ),
 
     Intent(
       id: "tap_widget/contact/tutorial_2",
       triggers: ["show", "open", "view", "see", "explain", "run", "go through"],
-      targets: ["event setup", "create event", "setup", "planning tutorial", "event planning"],
+      targets: ["event setup", "create event", "setup", "planning tutorial", "event planning", "how to create an event", "how to create events"],
     ),
 
     Intent(
       id: "tap_widget/contact/tutorial_3",
       triggers: ["show", "open", "view", "see", "explain", "manage", "run"],
       targets: ["team management", "add members", "collaboration", "assign roles", "members tutorial"],
+      notContains: ["ai", "chat"],
     ),
 
     Intent(
       id: "tap_widget/contact/tutorial_4",
       triggers: ["show", "open", "view", "explain", "demo", "walkthrough", "run"],
-      targets: ["live assist", "jamie help", "ai commands", "ai chat tutorial", "assistant tutorial", "voice commands"],
+      targets: ["live assist", "jamie help", "ai commands", "ai chat tutorial", "assistant tutorial", "voice commands", "how to use you"],
     ),
 
     Intent(
       id: "tap_widget/contact/tutorial_5",
       triggers: ["show", "open", "walk me through", "configure", "explain", "run"],
-      targets: ["settings tutorial", "app preferences", "configuration", "options tutorial", "toggle settings"],
+      targets: ["settings tutorial", "app preferences", "configuration", "options tutorial", "toggle settings", "how to use the settings"],
     ),
 
 

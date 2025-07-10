@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:optima/ai/ai_recordings.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/services/livesync/event_live_sync.dart';
@@ -40,6 +41,10 @@ class LocalNotificationService {
 
           if (eventId == null) continue;
 
+          if (jamieRemindersNotifier.value) {
+            AiRecordings.playRandomNewNotification();
+          }
+
           if (type == 'event_join_request_accepted') {
             await _handleJoinRequestAccepted(eventId);
           } else if (type == 'event_join_request_declined') {
@@ -58,6 +63,8 @@ class LocalNotificationService {
   void stopListening() {
     _unreadCounterSub?.cancel();
   }
+
+
 
 
   Future<void> addNotification({
@@ -95,7 +102,6 @@ class LocalNotificationService {
 
     await notifRef.delete();
   }
-
 
   Stream<List<Map<String, dynamic>>> getNotifications(String userId) {
     return FirebaseFirestore.instance
@@ -155,6 +161,8 @@ class LocalNotificationService {
     final eventData = eventSnap.data();
     if (eventData == null) return;
 
+
+
     final memberDocs = await eventRef
         .collection('members')
         .get()
@@ -178,11 +186,21 @@ class LocalNotificationService {
         .where((doc) => doc.id != 'placeholder')
         .toList());
 
+    final feedbackDocs = await eventRef
+        .collection('feedback')
+        .get()
+        .then((snapshot) => snapshot.docs
+        .where((doc) => doc.id != 'placeholder')
+        .toList());
+
+
+
     final newEvent = EventData.fromMap(
       eventData,
       memberDocs: memberDocs,
       aiChatDocs: aiChatDocs,
       membersChatDocs: membersChatDocs,
+      feedbackDocs: feedbackDocs,
     )..id = eventId;
 
     events.add(newEvent);

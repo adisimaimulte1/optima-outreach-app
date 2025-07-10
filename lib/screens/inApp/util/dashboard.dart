@@ -70,11 +70,10 @@ class DashboardScreenState extends State<DashboardScreen> {
     debugPrint("isFirstDashboardLaunch: $isFirstDashboardLaunch");
 
     if (isFirstDashboardLaunch) {
+      isFirstDashboardLaunch = false;
       await LocalStorageService().checkAndRequestPermissionsOnce();
 
       if (!(await LocalStorageService().hasSeenTutorial())) {
-        isFirstDashboardLaunch = false;
-
         showGeneralDialog(
           context: context,
           barrierDismissible: false,
@@ -99,14 +98,17 @@ class DashboardScreenState extends State<DashboardScreen> {
 
       final chance = Random().nextInt(5);
       if (jamieReminders && chance == 3) {
-        assistantState.value = JamieState.thinking;
+        if (assistantState.value != JamieState.speaking) {
+          assistantState.value = JamieState.thinking;
+        }
         await Future.delayed(Duration(milliseconds: 300 + Random().nextInt(30)));
         await AiRecordings.playRandomIntro();
       }
 
       await LocationProcessor.updateUserCountryCode();
-      assistantState.value = JamieState.idle;
-      isFirstDashboardLaunch = false;
+      if (assistantState.value != JamieState.speaking) {
+        assistantState.value = JamieState.idle;
+      }
     }
   }
 
@@ -125,13 +127,13 @@ class DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 60),
                 _buildHeader(context),
                 const SizedBox(height: 20),
-                const LineChartCard(),
+                LineChartCard(key: chartCardKey),
                 const SizedBox(height: 30),
                 _buildLine(context),
                 const SizedBox(height: 30),
                 _buildDashboardRow(context),
                 const SizedBox(height: 10),
-                const EventActionSelectorWheel(),
+                EventActionSelectorWheel(key: eventActionSelectorKey),
                 const SizedBox(height: 10),
                 CreditsLeftCard(),
                 const SizedBox(height: 30),

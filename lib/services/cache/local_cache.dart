@@ -350,6 +350,7 @@ class LocalCache {
           memberDocs: filteredMemberDocs,
           aiChatDocs: [],
           membersChatDocs: [],
+          feedbackDocs: [],
         )..id = doc.id;
 
         event.tags = await getTagsForEvent(event, currentLocation);
@@ -371,12 +372,24 @@ class LocalCache {
         .get();
     final filteredMembersChatDocs = membersChatSnap.docs.where((d) => d.id != 'placeholder').toList();
 
+
+    final feedbackSnap = await doc.reference
+        .collection("feedback")
+        .get();
+    final filteredFeedbackDocs = feedbackSnap.docs.where((d) => d.id != 'placeholder').toList();
+
+
+
+
     final event = EventData.fromMap(
       data,
       memberDocs: filteredMemberDocs,
       aiChatDocs: filteredAiChatDocs,
       membersChatDocs: filteredMembersChatDocs,
+      feedbackDocs: filteredFeedbackDocs,
     )..id = doc.id;
+
+
 
     // Run all member photo caching in parallel
     await Future.wait(memberList.map((member) async {

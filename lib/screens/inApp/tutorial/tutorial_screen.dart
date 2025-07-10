@@ -141,12 +141,20 @@ class TutorialOverlayScreen extends StatelessWidget {
     switch (tutorialNumber) {
       case 1:
         await AiNavigator.navigateToScreen(context, "navigate/dashboard");
+        break;
       case 2:
         await AiNavigator.navigateToScreen(context, "navigate/events");
+        break;
       case 3:
         await AiNavigator.navigateToScreen(context, "navigate/users");
+        break;
+      case 4:
+        isTouchActive.value = false;
+        await Future<void>.delayed(const Duration(seconds: 1));
+        break;
       case 5:
         await AiNavigator.navigateToScreen(context, "navigate/settings");
+        break;
     }
 
 
@@ -160,8 +168,11 @@ class TutorialOverlayScreen extends StatelessWidget {
     });
 
     aiVoice.aiSpeaking = true;
-    await aiVoice.playResponseFile(bytes.buffer.asUint8List(), 0);
+    await aiVoice.playResponseFile(bytes.buffer.asUint8List(), 0).catchError((e) {
+      debugPrint("⚠️ Unexpected tutorial error: $e");
+    });
 
+    debugPrint("it's done");
     _restoreJamie(wasJamieEnabled, wasWakeWordDetected);
     aiVoice.logStatus();
   }

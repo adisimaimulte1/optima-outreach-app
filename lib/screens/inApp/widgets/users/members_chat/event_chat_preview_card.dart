@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/users/members_chat/event_avatar.dart';
@@ -91,19 +90,15 @@ class EventChatPreviewCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  MarkdownBody(
-                    data: previewText,
-                    styleSheet: MarkdownStyleSheet(
-                      p: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.white70,
-                      ),
+                  Text(
+                    _stripMarkdown(previewText),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.white70,
                     ),
-                    softLineBreak: true,
-                    shrinkWrap: true,
-                    selectable: false,
-                    builders: const {},
-                  ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  )
                 ],
               ),
             ),
@@ -112,5 +107,17 @@ class EventChatPreviewCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _stripMarkdown(String input) {
+    return input
+        .replaceAllMapped(RegExp(r'\*\*(.*?)\*\*'), (m) => m[1]!) // bold → keep content
+        .replaceAllMapped(RegExp(r'\*(.*?)\*'), (m) => m[1]!)     // italic
+        .replaceAllMapped(RegExp(r'`(.*?)`'), (m) => m[1]!)       // code
+        .replaceAllMapped(RegExp(r'\[(.*?)\]\((.*?)\)'), (m) => m[1]!) // links → keep label
+        .replaceAll(RegExp(r'^> ', multiLine: true), '')          // quotes
+        .replaceAll(RegExp(r'^#+ ', multiLine: true), '')         // headers
+        .replaceAll(RegExp(r'[_~]'), '')                          // stray markdown
+        .trim();
   }
 }

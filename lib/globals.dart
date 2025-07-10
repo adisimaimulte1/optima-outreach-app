@@ -19,12 +19,18 @@ import 'package:optima/screens/inApp/util/events.dart';
 import 'package:optima/screens/inApp/util/settings.dart';
 import 'package:optima/screens/inApp/util/users.dart';
 import 'package:optima/screens/inApp/widgets/aichat/ai_chat_controller.dart';
+import 'package:optima/screens/inApp/widgets/aichat/ai_chat_message.dart';
 import 'package:optima/screens/inApp/widgets/contact/tutorial_card_item.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/new_event_button.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/buttons/reminder_bell_button.dart';
 import 'package:optima/screens/inApp/widgets/dashboard/cards/upcoming_event.dart';
+import 'package:optima/screens/inApp/widgets/dashboard/chart.dart';
+import 'package:optima/screens/inApp/widgets/dashboard/event_action_selector.dart';
 import 'package:optima/screens/inApp/widgets/events/add_event_form.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/screens/inApp/widgets/users/members_chat/members_chat_message.dart';
+import 'package:optima/screens/inApp/widgets/users/tabs/events_chat_tab.dart';
+import 'package:optima/screens/inApp/widgets/users/tabs/public_events_tab.dart';
 import 'package:optima/screens/inApp/widgets/users/users_controller.dart';
 import 'package:optima/services/ads/ad_service.dart';
 import 'package:optima/services/credits/credit_notifier.dart';
@@ -32,6 +38,7 @@ import 'package:optima/services/credits/plan_notifier.dart';
 import 'package:optima/services/credits/sub_credit_notifier.dart';
 import 'package:optima/services/livesync/combined_listenable.dart';
 import 'package:optima/services/livesync/credit_history_live_sync.dart';
+import 'package:optima/services/livesync/event_live_sync.dart';
 import 'package:optima/services/storage/local_storage_service.dart';
 
 
@@ -80,6 +87,13 @@ final GlobalKey<TriggerProxyState> websiteTriggerKey = GlobalKey<TriggerProxySta
 
 GlobalKey<ScaffoldState> aiChatScaffoldKey = GlobalKey<ScaffoldState>();
 
+final GlobalKey<EventsChatTabState> eventsChatTabKey = GlobalKey<EventsChatTabState>();
+final GlobalKey<PublicEventsTabState> publicEventsTabKey = GlobalKey<PublicEventsTabState>();
+
+final GlobalKey<LineChartCardState> chartCardKey = GlobalKey<LineChartCardState>();
+final GlobalKey<EventActionSelectorWheelState> eventActionSelectorKey = GlobalKey<EventActionSelectorWheelState>();
+
+
 
 GlobalKey<SettingsScreenState> settingsKey = GlobalKey<SettingsScreenState>();
 GlobalKey<DashboardScreenState> dashboardKey = GlobalKey<DashboardScreenState>();
@@ -96,6 +110,7 @@ final ValueNotifier<UniqueKey> appReloadKey = ValueNotifier(UniqueKey());
 final ValueNotifier<int> popupStackCount = ValueNotifier(0);
 
 final ValueNotifier<bool> isTouchActive = ValueNotifier(true);
+final ValueNotifier<bool> isTutorialActive = ValueNotifier(false);
 final ValueNotifier<bool> tutorialCancelled = ValueNotifier(false);
 
 
@@ -171,12 +186,15 @@ EventData tutorialEventData = EventData(
   isPublic: true,
   isPaid: false,
   jamieEnabled: true,
-  eventManagers: [email],
+  eventManagers: [''],
   status: 'UPCOMING',
-  createdBy: email,
+  createdBy: '',
   eventPrice: null,
   eventCurrency: 'RON',
-);
+  chatImage: null,
+)..id = 'tutorial';
+final tutorialNotifier = ValueNotifier(tutorialEventData);
+
 
 
 
@@ -296,11 +314,93 @@ QuerySnapshot<Map<String, dynamic>>? allPublicData;
 
 
 
+void removeTutorialEvent() {
+  if (events.any((e) => e.id == tutorialEventData.id)) {
+    EventLiveSyncService().stopListeningToEvent(tutorialEventData.id!);
+    eventNotifiers.remove(tutorialEventData.id);
+    combinedEventsListenable.remove(tutorialNotifier);
+
+    final index = events.indexWhere((e) => e.id == tutorialEventData.id);
+    if (index != -1) {
+      events.removeAt(index);
+    }
+    rebuildUI();
+  }
+}
+
+void addTutorialEvent() {
+  initTutorialEvent();
+
+  if (!events.any((e) => e.id == tutorialEventData.id)) {
+    // Insert tutorial event locally
+    events.insert(0, tutorialEventData);
+
+    // Add notifiers
+    eventNotifiers[tutorialEventData.id!] = tutorialNotifier;
+    combinedEventsListenable.add(tutorialNotifier);
+    EventLiveSyncService().fakeListener(tutorialEventData.id!);
+
+    rebuildUI();
+  }
+}
+
+void initTutorialEvent() {
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  email = FirebaseAuth.instance.currentUser!.email!;
+
+  tutorialEventData
+    ..createdBy = email
+    ..eventManagers = [email]
+    ..membersChatMessages = [
+      MembersChatMessage(
+        id: 'msg1',
+        senderId: 'optimatestid',
+        content: 'This is how a message from **other** users looks like!',
+        timestamp: DateTime.now(),
+        reactions: {
+          'laugh': [uid],
+        },
+      ),
+      MembersChatMessage(
+        id: 'msg2',
+        senderId: uid,
+        content: 'And this is how **your** messages looks like! Keep in mind, only *managers can write*.',
+        timestamp: DateTime.now().add(const Duration(seconds: 4)),
+      ),
+      MembersChatMessage(
+        id: 'msg3',
+        senderId: uid,
+        content: "But you can react to both your messages and other users'",
+        timestamp: DateTime.now().add(const Duration(seconds: 8)),
+        reactions: {
+          'love': ['optimatestid'],
+          'fire': [uid],
+        },
+      ),
+    ]
+    ..aiChatMessages = [
+      AiChatMessage(
+        id: 'aiMsg1',
+        content: 'Hey Jamie, can you please tell me what are the goals of the event and how to reach them?',
+        timestamp: DateTime.now(),
+        role: 'user',
+      ),
+      AiChatMessage(
+        id: 'aiMsg2',
+        content: "# Event Goals\n- **Recruit 10 members**\n- **Promote STEM**\n# How to Accomplish Them\n- **Recruit 10 members**: promote the event on social media, invite friends personally, and showcase what makes your organization exciting.\n- **Promote STEM**: organize fun hands-on activities, interactive demos, and short talks about tech and science to spark curiosity.",
+        timestamp: DateTime.now().add(const Duration(seconds: 4)),
+        isPinned: true,
+        role: 'assistant',
+      ),
+    ];
+
+  tutorialNotifier.value = tutorialEventData;
+}
 
 void rebuildUI() {
   SchedulerBinding.instance.addPostFrameCallback((_) {
     final old = screenScaleNotifier.value;
-    screenScaleNotifier.value = old == 1.0 ? 0.99 : 1.0;
+    screenScaleNotifier.value = old == 1.0 ? 0.999 : 1.0;
     Future.delayed(Duration(milliseconds: 10), () {
       screenScaleNotifier.value = old;
     });

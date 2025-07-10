@@ -223,7 +223,7 @@ class UpcomingEventCardState extends State<UpcomingEventCard> implements Trigger
 
 
   @override
-  void triggerFromAI() {
+  Future<void> triggerFromAI() async {
     final event = nextEvent;
     if (event != null && screenScaleNotifier.value >= 0.99) {
       _handleTap(event);

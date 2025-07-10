@@ -186,7 +186,7 @@ class TutorialCardItemState extends State<TutorialCardItem> with SingleTickerPro
 
 
   @override
-  void triggerFromAI() {
+  Future<void> triggerFromAI() async {
     if (screenScaleNotifier.value >= 0.99) {
       _showTutorialOverlay();
     } else {

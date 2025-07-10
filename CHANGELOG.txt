@@ -2,7 +2,7 @@ Change Log
 ==========
 
 
-0.0.1 (28/03/2024)
+0.1.0 (28/03/2024)
 ------------------
 - created the brand:
     * name
@@ -14,13 +14,13 @@ Change Log
 - support for Android & iOS
 
 
-0.0.11 (30/03/2024)
+0.2.0 (30/03/2024)
 ------------------
 - added custom splash screen
 - dark theme support
 
 
-0.0.12 (01/04/2024)
+0.3.0 (01/04/2024)
 ------------------
 - added a logging screen, login / register via:
     * email & password
@@ -30,7 +30,7 @@ Change Log
     * resetting password
 
 
-0.0.13 (05/04/2024)
+0.4.0 (05/04/2024)
 ------------------
 - added the selection menu
 - icons for all in-app screens
@@ -38,26 +38,26 @@ Change Log
 - fixed login screen bugs
 
 
-0.0.14 (06/04/2024)
+0.5.0 (06/04/2024)
 ------------------
 - refactored code for in a more reusable manner
 - fixed selection menu bugs
 
 
-0.0.15 (10/04/2024)
+0.6.0 (10/04/2024)
 ------------------
 - made a backend node server for gpt access
 - added the concept of AI in the actual app
 - working on functionality..
 
 
-0.0.16 (13/04/2024)
+0.7.0 (13/04/2024)
 ------------------
 - finished adding AI assistant
 - started working on the UI
 
 
-0.0.17 (24/04/2024)
+0.8.0 (24/04/2024)
 ------------------
 - added the settings screen UI
 - added an easter egg in the settings screen (press three times on the app version)
@@ -70,7 +70,7 @@ Change Log
 - starting to work on the events screen UI
 
 
-0.1.0 (25/05/2024)
+1.0.0 (25/05/2024)
 ------------------
 - added Jamie voice control through the app
 - updated the dark theme to be the same throughout the app
@@ -79,7 +79,7 @@ Change Log
 - fixed last word not being detected when talking
 
 
-0.1.1 (14/06/2024)
+1.1.0 (14/06/2024)
 ------------------
 - fixed UI device compatibility
 - fixed STT not working on some devices
@@ -88,7 +88,7 @@ Change Log
 - device font size / bold text options don't break the UI anymore
 
 
-0.1.2 (25/06/2024)
+1.2.0 (25/06/2024)
 ------------------
 - added UI for the Contact screen
 - fixed initial beam being in wrong position
@@ -97,7 +97,7 @@ Change Log
 - You can write messages to Jamie in the AI Chat screen - basic version
 
 
-0.1.3 (27/06/2024)
+1.3.0 (27/06/2024)
 ------------------
 - switched event ownership colors for consistency
 - fixed icons and occasional UI clipping bugs
@@ -105,7 +105,7 @@ Change Log
 - fixed some more AI Chat bugs (still doesn't work, let me sleep)
 
 
-0.1.35 (27/06/2024)
+1.3.5 (27/06/2024)
 ------------------
 - fixed all this stuff:
     * made delete + pin buttons work
@@ -114,7 +114,7 @@ Change Log
     * make delete + pin buttons & search bar disappear on: outside tap, screen scale change, menu enter
 
 
-0.1.4 (28/06/2024)
+1.4.0 (28/06/2024)
 ------------------
 - update pinned messages to the database
 - live sync the AI Chat messages
@@ -122,13 +122,13 @@ Change Log
 - fixed AI messages getting cut off
 
 
-0.1.42 (30/06/2024)
+1.4.2 (30/06/2024)
 ------------------
 - cache more than 20 messages at once in AI Chat
 - make the search bar arrows work
 
 
-0.1.5 (02/07/2024)
+1.5.0 (02/07/2024)
 ------------------
 - AI Assistant updates:
     * now it can travel to all 6 screens
@@ -141,7 +141,7 @@ Change Log
 - now the AI Chat screen also rebuilds naturally on AI theme change
 
 
-0.1.6 (03/07/2024)
+1.6.0 (03/07/2024)
 ------------------
 - AI now detects, queue and execute multiple actions in the same input speech
     (with the help of connector words e.g.: "then", "next", "also" etc.)
@@ -155,7 +155,7 @@ Change Log
 - implemented the graph from dashboard, with 3 graphed options (2/3 working)
 
 
-0.1.7 (06/07/2024)
+1.7.0 (06/07/2024)
 ------------------
 - new dashboard widgets (finished):
     * the event shortcut selector
@@ -173,7 +173,7 @@ Change Log
 - FIXED BUG: event members did visually pop upon hold indicating them leaving, without leaving (now they can't pop)
 
 
-0.1.8 (09/07/2024)
+1.8.0 (09/07/2024)
 ------------------
 - app now actively listens to internet connectivity and pops up the "no internet screen"
 - Public Data is now read once on app init. Profile photos & names (non relevant data) isn't live sync
@@ -185,3 +185,16 @@ Change Log
 - fixed account creation and deletion & event creation
 - fixed A TON OF BUGS
 - Users screen fully added
+
+
+2.0.0 (11/07/2024)
+------------------
+- fixed the touch blocker and event cancellation + more tutorial bugs
+- implemented a local event for tutorials
+- added more AI commands for the new screens
+- added the "Team Management" and "Live Assist" tutorials
+- new functionality for Jamie Reminders: tells you when new notifications appear while in the App
+- implemented a feedback form + feedback data
+- dashboard chat displays impact live + added different measurements for each tab
+- event status now is semi-automated & you can't set a past event upcoming or future event completed
+- updated the "Getting Started" tutorial

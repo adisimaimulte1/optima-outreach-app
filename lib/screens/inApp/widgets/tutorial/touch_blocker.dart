@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:optima/globals.dart';
 import 'dart:async';
 
+import 'package:optima/services/livesync/event_live_sync.dart';
+
 class TouchBlocker extends StatefulWidget {
   const TouchBlocker({super.key});
 
@@ -12,6 +14,7 @@ class TouchBlocker extends StatefulWidget {
 class _TouchBlockerState extends State<TouchBlocker> with TickerProviderStateMixin {
   Offset? fingerPosition;
   bool showCancel = false;
+  bool _holdCompleted = false;
   Timer? _holdTimer;
 
 
@@ -42,34 +45,40 @@ class _TouchBlockerState extends State<TouchBlocker> with TickerProviderStateMix
     _popScale = Tween<double>(begin: 1.0, end: 1.7)
         .chain(CurveTween(curve: Curves.easeOutSine))
         .animate(_popController);
-
   }
 
   void _startHold(LongPressStartDetails details) {
+    if (!isTutorialActive.value) return;
+
     setState(() {
       fingerPosition = details.globalPosition;
       showCancel = true;
+      _holdCompleted = false;
     });
 
     _controller.forward(from: 0);
 
     _holdTimer = Timer(holdDuration, () {
+      _holdCompleted = true;
       _controller.forward(from: 1.0);
       _triggerPop();
     });
   }
 
   void _endHold(_) {
+    if (!isTutorialActive.value) return;
+
     _holdTimer?.cancel();
 
     final double current = _controller.value;
 
     if (_controller.isAnimating || current > 0.0) {
-      _controller
-          .animateBack(0.0, duration: Duration(
-        milliseconds: (holdDuration.inMilliseconds * current).round(),
-      ))
-          .whenComplete(() {
+      _controller.animateBack(
+        0.0,
+        duration: Duration(
+          milliseconds: (holdDuration.inMilliseconds * current).round(),
+        ),
+      ).whenComplete(() {
         setState(() {
           showCancel = false;
           fingerPosition = null;
@@ -82,21 +91,31 @@ class _TouchBlockerState extends State<TouchBlocker> with TickerProviderStateMix
       });
     }
 
-    _popController.reset();
+    // Only reset if the hold wasn’t completed
+    if (!_holdCompleted) {
+      _popController.reset();
+    }
   }
 
   void _triggerPop() async {
+    if (!isTutorialActive.value) return;
+
     await _popController.forward(from: 0);
     await Future.delayed(const Duration(milliseconds: 300));
     await _popController.reverse();
 
-    _cancelTutorial();
+    if (_holdCompleted) {
+      _cancelTutorial();
+    }
   }
 
   void _cancelTutorial() {
     isTouchActive.value = true;
+    isTutorialActive.value = false;
     tutorialCancelled.value = true;
     debugPrint("🛑 Tutorial canceled");
+
+    removeTutorialEvent();
 
     _controller.reverse();
     setState(() {
@@ -140,7 +159,7 @@ class _TouchBlockerState extends State<TouchBlocker> with TickerProviderStateMix
               ),
             ),
 
-            if (showCancel && fingerPosition != null)
+            if (isTutorialActive.value && showCancel && fingerPosition != null)
               AnimatedBuilder(
                 animation: _animation,
                 builder: (_, __) {

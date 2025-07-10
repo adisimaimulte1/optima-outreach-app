@@ -235,6 +235,15 @@ class _EventDetailsState extends State<EventDetails> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: statusList.map((status) {
+        final current = eventData.status;
+
+        final bool isPast = eventData.selectedDate!.isBefore(DateTime.now());
+        final isIllegal =
+            (current == "UPCOMING" && status == "COMPLETED") ||
+                (current == "COMPLETED" && status == "UPCOMING") ||
+                (current == "CANCELLED" && status == "UPCOMING" && isPast) ||
+                (current == "CANCELLED" && status == "COMPLETED" && !isPast);
+
         final isSelected = selectedStatus == status;
         final isCancelled = status == "CANCELLED";
         final isUpcoming = status == "UPCOMING";
@@ -250,16 +259,19 @@ class _EventDetailsState extends State<EventDetails> {
 
         final Color borderColor = isSelected
             ? color
-            : Colors.white.withOpacity(0.2);
+            : isIllegal && hasPermission ? Colors.white.withOpacity(0.2)
+            : Colors.white.withOpacity(0.5);
 
-        final Color textColor = isSelected
+        final Color textColor = isIllegal && hasPermission ?
+            Colors.white.withOpacity(0.2)
+            : isSelected
             ? (isCompleted ? inAppForegroundColor : color)
-            : Colors.white.withOpacity(isCancelled ? 0.4 : 0.5);
+            : Colors.white.withOpacity(0.5);
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 3),
           child: GestureDetector(
-            onTap: !hasPermission
+            onTap: !hasPermission || isIllegal
                 ? null
                 : () async {
               if (selectedStatus == status) return;
@@ -268,10 +280,8 @@ class _EventDetailsState extends State<EventDetails> {
               eventData.status = status;
 
               CloudStorageService().saveEvent(eventData);
-
               widget.onStatusChange?.call(eventData);
             },
-
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -293,6 +303,7 @@ class _EventDetailsState extends State<EventDetails> {
         );
       }).toList(),
     );
+
   }
 
   Widget _buildTitleBlock(BuildContext context, EventData eventData) {

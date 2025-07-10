@@ -16,7 +16,7 @@ class TriggerProxyState extends State<TriggerProxy> implements Triggerable {
   Widget build(BuildContext context) => const SizedBox.shrink();
 
   @override
-  void triggerFromAI() {
+  Future<void> triggerFromAI() async {
     if (screenScaleNotifier.value >= 0.99) {
       widget.onTriggered();
     } else {

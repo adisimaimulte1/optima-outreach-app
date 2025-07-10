@@ -113,6 +113,7 @@ flutter:
     - assets/images/icons/
     - assets/splash/
     - assets/audio/intro/
+    - assets/audio/notifications/
     - assets/audio/wake/
 
     - assets/audio/actions/navigate/dashboard/
@@ -148,6 +149,9 @@ flutter:
     - assets/audio/actions/tap_widget/contact/tutorial_3/
     - assets/audio/actions/tap_widget/contact/tutorial_4/
     - assets/audio/actions/tap_widget/contact/tutorial_5/
+
+    - assets/audio/actions/tap_widget/users/public/
+    - assets/audio/actions/tap_widget/users/members/
 
 
     - assets/audio/actions/just_talk/joke/

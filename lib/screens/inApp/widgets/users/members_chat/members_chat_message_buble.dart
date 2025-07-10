@@ -428,7 +428,7 @@ class _MembersChatMessageBubbleState extends State<MembersChatMessageBubble> wit
               return order.indexOf(a.key).compareTo(order.indexOf(b.key));
             });
 
-            final rowHeight = 28.0;
+            final rowHeight = 32.0;
             final titleHeight = 32.0 + 14;
             final padding = 14.0 * 1;
             final totalHeight = (sortedEntries.length * rowHeight) + titleHeight + padding;

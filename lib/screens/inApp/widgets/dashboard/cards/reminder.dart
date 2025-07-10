@@ -71,6 +71,8 @@ class ReminderStatusCardState extends State<ReminderStatusCard> {
       case 'event_join_request_declined':
         message = "join request declined";
         break;
+      case 'event_feedback_request':
+        message = "new feedback request";
     }
 
     update(text: message, hasReminder: true);
@@ -110,6 +112,7 @@ class ReminderStatusCardState extends State<ReminderStatusCard> {
           'event_join_request' => "new join request",
           'event_join_request_accepted' => "join request accepted",
           'event_join_request_declined' => "join request declined",
+          'event_feedback_request' => "new feedback request",
           _ => "notification received",
         };
 

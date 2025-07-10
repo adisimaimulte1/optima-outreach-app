@@ -95,7 +95,7 @@ class NewEventButtonState extends State<NewEventButton> implements Triggerable {
 
 
   @override
-  void triggerFromAI() {
+  Future<void> triggerFromAI() async {
     if (screenScaleNotifier.value >= 0.99) {
       widget.onTap();
     } else {

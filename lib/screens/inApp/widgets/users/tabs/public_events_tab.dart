@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/ai_navigator.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/events/event_card.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
@@ -11,14 +12,14 @@ class PublicEventsTab extends StatefulWidget {
   const PublicEventsTab({super.key});
 
   @override
-  State<PublicEventsTab> createState() => _PublicEventsTabState();
+  State<PublicEventsTab> createState() => PublicEventsTabState();
 }
 
-class _PublicEventsTabState extends State<PublicEventsTab> {
+class PublicEventsTabState extends State<PublicEventsTab> implements Triggerable {
   final TextEditingController _searchController = TextEditingController();
   bool _hasUnfocused = false;
 
-  String _selectedTag = 'All';
+  String selectedTag = 'All';
   List<EventData> get filteredEvents {
     final query = _searchController.text.toLowerCase();
     return upcomingPublicEvents.where((event) {
@@ -27,12 +28,11 @@ class _PublicEventsTabState extends State<PublicEventsTab> {
       final tags = event.tags ?? [];
 
       final matchesSearch = name.contains(query) || location.contains(query);
-      final matchesTag = _selectedTag == 'All' || tags.contains(_selectedTag);
+      final matchesTag = selectedTag == 'All' || tags.contains(selectedTag);
 
       return matchesSearch && matchesTag;
     }).toList()..shuffle();
   }
-
 
 
 
@@ -48,8 +48,6 @@ class _PublicEventsTabState extends State<PublicEventsTab> {
       ],
     );
   }
-
-
 
   Widget _buildSearchBar() {
     return Padding(
@@ -141,9 +139,9 @@ class _PublicEventsTabState extends State<PublicEventsTab> {
         spacing: 8,
         runSpacing: 8,
         children: tags.map((tag) {
-          final selected = _selectedTag == tag;
+          final selected = selectedTag == tag;
           return GestureDetector(
-            onTap: () => setState(() => _selectedTag = tag),
+            onTap: () => setState(() => selectedTag = tag),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: EdgeInsets.symmetric(horizontal: 16 * screenScaleNotifier.value, vertical: 8),
@@ -168,6 +166,8 @@ class _PublicEventsTabState extends State<PublicEventsTab> {
         }).toList(),
     );
   }
+
+
 
   void _handleJoin(EventData event) async {
     JoinEventConfirmationDialog.show(context, event.eventName, () async {
@@ -224,5 +224,22 @@ class _PublicEventsTabState extends State<PublicEventsTab> {
         }
       }
     });
+  }
+
+
+
+  @override
+  Future<void> triggerFromAI() async {
+    if (screenScaleNotifier.value < 0.99) {
+      debugPrint("🔒 Screen not ready, ignoring AI trigger");
+      return;
+    }
+
+    final currentIndex = usersController.tabController.index;
+
+    if (currentIndex != 1) {
+      usersController.tabController.animateTo(1);
+      await Future.delayed(const Duration(milliseconds: 600));
+    }
   }
 }

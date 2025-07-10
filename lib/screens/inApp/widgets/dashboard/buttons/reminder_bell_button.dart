@@ -163,7 +163,7 @@ class ReminderBellButtonState extends State<ReminderBellButton> implements Trigg
   }
 
   @override
-  void triggerFromAI() {
+  Future<void> triggerFromAI() async {
     if (screenScaleNotifier.value >= 0.99) {
       widget.onTap!();
       widget.onTap!();

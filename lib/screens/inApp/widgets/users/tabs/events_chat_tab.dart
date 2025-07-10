@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:optima/ai/navigator/ai_navigator.dart';
 import 'package:optima/globals.dart';
+import 'package:optima/screens/inApp/widgets/events/event_data.dart';
 import 'package:optima/screens/inApp/widgets/users/dialogs/members_chat_dialog.dart';
 import 'package:optima/screens/inApp/widgets/users/members_chat/event_chat_preview_card.dart';
 
@@ -7,10 +9,10 @@ class EventsChatTab extends StatefulWidget {
   const EventsChatTab({super.key});
 
   @override
-  State<EventsChatTab> createState() => _EventsChatTabState();
+  State<EventsChatTab> createState() => EventsChatTabState();
 }
 
-class _EventsChatTabState extends State<EventsChatTab> {
+class EventsChatTabState extends State<EventsChatTab>  implements Triggerable {
   bool _hasUnfocused = false;
 
   @override
@@ -102,4 +104,39 @@ class _EventsChatTabState extends State<EventsChatTab> {
       },
     );
   }
+
+  @override
+  Future<void> triggerFromAI() async {
+    if (screenScaleNotifier.value < 0.99) {
+      debugPrint("🔒 Screen not ready, ignoring AI trigger");
+      return;
+    }
+
+    final currentIndex = usersController.tabController.index;
+
+    if (currentIndex != 0) {
+      usersController.tabController.animateTo(0);
+      await Future.delayed(const Duration(milliseconds: 600));
+    }
+  }
+
+
+  void openEventChat(EventData event) {
+    popupStackCount.value++;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: MembersChatDialog(event: event),
+        ),
+      ),
+    ).whenComplete(() => popupStackCount.value--);
+  }
+
+
 }

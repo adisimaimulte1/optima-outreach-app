@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:optima/screens/inApp/widgets/aichat/ai_chat_message.dart';
+import 'package:optima/screens/inApp/widgets/events/event_feedback.dart';
 import 'package:optima/screens/inApp/widgets/users/members_chat/members_chat_message.dart';
 
 class EventData {
@@ -28,6 +29,7 @@ class EventData {
 
   List<AiChatMessage> aiChatMessages = [];
   List<MembersChatMessage> membersChatMessages = [];
+  List<EventFeedback> feedback = [];
 
   List<String>? tags;
   String? chatImage;
@@ -90,6 +92,7 @@ class EventData {
         required List<QueryDocumentSnapshot<Map<String, dynamic>>> memberDocs,
         required List<QueryDocumentSnapshot<Map<String, dynamic>>> aiChatDocs,
         required List<QueryDocumentSnapshot<Map<String, dynamic>>> membersChatDocs,
+        required List<QueryDocumentSnapshot<Map<String, dynamic>>> feedbackDocs,
       }){
     final timeParts = (map['selectedTime'] as String?)?.split(':') ?? ['0', '0'];
 
@@ -112,6 +115,10 @@ class EventData {
         .map((doc) => MembersChatMessage.fromFirestore(doc.data(), doc.id))
         .toList()
         .reversed
+        .toList();
+
+    final List<EventFeedback> feedback = feedbackDocs
+        .map((doc) => EventFeedback.fromFirestore(doc.data()))
         .toList();
 
 
@@ -150,6 +157,8 @@ class EventData {
 
     event.aiChatMessages = aiMessages;
     event.membersChatMessages = membersChatMessages;
+    event.feedback = feedback;
+
     return event;
   }
 
@@ -175,6 +184,7 @@ class EventData {
     String? createdBy,
     List<AiChatMessage>? aiChatMessages,
     List<MembersChatMessage>? membersChatMessages,
+    List<EventFeedback>? feedback,
     List<String>? tags,
     String? chatImage,
   }) {
@@ -202,7 +212,8 @@ class EventData {
       tags: tags ?? this.tags,
     )..id = id ?? this.id
       ..aiChatMessages = aiChatMessages ?? this.aiChatMessages
-      ..membersChatMessages = membersChatMessages ?? this.membersChatMessages;
+      ..membersChatMessages = membersChatMessages ?? this.membersChatMessages
+      ..feedback = feedback ?? this.feedback;
   }
 
   bool hasPermission(String email) {

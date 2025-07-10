@@ -45,6 +45,48 @@ class AiRecordings {
       'text': "Hi! Do you know what's the AI's favorite drink? Strawberry juice!"
     }
   ];
+  static final List<Map<String, String>> _notifications = [
+    {
+      'file': 'notifications_1.mp3',
+      'text': "You’ve received a new notification."
+    },
+    {
+      'file': 'notifications_2.mp3',
+      'text': "There’s an update that needs your attention."
+    },
+    {
+      'file': 'notifications_3.mp3',
+      'text': "A new alert has been added to your feed."
+    },
+    {
+      'file': 'notifications_4.mp3',
+      'text': "Something just came in. It might be important."
+    },
+    {
+      'file': 'notifications_5.mp3',
+      'text': "You may want to check your notifications."
+    },
+    {
+      'file': 'notifications_6.mp3',
+      'text': "A new notification was delivered. Please review it."
+    },
+    {
+      'file': 'notifications_7.mp3',
+      'text': "You have pending notifications waiting."
+    },
+    {
+      'file': 'notifications_8.mp3',
+      'text': "A notification just in — check your dashboard."
+    },
+    {
+      'file': 'notifications_9.mp3',
+      'text': "Alert received. Action may be required."
+    },
+    {
+      'file': 'notifications_10.mp3',
+      'text': "This strawberry is SO GOOD! Oh... sorry... you've got a new notification."
+    },
+  ];
   static final List<Map<String, String>> _wakeResponses = [
     {
       'file': 'wake_ack_1.mp3',
@@ -108,6 +150,8 @@ class AiRecordings {
     }
   ];
 
+
+
   /// Plays a random intro using AIVoiceAssistant and returns the transcript
   static Future<String> playRandomIntro() async {
     final response = _intros[_random.nextInt(_intros.length)];
@@ -119,6 +163,28 @@ class AiRecordings {
     return response['text']!;
   }
 
+  static Future<String> playRandomNewNotification() async {
+    if (aiVoice.aiSpeaking ||
+        assistantState.value == JamieState.speaking ||
+        assistantState.value == JamieState.thinking)
+    { return ''; }
+
+    final response = _notifications[_random.nextInt(_notifications.length)];
+    final bytes = await rootBundle.load('assets/audio/notifications/${response['file']}');
+
+    final initialListening = aiVoice.isListening;
+    final initialState = assistantState.value;
+
+    aiVoice.isListening = false;
+    assistantState.value = JamieState.speaking;
+
+    await aiVoice.playResponseFile(bytes.buffer.asUint8List(), 0);
+
+    assistantState.value = initialState;
+    aiVoice.isListening = initialListening;
+
+    return response['text']!;
+  }
 
   /// Plays a random friendly wake-word response (no credit used)
   static Future<String> playWakeResponse() async {
@@ -138,6 +204,9 @@ class AiRecordings {
 
     return response['text']!;
   }
+
+
+
 
 
   /// Plays a random Jamie action response (like navigate/dashboard, event/add)
@@ -174,11 +243,12 @@ class AiRecordings {
 
 
 
+
+
   /// Stops any currently playing audio
   static Future<void> stop() async {
     await _player.stop();
   }
-
 
   static bool _hasUpcomingEvent() {
     final now = DateTime.now();

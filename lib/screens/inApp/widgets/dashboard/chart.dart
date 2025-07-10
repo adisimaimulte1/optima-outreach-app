@@ -2,17 +2,20 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:optima/globals.dart';
-import 'package:optima/services/livesync/combined_listenable.dart';
+import 'package:optima/screens/inApp/widgets/events/event_feedback.dart';
+
 enum ChartMode { eventHistory, creditUsage, eventImpact }
+
+
 
 class LineChartCard extends StatefulWidget {
   const LineChartCard({super.key});
 
   @override
-  State<LineChartCard> createState() => _LineChartCardState();
+  State<LineChartCard> createState() => LineChartCardState();
 }
 
-class _LineChartCardState extends State<LineChartCard> {
+class LineChartCardState extends State<LineChartCard> {
   ChartMode currentMode = ChartMode.eventHistory;
 
   final Map<ChartMode, List<double>> chartData = {
@@ -20,6 +23,8 @@ class _LineChartCardState extends State<LineChartCard> {
     ChartMode.creditUsage: [],
     ChartMode.eventImpact: [],
   };
+
+
 
   @override
   void initState() {
@@ -47,18 +52,60 @@ class _LineChartCardState extends State<LineChartCard> {
     }
 
     final creditMap = creditHistoryMap.value;
+
     for (int i = 0; i < 16; i++) {
       final dateKey = DateFormat('yyyy-MM-dd').format(last16Days[i]);
       final entry = creditMap[dateKey];
       if (entry != null) {
         creditsData[i] = entry.usedCredits + entry.usedSubCredits;
       }
+
+      // Now calculate impact for the same day
+      final day = last16Days[i];
+      final feedbacksForDay = <EventFeedback>[];
+
+      for (final event in events) {
+        final date = event.selectedDate;
+        if (date == null || !_isSameDay(date, day)) continue;
+        feedbacksForDay.addAll(event.feedback);
+      }
+
+      if (feedbacksForDay.isEmpty) {
+        impactData[i] = 0;
+        continue;
+      }
+
+      double totalImpact = 0;
+
+      for (final feedback in feedbacksForDay) {
+        if (!feedback.completed) continue;
+
+        final starsScore = feedback.stars.clamp(0, 5) / 5; // 50%
+        final organizedScore = feedback.wasOrganizedWell ? 0.2 : 0; // 20%
+        final recommendScore = feedback.wouldRecommend ? 0.2 : 0;   // 20%
+        final contactScore = feedback.wantsToBeContacted ? 0.1 : 0; // 10%
+
+        final individualScore = (starsScore * 0.5) + organizedScore + recommendScore + contactScore;
+        totalImpact += individualScore.clamp(0, 1);
+      }
+
+      final totalSub = feedbacksForDay.where((f) => f.completed).length;
+      double avgImpact;
+
+      if (totalSub != 0) {
+        avgImpact = totalImpact / feedbacksForDay.where((f) => f.completed).length;
+      } else { avgImpact = 0; }
+
+      impactData[i] = (avgImpact * 100).clamp(0, 100); // percent
     }
+
 
     chartData[ChartMode.eventHistory] = historyData;
     chartData[ChartMode.creditUsage] = creditsData;
     chartData[ChartMode.eventImpact] = impactData;
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +145,6 @@ class _LineChartCardState extends State<LineChartCard> {
       },
     );
   }
-
 
   Widget _buildTabs() {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -258,8 +304,17 @@ class _LineChartCardState extends State<LineChartCard> {
           ),
           getTooltipItems: (touchedSpots) {
             return touchedSpots.map((spot) {
+              final isImpact = currentMode == ChartMode.eventImpact;
+              final isCredits = currentMode == ChartMode.creditUsage;
+
+              final formatted = isImpact
+                  ? "${spot.y.toStringAsFixed(0)}%" // whole number + %
+                  : (isCredits
+                  ? "◉ ${spot.y.toStringAsFixed(2)}"
+                  : "${spot.y.toInt()}");
+
               return LineTooltipItem(
-                spot.y.toStringAsFixed(1),
+                formatted,
                 TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -276,6 +331,7 @@ class _LineChartCardState extends State<LineChartCard> {
     );
 
   }
+
 
 
   double _getYInterval(List<double> values) {

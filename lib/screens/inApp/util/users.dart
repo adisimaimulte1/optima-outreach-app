@@ -73,28 +73,66 @@ class UsersScreenState extends State<UsersScreen> with TickerProviderStateMixin 
         return AnimatedBuilder(
           animation: combinedEventsListenable,
           builder: (context, _) {
-            return Scaffold(
-              backgroundColor: Colors.transparent,
-              body: Column(
-                children: [
-                  const SizedBox(height: 85),
-                  _buildTabBar(context),
-                  _buildDivider(),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: TabBarView(
-                      controller: usersController.tabController,
-                      physics: scale < 0.99
-                          ? const NeverScrollableScrollPhysics()
-                          : const BouncingScrollPhysics(),
-                      children: [
-                        EventsChatTab(),
-                        PublicEventsTab(),
-                      ],
-                    ),
+            return Stack(
+              children: [
+                Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Column(
+                    children: [
+                      const SizedBox(height: 85),
+                      _buildTabBar(context),
+                      _buildDivider(),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: AnimatedBuilder(
+                          animation: usersController.tabController,
+                          builder: (context, _) {
+                            return IndexedStack(
+                              index: usersController.tabController.index,
+                              children: [
+                                EventsChatTab(key: eventsChatTabKey),
+                                PublicEventsTab(key: publicEventsTabKey),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                // Tap zones
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 60,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () {
+                      final index = usersController.tabController.index;
+                      if (index > 0) {
+                        usersController.tabController.animateTo(index - 1);
+                      }
+                    },
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 60,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () {
+                      final index = usersController.tabController.index;
+                      if (index < usersController.tabController.length - 1) {
+                        usersController.tabController.animateTo(index + 1);
+                      }
+                    },
+                  ),
+                ),
+              ],
             );
           },
         );

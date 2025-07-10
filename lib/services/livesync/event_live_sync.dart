@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:optima/globals.dart';
 import 'package:optima/screens/inApp/widgets/aichat/ai_chat_message.dart';
 import 'package:optima/screens/inApp/widgets/events/event_data.dart';
+import 'package:optima/screens/inApp/widgets/events/event_feedback.dart';
 import 'package:optima/screens/inApp/widgets/users/members_chat/members_chat_message.dart';
 import 'package:optima/services/cache/local_cache.dart';
 
@@ -183,11 +184,34 @@ class EventLiveSyncService {
     });
 
 
+    // 🔁 Listener 5: Feedback
+    final feedbackSub = ref
+        .collection('feedback')
+        .snapshots()
+        .listen((snapshot) {
+      final current = notifier.value;
+
+      final feedbackList = snapshot.docs
+          .where((doc) => doc.id != 'placeholder')
+          .map((doc) => EventFeedback.fromFirestore(doc.data()))
+          .toList();
+
+      final updated = current.copyWith(feedback: feedbackList);
+
+      notifier.value = updated;
+
+      final index = events.indexWhere((e) => e.id == eventId);
+      if (index != -1) events[index] = updated;
+    });
+
+
+
     _eventListeners[eventId] = _EventSubscriptions(
       eventSub,
       membersSub,
       aiChatSub,
       membersChatSub,
+      feedbackSub,
     );
   }
 
@@ -208,6 +232,10 @@ class EventLiveSyncService {
     eventNotifiers.clear();
   }
 
+  void fakeListener(String eventId) {
+    _eventListeners[tutorialEventData.id!] = _EventSubscriptions.empty();
+  }
+
 
 
   TimeOfDay? _parseTime(dynamic raw) {
@@ -219,18 +247,39 @@ class EventLiveSyncService {
   }
 }
 
+
+
 class _EventSubscriptions {
   final StreamSubscription eventSub;
   final StreamSubscription membersSub;
   final StreamSubscription aiChatSub;
   final StreamSubscription membersChatSub;
+  final StreamSubscription feedbackSub;
 
-  _EventSubscriptions(this.eventSub, this.membersSub, this.aiChatSub, this.membersChatSub);
+  _EventSubscriptions(
+      this.eventSub,
+      this.membersSub,
+      this.aiChatSub,
+      this.membersChatSub,
+      this.feedbackSub,
+      );
 
   void cancel() {
     eventSub.cancel();
     membersSub.cancel();
     aiChatSub.cancel();
     membersChatSub.cancel();
+    feedbackSub.cancel();
+  }
+
+  static _EventSubscriptions empty() {
+    StreamSubscription<T> dummy<T>() => Stream<T>.empty().listen((_) {});
+    return _EventSubscriptions(
+      dummy(),
+      dummy(),
+      dummy(),
+      dummy(),
+      dummy(),
+    );
   }
 }

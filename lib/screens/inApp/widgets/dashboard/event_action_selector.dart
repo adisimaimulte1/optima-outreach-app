@@ -6,10 +6,10 @@ class EventActionSelectorWheel extends StatefulWidget {
   const EventActionSelectorWheel({super.key});
 
   @override
-  State<EventActionSelectorWheel> createState() => _EventActionSelectorWheelState();
+  State<EventActionSelectorWheel> createState() => EventActionSelectorWheelState();
 }
 
-class _EventActionSelectorWheelState extends State<EventActionSelectorWheel> {
+class EventActionSelectorWheelState extends State<EventActionSelectorWheel> {
   int selectedEventIndex = 0;
   int selectedActionIndex = 0;
 
@@ -189,5 +189,9 @@ class _EventActionSelectorWheelState extends State<EventActionSelectorWheel> {
         showEventChatOnLaunch = MapEntry(true, selectedEvent);
         break;
     }
+  }
+
+  void scrollToActionIndex (int index, Duration duration) {
+    actionScroll.animateToItem(index, duration: duration, curve: Curves.easeInOut);
   }
 }

@@ -46,6 +46,7 @@ class AiChatTopBar extends StatelessWidget {
                           onTap: () {
                             chat.showPinnedOnly.value = !isPinned;
                             chat.isSearchBarVisible.value = false;
+                            chat.toggleSearchBar(false);
                             chat.resetScrollController();
                             chat.closeMessageOptions();
                             },
