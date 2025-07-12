@@ -12,7 +12,7 @@
 ---
 
 <p align="center">
-  <strong>$\LARGE \color{#FFC62D}{\textsf{FEATURES}}$</strong>
+  <strong>$\LARGE \color{#FFC62D}{\textsf{DESCRIPTION}}$</strong>
 </p>
 
 <p align="center">
